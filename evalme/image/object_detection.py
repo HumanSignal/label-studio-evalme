@@ -138,10 +138,29 @@ def _total_iou(item_a, item_b):
     return 0.5 * (a_to_b + b_to_a)
 
 
+def _as_bboxes(item):
+    if not isinstance(item, BboxObjectDetectionEvalItem):
+        return BboxObjectDetectionEvalItem(item)
+    return item
+
+
+def _as_polygons(item):
+    if not isinstance(item, PolygonObjectDetectionEvalItem):
+        return PolygonObjectDetectionEvalItem(item)
+    return item
+
+
 def total_iou_bboxes(item_a, item_b):
-    return _total_iou(BboxObjectDetectionEvalItem(item_a), BboxObjectDetectionEvalItem(item_b))
+    return _total_iou(_as_bboxes(item_a), _as_bboxes(item_b))
 
 
 def total_iou_polygons(item_a, item_b):
-    return _total_iou(PolygonObjectDetectionEvalItem(item_a), PolygonObjectDetectionEvalItem(item_b))
+    return _total_iou(_as_polygons(item_a), _as_polygons(item_b))
 
+
+def total_iou_bboxes_asym(item_gt, item_pred):
+    return _as_bboxes(item_pred).total_iou(_as_bboxes(item_gt))
+
+
+def total_iou_polygons_asym(item_gt, item_pred):
+    return _as_polygons(item_pred).total_iou(_as_polygons(item_gt))
