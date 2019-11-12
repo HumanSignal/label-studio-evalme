@@ -5,7 +5,7 @@ with open('README.md', 'r') as f:
 
 setuptools.setup(
     name='label-studio-evalme',
-    version='0.0.1',
+    version='0.0.1.dev1',
     author='Heartex',
     author_email="hello@heartex.ai",
     description='Evaluation metrics',
