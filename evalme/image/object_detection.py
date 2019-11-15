@@ -69,7 +69,8 @@ class ObjectDetectionEvalItem(EvalItem):
                 else:
                     if iou >= iou_threshold:
                         fp += 1
-        precision = tp / (tp + fp)
+        totalp = tp + fp
+        precision = tp / totalp if totalp > 0 else 0
         recall = tp / (tp + fn)
         return precision, recall
 
@@ -132,12 +133,6 @@ class PolygonObjectDetectionEvalItem(ObjectDetectionEvalItem):
         return iou
 
 
-def _total_iou(item_a, item_b):
-    a_to_b = item_a.total_iou(item_b)
-    b_to_a = item_b.total_iou(item_a)
-    return 0.5 * (a_to_b + b_to_a)
-
-
 def _as_bboxes(item):
     if not isinstance(item, BboxObjectDetectionEvalItem):
         return BboxObjectDetectionEvalItem(item)
@@ -150,17 +145,33 @@ def _as_polygons(item):
     return item
 
 
-def total_iou_bboxes(item_a, item_b):
-    return _total_iou(_as_bboxes(item_a), _as_bboxes(item_b))
-
-
-def total_iou_polygons(item_a, item_b):
-    return _total_iou(_as_polygons(item_a), _as_polygons(item_b))
-
-
-def total_iou_bboxes_asym(item_gt, item_pred):
+def iou_bboxes(item_gt, item_pred):
     return _as_bboxes(item_pred).total_iou(_as_bboxes(item_gt))
 
 
-def total_iou_polygons_asym(item_gt, item_pred):
+def iou_polygons(item_gt, item_pred):
     return _as_polygons(item_pred).total_iou(_as_polygons(item_gt))
+
+
+def precision_bboxes(item_gt, item_pred, iou_threshold=0.5):
+    return _as_bboxes(item_pred).precision_at_iou(_as_bboxes(item_gt), iou_threshold)
+
+
+def precision_polygons(item_gt, item_pred, iou_threshold=0.5):
+    return _as_polygons(item_pred).precision_at_iou(_as_polygons(item_gt), iou_threshold)
+
+
+def recall_bboxes(item_gt, item_pred, iou_threshold=0.5):
+    return _as_bboxes(item_pred).recall_at_iou(_as_bboxes(item_gt), iou_threshold)
+
+
+def recall_polygons(item_gt, item_pred, iou_threshold=0.5):
+    return _as_polygons(item_pred).recall_at_iou(_as_polygons(item_gt), iou_threshold)
+
+
+def f1_bboxes(item_gt, item_pred, iou_threshold=0.5):
+    return _as_bboxes(item_pred).f1_at_iou(_as_bboxes(item_gt), iou_threshold)
+
+
+def f1_polygons(item_gt, item_pred, iou_threshold=0.5):
+    return _as_polygons(item_pred).f1_at_iou(_as_polygons(item_gt), iou_threshold)

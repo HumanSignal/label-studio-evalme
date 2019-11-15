@@ -3,9 +3,13 @@ import setuptools
 with open('README.md', 'r') as f:
     long_description = f.read()
 
+
+with open('requirements.txt') as f:
+    requirements = f.read().splitlines()
+
 setuptools.setup(
     name='label-studio-evalme',
-    version='0.0.1.dev1',
+    version='0.0.1.dev2',
     author='Heartex',
     author_email="hello@heartex.ai",
     description='Evaluation metrics',
@@ -18,5 +22,6 @@ setuptools.setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
+    install_requires=requirements,
     python_requires='>=3.6',
 )
