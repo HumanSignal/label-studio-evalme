@@ -70,8 +70,9 @@ class ObjectDetectionEvalItem(EvalItem):
                     if iou >= iou_threshold:
                         fp += 1
         totalp = tp + fp
+        total_true = tp + fn
         precision = tp / totalp if totalp > 0 else 0
-        recall = tp / (tp + fn)
+        recall = tp / total_true if total_true > 0 else 0
         return precision, recall
 
     def precision_at_iou(self, item, iou_threshold=0.5):
