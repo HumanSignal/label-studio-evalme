@@ -17,3 +17,10 @@ class EvalItem(object):
 
     def get_values(self):
         return list(self.get_values_iter())
+
+    @property
+    def empty(self):
+        return len(self._raw_data) == 0
+
+    def __len__(self):
+        return len(self._raw_data)
