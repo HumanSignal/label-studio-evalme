@@ -24,3 +24,23 @@ class ChoicesEvalItem(ClassificationEvalItem):
 
 class PairwiseEvalItem(ClassificationEvalItem):
     SHAPE_KEY = 'pairwise'
+
+
+def _as_choices(item):
+    if not isinstance(item, ChoicesEvalItem):
+        return ChoicesEvalItem(item)
+    return item
+
+
+def _as_pairwise(item):
+    if not isinstance(item, PairwiseEvalItem):
+        return PairwiseEvalItem(item)
+    return item
+
+
+def exact_matching_choices(item_gt, item_pred):
+    return _as_choices(item_gt).exact_match(_as_choices(item_pred))
+
+
+def exact_matching_pairwise(item_gt, item_pred):
+    return _as_pairwise(item_gt).exact_match(_as_pairwise(item_pred))

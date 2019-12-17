@@ -35,7 +35,7 @@ class HTMLTagsEvalItem(EvalItem):
 
 
 def _as_html_tags_eval_item(item):
-    if not isinstance(HTMLTagsEvalItem, item):
+    if not isinstance(item, HTMLTagsEvalItem):
         return HTMLTagsEvalItem(item)
     return item
 
