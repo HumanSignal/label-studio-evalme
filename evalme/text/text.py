@@ -3,6 +3,41 @@ from functools import partial
 from evalme.eval_item import EvalItem
 
 
+class TextTagsEvalItem(EvalItem):
+
+    SHAPE_KEY = 'labels'
+
+    def _intersect(self, x, y):
+        if x[self.SHAPE_KEY] != y[self.SHAPE_KEY]:
+            return 0
+        s1, e1 = x['start'], x['end']
+        s2, e2 = y['start'], y['end']
+        if s2 > e1 or s1 > e2:
+            return 0
+        return min(e1, e2) - max(s1, s2)
+
+    def intersection(self, item, label_weights=None):
+        label_weights = label_weights or {}
+        item = _as_text_tags_eval_item(item)
+        someone_is_empty = self.empty ^ item.empty
+        if someone_is_empty:
+            return 0
+        if self.empty and item.empty:
+            return 1
+        total_len, total_intersect_len = 0, 0
+        gt_values = self.get_values()
+        for pred_value in item.get_values_iter():
+            intersect_length = max(map(partial(self._intersect, y=pred_value), gt_values))
+            length = pred_value['end'] - pred_value['start']
+            if self.SHAPE_KEY in pred_value:
+                weight = sum(label_weights.get(l, 1) for l in pred_value[self.SHAPE_KEY])
+            else:
+                weight = 1
+            total_len += weight * length
+            total_intersect_len += weight * intersect_length
+        return total_intersect_len / max(total_len, 1)
+
+
 class HTMLTagsEvalItem(EvalItem):
     SHAPE_KEY = 'htmllabels'
 
@@ -19,7 +54,8 @@ class HTMLTagsEvalItem(EvalItem):
             return 0
         return min(e1, e2) - max(s1, s2)
 
-    def intersection(self, item):
+    def intersection(self, item, label_weights=None):
+        label_weights = label_weights or {}
         item = _as_html_tags_eval_item(item)
         someone_is_empty = self.empty ^ item.empty
         if someone_is_empty:
@@ -29,9 +65,23 @@ class HTMLTagsEvalItem(EvalItem):
         total_len, total_intersect_len = 0, 0
         gt_values = self.get_values()
         for pred_value in item.get_values_iter():
-            total_len += pred_value['endOffset'] - pred_value['startOffset']
-            total_intersect_len += max(map(partial(self._intersect, y=pred_value), gt_values))
+            intersect_length = max(map(partial(self._intersect, y=pred_value), gt_values))
+            length = pred_value['endOffset'] - pred_value['startOffset']
+
+            if self.SHAPE_KEY in pred_value:
+                weight = sum(label_weights.get(l, 1) for l in pred_value[self.SHAPE_KEY])
+            else:
+                weight = 1
+
+            total_len += weight * length
+            total_intersect_len += weight * intersect_length
         return total_intersect_len / max(total_len, 1)
+
+
+def _as_text_tags_eval_item(item):
+    if not isinstance(item, TextTagsEvalItem):
+        return TextTagsEvalItem(item)
+    return item
 
 
 def _as_html_tags_eval_item(item):
@@ -40,5 +90,9 @@ def _as_html_tags_eval_item(item):
     return item
 
 
-def intersection_html_tagging(item_gt, item_pred):
-    return _as_html_tags_eval_item(item_gt).intersection(item_pred)
+def intersection_text_tagging(item_gt, item_pred, label_weights=None):
+    return _as_text_tags_eval_item(item_gt).intersection(item_pred, label_weights)
+
+
+def intersection_html_tagging(item_gt, item_pred, label_weights=None):
+    return _as_html_tags_eval_item(item_gt).intersection(item_pred, label_weights)

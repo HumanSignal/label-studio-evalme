@@ -34,7 +34,7 @@ class ObjectDetectionEvalItem(EvalItem):
         # return the intersection over union value
         return iou
 
-    def total_iou(self, item):
+    def total_iou(self, item, label_weights=None):
         """
         For each shape in current eval item, we compute IOU with identically labeled shape with largest intersection.
         This is suboptimal metric since it doesn't consider cases where multiple boxes from self coincides with
@@ -43,48 +43,57 @@ class ObjectDetectionEvalItem(EvalItem):
         :return:
         """
         ious = []
+        label_weights = label_weights or {}
         shapes_pred = item.get_values()
+        weights = []
         for shape in self.get_values_iter():
-            shape_label = shape[self.SHAPE_KEY]
-            pred_bboxes_by_label = filter(lambda b: b[self.SHAPE_KEY] == shape_label, shapes_pred)
+            shape_labels = shape[self.SHAPE_KEY]
+            weight = sum(label_weights.get(l, 1) for l in shape_labels)
+            pred_bboxes_by_label = filter(lambda b: b[self.SHAPE_KEY] == shape_labels, shapes_pred)
             iou_per_box = map(partial(self._iou, shape), pred_bboxes_by_label)
             try:
                 iou = max(iou_per_box)
             except ValueError:
                 iou = 0.0
-            ious.append(iou)
-        return np.mean(ious) if ious else 0.0
+            ious.append(weight * iou)
+            weights.append(weight)
+        return np.average(ious, weights=weights) if ious else 0.0
 
-    def _precision_recall_at_iou(self, item, iou_threshold):
+    def _precision_recall_at_iou(self, item, iou_threshold, label_weights=None):
         shapes = item.get_values()
         tp, fp, fn = 0, 0, 0
+        label_weights = label_weights or {}
         for shape_pred in self.get_values_iter():
             for shape_gt in shapes:
                 iou = self._iou(shape_pred, shape_gt)
+                if self.SHAPE_KEY in shape_gt:
+                    weight = sum(label_weights.get(l, 1) for l in shape_gt[self.SHAPE_KEY])
+                else:
+                    weight = 1
                 if shape_pred[self.SHAPE_KEY] == shape_gt[self.SHAPE_KEY]:
                     if iou >= iou_threshold:
-                        tp += 1
+                        tp += weight
                     else:
-                        fn += 1
+                        fn += weight
                 else:
                     if iou >= iou_threshold:
-                        fp += 1
+                        fp += weight
         totalp = tp + fp
         total_true = tp + fn
         precision = tp / totalp if totalp > 0 else 0
         recall = tp / total_true if total_true > 0 else 0
         return precision, recall
 
-    def precision_at_iou(self, item, iou_threshold=0.5):
-        precision, _ = self._precision_recall_at_iou(item, iou_threshold)
+    def precision_at_iou(self, item, iou_threshold=0.5, label_weights=None):
+        precision, _ = self._precision_recall_at_iou(item, iou_threshold, label_weights)
         return precision
 
-    def recall_at_iou(self, item, iou_threshold=0.5):
-        _, recall = self._precision_recall_at_iou(item, iou_threshold)
+    def recall_at_iou(self, item, iou_threshold=0.5, label_weights=None):
+        _, recall = self._precision_recall_at_iou(item, iou_threshold, label_weights)
         return recall
 
-    def f1_at_iou(self, item, iou_threshold=0.5):
-        precision, recall = self._precision_recall_at_iou(item, iou_threshold)
+    def f1_at_iou(self, item, iou_threshold=0.5, label_weights=None):
+        precision, recall = self._precision_recall_at_iou(item, iou_threshold, label_weights)
         return 2 * precision * recall / (precision + recall)
 
 
@@ -146,33 +155,33 @@ def _as_polygons(item):
     return item
 
 
-def iou_bboxes(item_gt, item_pred):
-    return _as_bboxes(item_pred).total_iou(_as_bboxes(item_gt))
+def iou_bboxes(item_gt, item_pred, label_weights=None):
+    return _as_bboxes(item_pred).total_iou(_as_bboxes(item_gt), label_weights)
 
 
-def iou_polygons(item_gt, item_pred):
-    return _as_polygons(item_pred).total_iou(_as_polygons(item_gt))
+def iou_polygons(item_gt, item_pred, label_weights=None):
+    return _as_polygons(item_pred).total_iou(_as_polygons(item_gt), label_weights)
 
 
-def precision_bboxes(item_gt, item_pred, iou_threshold=0.5):
-    return _as_bboxes(item_pred).precision_at_iou(_as_bboxes(item_gt), iou_threshold)
+def precision_bboxes(item_gt, item_pred, iou_threshold=0.5, label_weights=None):
+    return _as_bboxes(item_pred).precision_at_iou(_as_bboxes(item_gt), iou_threshold, label_weights)
 
 
-def precision_polygons(item_gt, item_pred, iou_threshold=0.5):
-    return _as_polygons(item_pred).precision_at_iou(_as_polygons(item_gt), iou_threshold)
+def precision_polygons(item_gt, item_pred, iou_threshold=0.5, label_weights=None):
+    return _as_polygons(item_pred).precision_at_iou(_as_polygons(item_gt), iou_threshold, label_weights)
 
 
-def recall_bboxes(item_gt, item_pred, iou_threshold=0.5):
-    return _as_bboxes(item_pred).recall_at_iou(_as_bboxes(item_gt), iou_threshold)
+def recall_bboxes(item_gt, item_pred, iou_threshold=0.5, label_weights=None):
+    return _as_bboxes(item_pred).recall_at_iou(_as_bboxes(item_gt), iou_threshold, label_weights)
 
 
-def recall_polygons(item_gt, item_pred, iou_threshold=0.5):
-    return _as_polygons(item_pred).recall_at_iou(_as_polygons(item_gt), iou_threshold)
+def recall_polygons(item_gt, item_pred, iou_threshold=0.5, label_weights=None):
+    return _as_polygons(item_pred).recall_at_iou(_as_polygons(item_gt), iou_threshold, label_weights)
 
 
-def f1_bboxes(item_gt, item_pred, iou_threshold=0.5):
-    return _as_bboxes(item_pred).f1_at_iou(_as_bboxes(item_gt), iou_threshold)
+def f1_bboxes(item_gt, item_pred, iou_threshold=0.5, label_weights=None):
+    return _as_bboxes(item_pred).f1_at_iou(_as_bboxes(item_gt), iou_threshold, label_weights)
 
 
-def f1_polygons(item_gt, item_pred, iou_threshold=0.5):
-    return _as_polygons(item_pred).f1_at_iou(_as_polygons(item_gt), iou_threshold)
+def f1_polygons(item_gt, item_pred, iou_threshold=0.5, label_weights=None):
+    return _as_polygons(item_pred).f1_at_iou(_as_polygons(item_gt), iou_threshold, label_weights)
