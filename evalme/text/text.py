@@ -1,4 +1,7 @@
+import textdistance
+
 from functools import partial
+from itertools import zip_longest
 
 from evalme.eval_item import EvalItem
 
@@ -78,6 +81,30 @@ class HTMLTagsEvalItem(EvalItem):
         return total_intersect_len / max(total_len, 1)
 
 
+class TextAreaEvalItem(EvalItem):
+    SHAPE_KEY = 'textarea'
+
+    _comparators = {}
+
+    def match(self, item, algorithm='Levenshtein', qval=1):
+        item = _as_textarea_eval_item(item)
+        comparator_key = (algorithm, qval)
+        if comparator_key not in self._comparators:
+            self._comparators[comparator_key] = getattr(textdistance, algorithm)(qval=qval)
+        comparator = self._comparators[comparator_key].normalized_similarity
+        all_scores = []
+        for gt, pred in zip(self.get_values_iter(), item.get_values_iter()):
+            scores = []
+            for gt_text, pred_text in zip_longest(gt['text'], pred['text']):
+                if gt_text is None or pred_text is None:
+                    scores.append(0)
+                else:
+                    scores.append(comparator(gt_text, pred_text))
+            mean_score = sum(scores) / max(len(scores), 1)
+            all_scores.append(mean_score)
+        return sum(all_scores) / max(len(all_scores), 1)
+
+
 def _as_text_tags_eval_item(item):
     if not isinstance(item, TextTagsEvalItem):
         return TextTagsEvalItem(item)
@@ -90,9 +117,20 @@ def _as_html_tags_eval_item(item):
     return item
 
 
+def _as_textarea_eval_item(item):
+    if not isinstance(item, HTMLTagsEvalItem):
+        return TextAreaEvalItem(item)
+    return item
+
+
 def intersection_text_tagging(item_gt, item_pred, label_weights=None):
     return _as_text_tags_eval_item(item_gt).intersection(item_pred, label_weights)
 
 
 def intersection_html_tagging(item_gt, item_pred, label_weights=None):
     return _as_html_tags_eval_item(item_gt).intersection(item_pred, label_weights)
+
+
+def match_textareas(item_gt, item_pred, algorithm='Levenshtein', qval=1):
+    qval = int(qval or 0) or None
+    return _as_textarea_eval_item(item_gt).match(item_pred, algorithm, qval)
