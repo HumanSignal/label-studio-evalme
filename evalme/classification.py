@@ -15,9 +15,9 @@ class ClassificationEvalItem(EvalItem):
             return 0
         total_weight = 0
         for x, y in zip(self.get_values_iter(), item.get_values_iter()):
-            if x[self.SHAPE_KEY] != y[self.SHAPE_KEY]:
+            if x[self._shape_key] != y[self._shape_key]:
                 return 0
-            weight = sum(label_weights.get(l, 1) for l in x[self.SHAPE_KEY])
+            weight = sum(label_weights.get(l, 1) for l in x[self._shape_key])
             total_weight += weight
         return total_weight
 

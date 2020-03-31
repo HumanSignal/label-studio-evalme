@@ -47,9 +47,9 @@ class ObjectDetectionEvalItem(EvalItem):
         shapes_pred = item.get_values()
         weights = []
         for shape in self.get_values_iter():
-            shape_labels = shape[self.SHAPE_KEY]
+            shape_labels = shape[self._shape_key]
             weight = sum(label_weights.get(l, 1) for l in shape_labels)
-            pred_bboxes_by_label = filter(lambda b: b[self.SHAPE_KEY] == shape_labels, shapes_pred)
+            pred_bboxes_by_label = filter(lambda b: b[self._shape_key] == shape_labels, shapes_pred)
             iou_per_box = map(partial(self._iou, shape), pred_bboxes_by_label)
             try:
                 iou = max(iou_per_box)
@@ -66,11 +66,11 @@ class ObjectDetectionEvalItem(EvalItem):
         for shape_pred in self.get_values_iter():
             for shape_gt in shapes:
                 iou = self._iou(shape_pred, shape_gt)
-                if self.SHAPE_KEY in shape_gt:
-                    weight = sum(label_weights.get(l, 1) for l in shape_gt[self.SHAPE_KEY])
+                if self._shape_key in shape_gt:
+                    weight = sum(label_weights.get(l, 1) for l in shape_gt[self._shape_key])
                 else:
                     weight = 1
-                if shape_pred[self.SHAPE_KEY] == shape_gt[self.SHAPE_KEY]:
+                if shape_pred[self._shape_key] == shape_gt[self._shape_key]:
                     if iou >= iou_threshold:
                         tp += weight
                     else:

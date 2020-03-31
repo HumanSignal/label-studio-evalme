@@ -5,8 +5,14 @@ class EvalItem(object):
     """
     Generic class that contains all info about evaluation item
     """
-    def __init__(self, raw_data):
+
+    SHAPE_KEY = None
+
+    def __init__(self, raw_data, shape_key=None):
         self._raw_data = raw_data
+        self._shape_key = shape_key or self.SHAPE_KEY
+        if not self._shape_key:
+            raise ValueError('Shape key is undefined')
 
     @property
     def raw_data(self):
