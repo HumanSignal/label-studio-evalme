@@ -6,6 +6,7 @@ from shapely.geometry import Polygon, MultiPolygon, LineString
 from shapely.ops import unary_union, polygonize
 
 from evalme.eval_item import EvalItem
+from evalme.utils import get_text_comparator, texts_similarity
 
 
 class ObjectDetectionEvalItem(EvalItem):
@@ -34,7 +35,7 @@ class ObjectDetectionEvalItem(EvalItem):
         # return the intersection over union value
         return iou
 
-    def total_iou(self, item, label_weights=None):
+    def total_iou(self, item, label_weights=None, algorithm=None, qval=None):
         """
         For each shape in current eval item, we compute IOU with identically labeled shape with largest intersection.
         This is suboptimal metric since it doesn't consider cases where multiple boxes from self coincides with
@@ -42,20 +43,20 @@ class ObjectDetectionEvalItem(EvalItem):
         :param item to be compared with self:
         :return:
         """
-        ious = []
         label_weights = label_weights or {}
         shapes_pred = item.get_values()
-        weights = []
-        for shape in self.get_values_iter():
-            shape_labels = shape[self._shape_key]
-            weight = sum(label_weights.get(l, 1) for l in shape_labels)
-            pred_bboxes_by_label = filter(lambda b: b[self._shape_key] == shape_labels, shapes_pred)
-            iou_per_box = map(partial(self._iou, shape), pred_bboxes_by_label)
-            try:
-                iou = max(iou_per_box)
-            except ValueError:
-                iou = 0.0
-            ious.append(weight * iou)
+        ious, weights = [], []
+        comparator = get_text_comparator(algorithm, qval)
+        for gt in self.get_values_iter():
+            max_iou = 0
+            for pred in shapes_pred.get_values_iter():
+                label_sim = texts_similarity(gt[self._shape_key], pred[self._shape_key], comparator)
+                if label_sim == 0:
+                    continue
+                iou = self._iou(gt, pred)
+                max_iou = max(iou, max_iou)
+            weight = sum(label_weights.get(l, 1) for l in gt[self._shape_key])
+            ious.append(max_iou * weight)
             weights.append(weight)
         return np.average(ious, weights=weights) if ious else 0.0
 
@@ -143,45 +144,73 @@ class PolygonObjectDetectionEvalItem(ObjectDetectionEvalItem):
         return iou
 
 
-def _as_bboxes(item):
+def _as_bboxes(item, shape_key=None):
     if not isinstance(item, BboxObjectDetectionEvalItem):
-        return BboxObjectDetectionEvalItem(item)
+        return BboxObjectDetectionEvalItem(item, shape_key)
     return item
 
 
-def _as_polygons(item):
+def _as_polygons(item, shape_key=None):
     if not isinstance(item, PolygonObjectDetectionEvalItem):
-        return PolygonObjectDetectionEvalItem(item)
+        return PolygonObjectDetectionEvalItem(item, shape_key)
     return item
 
 
-def iou_bboxes(item_gt, item_pred, label_weights=None):
-    return _as_bboxes(item_pred).total_iou(_as_bboxes(item_gt), label_weights)
+def iou_bboxes(item_gt, item_pred, label_weights=None, shape_key=None):
+    item_gt = _as_bboxes(item_gt, shape_key=shape_key)
+    item_pred = _as_bboxes(item_pred, shape_key=shape_key)
+    return item_pred.total_iou(item_gt, label_weights)
 
 
-def iou_polygons(item_gt, item_pred, label_weights=None):
-    return _as_polygons(item_pred).total_iou(_as_polygons(item_gt), label_weights)
+def iou_bboxes_textarea(item_gt, item_pred, label_weights=None, shape_key=None, algorithm='Levenshtein', qval=1):
+    item_gt = _as_bboxes(item_gt, shape_key=shape_key)
+    item_pred = _as_bboxes(item_pred, shape_key=shape_key)
+    return item_pred.total_iou(item_gt, label_weights, algorithm=algorithm, qval=qval)
 
 
-def precision_bboxes(item_gt, item_pred, iou_threshold=0.5, label_weights=None):
-    return _as_bboxes(item_pred).precision_at_iou(_as_bboxes(item_gt), iou_threshold, label_weights)
+def iou_polygons(item_gt, item_pred, label_weights=None, shape_key=None):
+    item_gt = _as_polygons(item_gt, shape_key=shape_key)
+    item_pred = _as_polygons(item_pred, shape_key=shape_key)
+    return item_pred.total_iou(item_gt, label_weights)
 
 
-def precision_polygons(item_gt, item_pred, iou_threshold=0.5, label_weights=None):
-    return _as_polygons(item_pred).precision_at_iou(_as_polygons(item_gt), iou_threshold, label_weights)
+def iou_polygons_textarea(item_gt, item_pred, label_weights=None, shape_key=None, algorithm='Levenshtein', qval=1):
+    item_gt = _as_polygons(item_gt, shape_key=shape_key)
+    item_pred = _as_polygons(item_pred, shape_key=shape_key)
+    return item_pred.total_iou(item_gt, label_weights, algorithm=algorithm, qval=qval)
 
 
-def recall_bboxes(item_gt, item_pred, iou_threshold=0.5, label_weights=None):
-    return _as_bboxes(item_pred).recall_at_iou(_as_bboxes(item_gt), iou_threshold, label_weights)
+def precision_bboxes(item_gt, item_pred, iou_threshold=0.5, label_weights=None, shape_key=None):
+    item_gt = _as_bboxes(item_gt, shape_key=shape_key)
+    item_pred = _as_bboxes(item_pred, shape_key=shape_key)
+    return item_pred.precision_at_iou(item_gt, iou_threshold, label_weights)
 
 
-def recall_polygons(item_gt, item_pred, iou_threshold=0.5, label_weights=None):
-    return _as_polygons(item_pred).recall_at_iou(_as_polygons(item_gt), iou_threshold, label_weights)
+def precision_polygons(item_gt, item_pred, iou_threshold=0.5, label_weights=None, shape_key=None):
+    item_gt = _as_polygons(item_gt, shape_key=shape_key)
+    item_pred = _as_polygons(item_pred, shape_key=shape_key)
+    return item_pred.precision_at_iou(item_gt, iou_threshold, label_weights)
 
 
-def f1_bboxes(item_gt, item_pred, iou_threshold=0.5, label_weights=None):
-    return _as_bboxes(item_pred).f1_at_iou(_as_bboxes(item_gt), iou_threshold, label_weights)
+def recall_bboxes(item_gt, item_pred, iou_threshold=0.5, label_weights=None, shape_key=None):
+    item_gt = _as_bboxes(item_gt, shape_key=shape_key)
+    item_pred = _as_bboxes(item_pred, shape_key=shape_key)
+    return item_pred.recall_at_iou(item_gt, iou_threshold, label_weights)
 
 
-def f1_polygons(item_gt, item_pred, iou_threshold=0.5, label_weights=None):
-    return _as_polygons(item_pred).f1_at_iou(_as_polygons(item_gt), iou_threshold, label_weights)
+def recall_polygons(item_gt, item_pred, iou_threshold=0.5, label_weights=None, shape_key=None):
+    item_gt = _as_polygons(item_gt, shape_key=shape_key)
+    item_pred = _as_polygons(item_pred, shape_key=shape_key)
+    return item_pred.recall_at_iou(item_gt, iou_threshold, label_weights)
+
+
+def f1_bboxes(item_gt, item_pred, iou_threshold=0.5, label_weights=None, shape_key=None):
+    item_gt = _as_bboxes(item_gt, shape_key=shape_key)
+    item_pred = _as_bboxes(item_pred, shape_key=shape_key)
+    return item_pred.f1_at_iou(item_gt, iou_threshold, label_weights)
+
+
+def f1_polygons(item_gt, item_pred, iou_threshold=0.5, label_weights=None, shape_key=None):
+    item_gt = _as_polygons(item_gt, shape_key=shape_key)
+    item_pred = _as_polygons(item_pred, shape_key=shape_key)
+    return item_pred.f1_at_iou(item_gt, iou_threshold, label_weights)
