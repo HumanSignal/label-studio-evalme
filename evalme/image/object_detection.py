@@ -44,12 +44,11 @@ class ObjectDetectionEvalItem(EvalItem):
         :return:
         """
         label_weights = label_weights or {}
-        shapes_pred = item.get_values()
         ious, weights = [], []
         comparator = get_text_comparator(algorithm, qval)
         for gt in self.get_values_iter():
             max_iou = 0
-            for pred in shapes_pred.get_values_iter():
+            for pred in item.get_values_iter():
                 label_sim = texts_similarity(gt[self._shape_key], pred[self._shape_key], comparator)
                 if label_sim == 0:
                     continue
