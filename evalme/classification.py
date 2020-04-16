@@ -13,13 +13,14 @@ class ClassificationEvalItem(EvalItem):
             return 0
         if len(self) != len(item):
             return 0
-        total_weight = 0
+        total_weight, n = 0, 0
         for x, y in zip(self.get_values_iter(), item.get_values_iter()):
             if x[self._shape_key] != y[self._shape_key]:
                 return 0
             weight = sum(label_weights.get(l, 1) for l in x[self._shape_key])
             total_weight += weight
-        return total_weight
+            n += 1
+        return total_weight / n
 
 
 class ChoicesEvalItem(ClassificationEvalItem):
