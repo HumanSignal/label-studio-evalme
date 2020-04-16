@@ -19,7 +19,9 @@ class ClassificationEvalItem(EvalItem):
                 return 0
             weight = sum(label_weights.get(l, 1) for l in x[self._shape_key])
             total_weight += weight
-            n += 1
+            n += len(x[self._shape_key])
+        if n == 0:
+            return 0
         return total_weight / n
 
 
