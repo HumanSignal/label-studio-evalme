@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from evalme.eval_item import EvalItem
 
 
@@ -5,7 +7,7 @@ class ClassificationEvalItem(EvalItem):
 
     SHAPE_KEY = 'undefined'
 
-    def exact_match(self, item, label_weights=None):
+    def exact_match(self, item, label_weights=None, per_label=False):
         label_weights = label_weights or {}
         if self.empty and item.empty:
             return 1
@@ -13,13 +15,28 @@ class ClassificationEvalItem(EvalItem):
             return 0
         if len(self) != len(item):
             return 0
-        total_weight, n = 0, 0
+        if per_label:
+            total_weight = defaultdict(int)
+        else:
+            total_weight, n = 0, 0
         for x, y in zip(self.get_values_iter(), item.get_values_iter()):
             if x[self._shape_key] != y[self._shape_key]:
-                return 0
-            weight = sum(label_weights.get(l, 1) for l in x[self._shape_key])
-            total_weight += weight
-            n += len(x[self._shape_key])
+                if per_label:
+                    for l in x[self._shape_key]:
+                        total_weight[l] = 0
+                else:
+                    return 0
+            if per_label:
+                # per label mode: label weights are unimportant
+                for l in x[self._shape_key]:
+                    total_weight[l] = 1
+            else:
+                # aggregation mode: average scores by label weights
+                weight = sum(label_weights.get(l, 1) for l in x[self._shape_key])
+                total_weight += weight
+                n += len(x[self._shape_key])
+        if per_label:
+            return total_weight
         if n == 0:
             return 0
         return total_weight / n

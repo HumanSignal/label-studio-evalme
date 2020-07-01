@@ -1,6 +1,7 @@
 import numpy as np
 
 from functools import partial
+from collections import defaultdict
 
 from shapely.geometry import Polygon, MultiPolygon, LineString
 from shapely.ops import unary_union, polygonize
@@ -35,7 +36,7 @@ class ObjectDetectionEvalItem(EvalItem):
         # return the intersection over union value
         return iou
 
-    def total_iou(self, item, label_weights=None, algorithm=None, qval=None):
+    def total_iou(self, item, label_weights=None, algorithm=None, qval=None, per_label=False):
         """
         For each shape in current eval item, we compute IOU with identically labeled shape with largest intersection.
         This is suboptimal metric since it doesn't consider cases where multiple boxes from self coincides with
@@ -44,7 +45,10 @@ class ObjectDetectionEvalItem(EvalItem):
         :return:
         """
         label_weights = label_weights or {}
-        ious, weights = [], []
+        if per_label:
+            ious = defaultdict(list)
+        else:
+            ious, weights = [], []
         comparator = get_text_comparator(algorithm, qval)
         for gt in self.get_values_iter():
             max_iou = 0
@@ -54,15 +58,53 @@ class ObjectDetectionEvalItem(EvalItem):
                     continue
                 iou = self._iou(gt, pred)
                 max_iou = max(iou, max_iou)
-            weight = sum(label_weights.get(l, 1) for l in gt[self._shape_key])
-            ious.append(max_iou * weight)
-            weights.append(weight)
+            if per_label:
+                for l in gt[self._shape_key]:
+                    ious[l].append(max_iou)
+            else:
+                weight = sum(label_weights.get(l, 1) for l in gt[self._shape_key])
+                ious.append(max_iou * weight)
+                weights.append(weight)
+        if per_label:
+            return {l: float(np.mean(v)) for l, v in ious.items()}
         return np.average(ious, weights=weights) if ious else 0.0
 
-    def _precision_recall_at_iou(self, item, iou_threshold, label_weights=None):
+    def _precision_recall_at_iou_per_label(self, item, iou_threshold):
+        tp, fp, fn = defaultdict(int), defaultdict(int), defaultdict(int)
+
+        def inc_counters(c, labels):
+            for l in labels:
+                c[l] += 1
+
+        for shape_pred in self.get_values_iter():
+            for shape_gt in shapes:
+                iou = self._iou(shape_pred, shape_gt)
+                if shape_pred[self._shape_key] == shape_gt[self._shape_key]:
+                    if iou >= iou_threshold:
+                        inc_counters(tp, shape_gt[self._shape_key])
+                    else:
+                        inc_counters(fn, shape_gt[self._shape_key])
+                else:
+                    inc_counters(fp, shape_gt[self._shape_key])
+
+        precision, recall = {}, {}
+        for l in set(tp) | set(fn) | set(fp):
+            totalp = tp[l] + fp[l]
+            total_true = tp[l] + fp[l]
+            precision[l] = tp[l] / totalp if totalp > 0 else 0
+            recall[l] = tp[l] / total_true if total_true > 0 else 0
+        return precision, recall
+
+    def _precision_recall_at_iou(self, item, iou_threshold, label_weights=None, per_label=False):
+
+        if per_label:
+            # it's identical except that it returns per-label scores rather than averaged
+            return self._precision_recall_at_iou_per_label(item, iou_threshold)
+
         shapes = item.get_values()
         tp, fp, fn = 0, 0, 0
         label_weights = label_weights or {}
+
         for shape_pred in self.get_values_iter():
             for shape_gt in shapes:
                 iou = self._iou(shape_pred, shape_gt)
@@ -84,16 +126,18 @@ class ObjectDetectionEvalItem(EvalItem):
         recall = tp / total_true if total_true > 0 else 0
         return precision, recall
 
-    def precision_at_iou(self, item, iou_threshold=0.5, label_weights=None):
-        precision, _ = self._precision_recall_at_iou(item, iou_threshold, label_weights)
+    def precision_at_iou(self, item, iou_threshold=0.5, label_weights=None, per_label=False):
+        precision, _ = self._precision_recall_at_iou(item, iou_threshold, label_weights, per_label)
         return precision
 
-    def recall_at_iou(self, item, iou_threshold=0.5, label_weights=None):
-        _, recall = self._precision_recall_at_iou(item, iou_threshold, label_weights)
+    def recall_at_iou(self, item, iou_threshold=0.5, label_weights=None, per_label=False):
+        _, recall = self._precision_recall_at_iou(item, iou_threshold, label_weights, per_label)
         return recall
 
-    def f1_at_iou(self, item, iou_threshold=0.5, label_weights=None):
-        precision, recall = self._precision_recall_at_iou(item, iou_threshold, label_weights)
+    def f1_at_iou(self, item, iou_threshold=0.5, label_weights=None, per_label=False):
+        precision, recall = self._precision_recall_at_iou(item, iou_threshold, label_weights, per_label)
+        if per_label:
+            return {l: 2 * precision[l] * recall[l] / (precision[l] + recall[l]) for l in precision}
         return 2 * precision * recall / (precision + recall)
 
 

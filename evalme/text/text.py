@@ -1,4 +1,5 @@
 from functools import partial
+from collections import defaultdict
 
 from evalme.eval_item import EvalItem
 from evalme.utils import texts_similarity, get_text_comparator
@@ -25,7 +26,7 @@ class TextTagsEvalItem(EvalItem):
         spans_match = self.spans_iou(x, y)
         return labels_match * spans_match
 
-    def intersection(self, item, label_weights=None, algorithm=None, qval=None):
+    def intersection(self, item, label_weights=None, algorithm=None, qval=None, per_label=False):
         comparator = get_text_comparator(algorithm, qval)
         label_weights = label_weights or {}
         someone_is_empty = self.empty ^ item.empty
@@ -35,17 +36,38 @@ class TextTagsEvalItem(EvalItem):
             return 1
 
         gt_values = self.get_values()
-        total_score, total_weight = 0, 0
+        if per_label:
+            total_score, total_weight = defaultdict(int), defaultdict(int)
+        else:
+            total_score, total_weight = 0, 0
         for pred_value in item.get_values_iter():
             # find the best matching span inside gt_values
             best_matching_score = max(map(partial(self._match, y=pred_value, f=comparator), gt_values))
 
-            if self._shape_key in pred_value:
-                weight = sum(label_weights.get(l, 1) for l in pred_value[self._shape_key])
+            if per_label:
+                # for per-label mode, label weights are unimportant - only scores are averaged
+                for l in pred_value[self._shape_key]:
+                    total_score[l] += best_matching_score
+                    total_weight[l] += 1
             else:
-                weight = 1
-            total_score += weight * best_matching_score
-            total_weight += weight
+                # when aggregating scores each individual label weight is taken into account
+                if self._shape_key in pred_value:
+                    weight = sum(label_weights.get(l, 1) for l in pred_value[self._shape_key])
+                else:
+                    weight = 1
+                total_score += weight * best_matching_score
+                total_weight += weight
+
+        if per_label:
+            # average per-label score
+            for l in total_score:
+                if total_weight[l] == 0:
+                    total_score[l] = 0
+                else:
+                    total_score[l] /= total_weight[l]
+            return total_score
+
+        # otherwise return overall score
         if total_weight == 0:
             return 0
         return total_score / total_weight
@@ -102,22 +124,22 @@ def _as_textarea_eval_item(item):
     return item
 
 
-def intersection_text_tagging(item_gt, item_pred, label_weights=None, shape_key=None):
+def intersection_text_tagging(item_gt, item_pred, label_weights=None, shape_key=None, per_label=False):
     item_gt = _as_text_tags_eval_item(item_gt, shape_key=shape_key)
     item_pred = _as_text_tags_eval_item(item_pred, shape_key=shape_key)
-    return item_gt.intersection(item_pred, label_weights)
+    return item_gt.intersection(item_pred, label_weights, per_label=per_label)
 
 
-def intersection_textarea_tagging(item_gt, item_pred, label_weights=None, shape_key='text', algorithm='Levenshtein', qval=1):
+def intersection_textarea_tagging(item_gt, item_pred, label_weights=None, shape_key='text', algorithm='Levenshtein', qval=1, per_label=False):
     item_gt = _as_text_tags_eval_item(item_gt, shape_key=shape_key)
     item_pred = _as_text_tags_eval_item(item_pred, shape_key=shape_key)
-    return item_gt.intersection(item_pred, label_weights=label_weights, algorithm=algorithm, qval=qval)
+    return item_gt.intersection(item_pred, label_weights=label_weights, algorithm=algorithm, qval=qval, per_label=per_label)
 
 
-def intersection_html_tagging(item_gt, item_pred, label_weights=None, shape_key=None, algorithm=None, qval=None):
+def intersection_html_tagging(item_gt, item_pred, label_weights=None, shape_key=None, algorithm=None, qval=None, per_label=False):
     item_gt = _as_html_tags_eval_item(item_gt, shape_key=shape_key)
     item_pred = _as_html_tags_eval_item(item_pred, shape_key=shape_key)
-    return item_gt.intersection(item_pred, label_weights, algorithm=algorithm, qval=qval)
+    return item_gt.intersection(item_pred, label_weights, algorithm=algorithm, qval=qval, per_label=per_label)
 
 
 def match_textareas(item_gt, item_pred, algorithm='Levenshtein', qval=1):
