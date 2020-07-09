@@ -142,7 +142,7 @@ def intersection_html_tagging(item_gt, item_pred, label_weights=None, shape_key=
     return item_gt.intersection(item_pred, label_weights, algorithm=algorithm, qval=qval, per_label=per_label)
 
 
-def match_textareas(item_gt, item_pred, algorithm='Levenshtein', qval=1):
+def match_textareas(item_gt, item_pred, algorithm='Levenshtein', qval=1, **kwargs):
     qval = int(qval or 0) or None
     item_gt = _as_textarea_eval_item(item_gt)
     item_pred = _as_textarea_eval_item(item_pred)

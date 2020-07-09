@@ -199,61 +199,61 @@ def _as_polygons(item, shape_key=None):
     return item
 
 
-def iou_bboxes(item_gt, item_pred, label_weights=None, shape_key=None):
+def iou_bboxes(item_gt, item_pred, label_weights=None, shape_key=None, per_label=False):
     item_gt = _as_bboxes(item_gt, shape_key=shape_key)
     item_pred = _as_bboxes(item_pred, shape_key=shape_key)
-    return item_pred.total_iou(item_gt, label_weights)
+    return item_pred.total_iou(item_gt, label_weights, per_label=per_label)
 
 
-def iou_bboxes_textarea(item_gt, item_pred, label_weights=None, shape_key=None, algorithm='Levenshtein', qval=1):
+def iou_bboxes_textarea(item_gt, item_pred, label_weights=None, shape_key=None, algorithm='Levenshtein', qval=1, per_label=False):
     item_gt = _as_bboxes(item_gt, shape_key=shape_key)
     item_pred = _as_bboxes(item_pred, shape_key=shape_key)
-    return item_pred.total_iou(item_gt, label_weights, algorithm=algorithm, qval=qval)
+    return item_pred.total_iou(item_gt, label_weights, algorithm=algorithm, qval=qval, per_label=per_label)
 
 
-def iou_polygons(item_gt, item_pred, label_weights=None, shape_key=None):
+def iou_polygons(item_gt, item_pred, label_weights=None, shape_key=None, per_label=False):
     item_gt = _as_polygons(item_gt, shape_key=shape_key)
     item_pred = _as_polygons(item_pred, shape_key=shape_key)
-    return item_pred.total_iou(item_gt, label_weights)
+    return item_pred.total_iou(item_gt, label_weights, per_label=per_label)
 
 
-def iou_polygons_textarea(item_gt, item_pred, label_weights=None, shape_key=None, algorithm='Levenshtein', qval=1):
+def iou_polygons_textarea(item_gt, item_pred, label_weights=None, shape_key=None, algorithm='Levenshtein', qval=1, per_label=False):
     item_gt = _as_polygons(item_gt, shape_key=shape_key)
     item_pred = _as_polygons(item_pred, shape_key=shape_key)
-    return item_pred.total_iou(item_gt, label_weights, algorithm=algorithm, qval=qval)
+    return item_pred.total_iou(item_gt, label_weights, algorithm=algorithm, qval=qval, per_label=per_label)
 
 
-def precision_bboxes(item_gt, item_pred, iou_threshold=0.5, label_weights=None, shape_key=None):
+def precision_bboxes(item_gt, item_pred, iou_threshold=0.5, label_weights=None, shape_key=None, per_label=False):
     item_gt = _as_bboxes(item_gt, shape_key=shape_key)
     item_pred = _as_bboxes(item_pred, shape_key=shape_key)
-    return item_pred.precision_at_iou(item_gt, iou_threshold, label_weights)
+    return item_pred.precision_at_iou(item_gt, iou_threshold, label_weights, per_label=per_label)
 
 
-def precision_polygons(item_gt, item_pred, iou_threshold=0.5, label_weights=None, shape_key=None):
+def precision_polygons(item_gt, item_pred, iou_threshold=0.5, label_weights=None, shape_key=None, per_label=False):
     item_gt = _as_polygons(item_gt, shape_key=shape_key)
     item_pred = _as_polygons(item_pred, shape_key=shape_key)
-    return item_pred.precision_at_iou(item_gt, iou_threshold, label_weights)
+    return item_pred.precision_at_iou(item_gt, iou_threshold, label_weights, per_label=per_label)
 
 
-def recall_bboxes(item_gt, item_pred, iou_threshold=0.5, label_weights=None, shape_key=None):
+def recall_bboxes(item_gt, item_pred, iou_threshold=0.5, label_weights=None, shape_key=None, per_label=False):
     item_gt = _as_bboxes(item_gt, shape_key=shape_key)
     item_pred = _as_bboxes(item_pred, shape_key=shape_key)
-    return item_pred.recall_at_iou(item_gt, iou_threshold, label_weights)
+    return item_pred.recall_at_iou(item_gt, iou_threshold, label_weights, per_label=per_label)
 
 
-def recall_polygons(item_gt, item_pred, iou_threshold=0.5, label_weights=None, shape_key=None):
+def recall_polygons(item_gt, item_pred, iou_threshold=0.5, label_weights=None, shape_key=None, per_label=False):
     item_gt = _as_polygons(item_gt, shape_key=shape_key)
     item_pred = _as_polygons(item_pred, shape_key=shape_key)
-    return item_pred.recall_at_iou(item_gt, iou_threshold, label_weights)
+    return item_pred.recall_at_iou(item_gt, iou_threshold, label_weights, per_label=per_label)
 
 
-def f1_bboxes(item_gt, item_pred, iou_threshold=0.5, label_weights=None, shape_key=None):
+def f1_bboxes(item_gt, item_pred, iou_threshold=0.5, label_weights=None, shape_key=None, per_label=False):
     item_gt = _as_bboxes(item_gt, shape_key=shape_key)
     item_pred = _as_bboxes(item_pred, shape_key=shape_key)
-    return item_pred.f1_at_iou(item_gt, iou_threshold, label_weights)
+    return item_pred.f1_at_iou(item_gt, iou_threshold, label_weights, per_label=per_label)
 
 
-def f1_polygons(item_gt, item_pred, iou_threshold=0.5, label_weights=None, shape_key=None):
+def f1_polygons(item_gt, item_pred, iou_threshold=0.5, label_weights=None, shape_key=None, per_label=False):
     item_gt = _as_polygons(item_gt, shape_key=shape_key)
     item_pred = _as_polygons(item_pred, shape_key=shape_key)
-    return item_pred.f1_at_iou(item_gt, iou_threshold, label_weights)
+    return item_pred.f1_at_iou(item_gt, iou_threshold, label_weights, per_label=per_label)
