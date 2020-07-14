@@ -26,7 +26,7 @@ class TextTagsEvalItem(EvalItem):
         spans_match = self.spans_iou(x, y)
         return labels_match * spans_match
 
-    def intersection(self, item, label_weights=None, algorithm=None, qval=None, per_label=False):
+    def intersection(self, item, label_weights=None, algorithm=None, qval=None, per_label=False, iou_threshold=None):
         comparator = get_text_comparator(algorithm, qval)
         label_weights = label_weights or {}
         someone_is_empty = self.empty ^ item.empty
@@ -43,7 +43,9 @@ class TextTagsEvalItem(EvalItem):
         for pred_value in item.get_values_iter():
             # find the best matching span inside gt_values
             best_matching_score = max(map(partial(self._match, y=pred_value, f=comparator), gt_values))
-
+            if iou_threshold is not None:
+                # make hard decision w.r.t. threshold whether current spans are matched
+                best_matching_score = float(best_matching_score > iou_threshold)
             if per_label:
                 # for per-label mode, label weights are unimportant - only scores are averaged
                 for l in pred_value[self._shape_key]:
@@ -124,22 +126,22 @@ def _as_textarea_eval_item(item):
     return item
 
 
-def intersection_text_tagging(item_gt, item_pred, label_weights=None, shape_key=None, per_label=False):
+def intersection_text_tagging(item_gt, item_pred, label_weights=None, shape_key=None, per_label=False, iou_threshold=None):
     item_gt = _as_text_tags_eval_item(item_gt, shape_key=shape_key)
     item_pred = _as_text_tags_eval_item(item_pred, shape_key=shape_key)
-    return item_gt.intersection(item_pred, label_weights, per_label=per_label)
+    return item_gt.intersection(item_pred, label_weights, per_label=per_label, iou_threshold=iou_threshold)
 
 
-def intersection_textarea_tagging(item_gt, item_pred, label_weights=None, shape_key='text', algorithm='Levenshtein', qval=1, per_label=False):
+def intersection_textarea_tagging(item_gt, item_pred, label_weights=None, shape_key='text', algorithm='Levenshtein', qval=1, per_label=False, iou_threshold=None):
     item_gt = _as_text_tags_eval_item(item_gt, shape_key=shape_key)
     item_pred = _as_text_tags_eval_item(item_pred, shape_key=shape_key)
-    return item_gt.intersection(item_pred, label_weights=label_weights, algorithm=algorithm, qval=qval, per_label=per_label)
+    return item_gt.intersection(item_pred, label_weights=label_weights, algorithm=algorithm, qval=qval, per_label=per_label, iou_threshold=iou_threshold)
 
 
-def intersection_html_tagging(item_gt, item_pred, label_weights=None, shape_key=None, algorithm=None, qval=None, per_label=False):
+def intersection_html_tagging(item_gt, item_pred, label_weights=None, shape_key=None, algorithm=None, qval=None, per_label=False, iou_threshold=None):
     item_gt = _as_html_tags_eval_item(item_gt, shape_key=shape_key)
     item_pred = _as_html_tags_eval_item(item_pred, shape_key=shape_key)
-    return item_gt.intersection(item_pred, label_weights, algorithm=algorithm, qval=qval, per_label=per_label)
+    return item_gt.intersection(item_pred, label_weights, algorithm=algorithm, qval=qval, per_label=per_label, iou_threshold=iou_threshold)
 
 
 def match_textareas(item_gt, item_pred, algorithm='Levenshtein', qval=1, **kwargs):
