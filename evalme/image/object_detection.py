@@ -70,6 +70,7 @@ class ObjectDetectionEvalItem(EvalItem):
         return np.average(ious, weights=weights) if ious else 0.0
 
     def _precision_recall_at_iou_per_label(self, item, iou_threshold):
+        shapes = item.get_values()
         tp, fp, fn = defaultdict(int), defaultdict(int), defaultdict(int)
 
         def inc_counters(c, labels):
