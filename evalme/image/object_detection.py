@@ -77,8 +77,11 @@ class ObjectDetectionEvalItem(EvalItem):
             for l in labels:
                 c[l] += 1
 
+        all_labels = set()
         for shape_pred in self.get_values_iter():
+            [all_labels.add(l) for l in shape_pred[self._shape_key]]
             for shape_gt in shapes:
+                [all_labels.add(l) for l in shape_gt[self._shape_key]]
                 iou = self._iou(shape_pred, shape_gt)
                 if shape_pred[self._shape_key] == shape_gt[self._shape_key]:
                     if iou >= iou_threshold:
@@ -93,7 +96,7 @@ class ObjectDetectionEvalItem(EvalItem):
                         inc_counters(fp, shape_gt[self._shape_key])
 
         precision, recall = {}, {}
-        for l in set(tp) | set(fn) | set(fp):
+        for l in all_labels:
             totalp = tp[l] + fp[l]
             total_true = tp[l] + fp[l]
             precision[l] = tp[l] / totalp if totalp > 0 else 0
