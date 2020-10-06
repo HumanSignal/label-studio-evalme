@@ -98,13 +98,13 @@ class HTMLTagsEvalItem(TextTagsEvalItem):
 
 
 class TextAreaEvalItem(EvalItem):
-    SHAPE_KEY = 'textarea'
+    SHAPE_KEY = 'text'
 
     def match(self, item, algorithm='Levenshtein', qval=1):
         comparator = get_text_comparator(algorithm, qval)
         all_scores = []
         for gt, pred in zip(self.get_values_iter(), item.get_values_iter()):
-            all_scores.append(texts_similarity(gt, pred, comparator))
+            all_scores.append(texts_similarity(gt[self._shape_key], pred[self._shape_key], comparator))
         return sum(all_scores) / max(len(all_scores), 1)
 
 
@@ -148,4 +148,7 @@ def match_textareas(item_gt, item_pred, algorithm='Levenshtein', qval=1, **kwarg
     qval = int(qval or 0) or None
     item_gt = _as_textarea_eval_item(item_gt)
     item_pred = _as_textarea_eval_item(item_pred)
+    if kwargs.get('per_label'):
+        # per-label mode is not supported for the plain text area
+        return {}
     return item_gt.match(item_pred, algorithm, qval)

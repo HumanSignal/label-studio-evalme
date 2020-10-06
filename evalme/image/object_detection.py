@@ -77,19 +77,26 @@ class ObjectDetectionEvalItem(EvalItem):
             for l in labels:
                 c[l] += 1
 
+        all_labels = set()
         for shape_pred in self.get_values_iter():
+            [all_labels.add(l) for l in shape_pred[self._shape_key]]
             for shape_gt in shapes:
+                [all_labels.add(l) for l in shape_gt[self._shape_key]]
                 iou = self._iou(shape_pred, shape_gt)
                 if shape_pred[self._shape_key] == shape_gt[self._shape_key]:
                     if iou >= iou_threshold:
+                        # IOU > t with matching labels => true positive
                         inc_counters(tp, shape_gt[self._shape_key])
                     else:
+                        # IOU < t with matching labels => false negative
                         inc_counters(fn, shape_gt[self._shape_key])
                 else:
-                    inc_counters(fp, shape_gt[self._shape_key])
+                    if iou >= iou_threshold:
+                        # IOU > t with non-matching labels => false positive
+                        inc_counters(fp, shape_gt[self._shape_key])
 
         precision, recall = {}, {}
-        for l in set(tp) | set(fn) | set(fp):
+        for l in all_labels:
             totalp = tp[l] + fp[l]
             total_true = tp[l] + fp[l]
             precision[l] = tp[l] / totalp if totalp > 0 else 0
@@ -138,7 +145,17 @@ class ObjectDetectionEvalItem(EvalItem):
     def f1_at_iou(self, item, iou_threshold=0.5, label_weights=None, per_label=False):
         precision, recall = self._precision_recall_at_iou(item, iou_threshold, label_weights, per_label)
         if per_label:
-            return {l: 2 * precision[l] * recall[l] / (precision[l] + recall[l]) for l in precision}
+            out = {}
+            for l in precision:
+                denom = precision[l] + recall[l]
+                if denom == 0:
+                    out[l] = 0
+                else:
+                    out[l] = 2 * precision[l] * recall[l] / denom
+            return out
+        denom = precision + recall
+        if denom == 0:
+            return 0
         return 2 * precision * recall / (precision + recall)
 
 
