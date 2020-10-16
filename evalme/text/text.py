@@ -30,10 +30,10 @@ class TextTagsEvalItem(EvalItem):
         comparator = get_text_comparator(algorithm, qval)
         label_weights = label_weights or {}
         someone_is_empty = self.empty ^ item.empty
-        if someone_is_empty:
+        if someone_is_empty and not per_label:
             return 0
         if self.empty and item.empty:
-            return 1
+            return {} if per_label else 1
 
         gt_values = self.get_values()
         if per_label:
