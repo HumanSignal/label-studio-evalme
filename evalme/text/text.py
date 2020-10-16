@@ -41,11 +41,15 @@ class TextTagsEvalItem(EvalItem):
         else:
             total_score, total_weight = 0, 0
         for pred_value in item.get_values_iter():
-            # find the best matching span inside gt_values
-            best_matching_score = max(map(partial(self._match, y=pred_value, f=comparator), gt_values))
-            if iou_threshold is not None:
-                # make hard decision w.r.t. threshold whether current spans are matched
-                best_matching_score = float(best_matching_score > iou_threshold)
+            if len(gt_values) == 0:
+                # for empty gt values, matching score for current prediction is the lowest
+                best_matching_score = 0
+            else:
+                # find the best matching span inside gt_values
+                best_matching_score = max(map(partial(self._match, y=pred_value, f=comparator), gt_values))
+                if iou_threshold is not None:
+                    # make hard decision w.r.t. threshold whether current spans are matched
+                    best_matching_score = float(best_matching_score > iou_threshold)
             if per_label:
                 # for per-label mode, label weights are unimportant - only scores are averaged
                 for l in pred_value[self._shape_key]:
