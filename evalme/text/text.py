@@ -10,8 +10,8 @@ class TextTagsEvalItem(EvalItem):
     SHAPE_KEY = 'labels'
 
     def spans_iou(self, x, y):
-        s1, e1 = x['start'], x['end']
-        s2, e2 = y['start'], y['end']
+        s1, e1 = int(x['start']), int(x['end'])
+        s2, e2 = int(y['start']), int(y['end'])
         if s2 > e1 or s1 > e2:
             return 0
         intersection = min(e1, e2) - max(s1, s2)
@@ -92,6 +92,12 @@ class HTMLTagsEvalItem(TextTagsEvalItem):
         s2, e2 = y['startOffset'], y['endOffset']
         if s2 > e1 or s1 > e2:
             return 0
+
+        # correct end offset if they lie in different block
+        # if e1 <= s1:
+        #     e1 = s1 + len(x.get('text', ''))
+        # if e2 <= s2:
+        #     e2 = s2 + len(y.get('text', ''))
 
         intersection = min(e1, e2) - max(s1, s2)
         union = max(e1, e2) - min(s1, s2)
