@@ -52,9 +52,12 @@ class TextTagsEvalItem(EvalItem):
                     best_matching_score = float(best_matching_score > iou_threshold)
             if per_label:
                 # for per-label mode, label weights are unimportant - only scores are averaged
+                prefix = pred_value.get('when_label_value', '')
+                if prefix:
+                    prefix += ':'
                 for l in pred_value[self._shape_key]:
-                    total_score[l] += best_matching_score
-                    total_weight[l] += 1
+                    total_score[prefix + l] += best_matching_score
+                    total_weight[prefix + l] += 1
             else:
                 # when aggregating scores each individual label weight is taken into account
                 if self._shape_key in pred_value:
