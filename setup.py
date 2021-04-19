@@ -9,7 +9,7 @@ with open('requirements.txt') as f:
 
 setuptools.setup(
     name='label-studio-evalme',
-    version='0.0.14',
+    version='0.0.15',
     author='Heartex',
     author_email="hello@heartex.ai",
     description='Evaluation metrics',
