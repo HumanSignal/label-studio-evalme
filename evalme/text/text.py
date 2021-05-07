@@ -85,14 +85,34 @@ class TextTagsEvalItem(EvalItem):
 class HTMLTagsEvalItem(TextTagsEvalItem):
     SHAPE_KEY = 'htmllabels'
 
-    def spans_iou(self, x, y):
-        # if labels are different returning 0 match
-        if not (set(x['htmllabels']) == set(y['htmllabels'])):
+    def _spans_iou_by_start_end_offsets(self, x, y):
+        """This code handles IOU for spans, but fails when start/end point to different blocks"""
+        s1, e1 = x['start'], x['end']
+        s2, e2 = y['start'], y['end']
+        if s1 != s2 or e1 != e2:
             return 0
 
+        s1, e1 = x['startOffset'], x['endOffset']
+        s2, e2 = y['startOffset'], y['endOffset']
+        if s2 > e1 or s1 > e2:
+            return 0
+
+        # correct end offset if they lie in different block
+        # if e1 <= s1:
+        #     e1 = s1 + len(x.get('text', ''))
+        # if e2 <= s2:
+        #     e2 = s2 + len(y.get('text', ''))
+
+        intersection = min(e1, e2) - max(s1, s2)
+        union = max(e1, e2) - min(s1, s2)
+        if union == 0:
+            return 0
+        iou = intersection / union
+        return iou
+
+    def _spans_iou_by_text(self, x, y):
         text1 = x['text']
         text2 = y['text']
-
         # if one of the texts are empty return 0 match
         if len(text1) == 0 or len(text2) == 0:
             return 0
@@ -124,6 +144,18 @@ class HTMLTagsEvalItem(TextTagsEvalItem):
             return m
         else:
             return 0
+
+    def spans_iou(self, x, y):
+        # if labels are different returning 0 match
+        if not (set(x[self._shape_key]) == set(y[self._shape_key])):
+            return 0
+
+        # in case when substrings are presented - when can compute IOU using them
+        if x.get('text') is not None and y.get('text') is not None:
+            return self._spans_iou_by_text(x, y)
+        # otherwise try using startOffset/endOffset for IOU
+        else:
+            return self._spans_iou_by_start_end_offsets(x, y)
 
 
 class TextAreaEvalItem(EvalItem):
