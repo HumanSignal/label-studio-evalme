@@ -12,7 +12,7 @@ class Matcher:
     Class for loading data from label studio
     """
     def __init__(self, url='http://127.0.0.1:8000',
-                 token='984dbd6702a7df0429703a76afb3b7bc66477d27', project=4):
+                 token=None, project=1):
         """
         :param url:
         :param token:
@@ -23,14 +23,12 @@ class Matcher:
             'Content-Type': 'application/json'
         }
         self._raw_data = {}
-        #TODO check if OS version has different API
         self._export_url = url + f'/api/projects/{project}/export?exportType=JSON'
         self._load_data()
 
-
     def _load_data(self):
-        responce = requests.get(self._export_url, headers=self._headers)
-        self._raw_data = json.loads(responce.text)
+        response = requests.get(self._export_url, headers=self._headers)
+        self._raw_data = json.loads(response.text)
 
     def refresh(self):
         self._load_data()
@@ -77,10 +75,10 @@ class Matcher:
                 tasks = 0
                 for annotation in annotations:
                     try:
-                        matching_score = Metrics.apply(
+                        matching = Metrics.apply(
                             {}, prediction['result'], annotation['result'], symmetric=True, per_label=False
                         )
-                        score += matching_score
+                        score += matching
                         tasks += 1
                     except Exception as exc:
                         logger.error(
@@ -89,7 +87,7 @@ class Matcher:
                             f"Reason: {exc}",
                             exc_info=True,
                         )
-                if tasks > 1:
+                if tasks > 0:
                     scores[prediction['id']] = score / tasks
         return scores
 
@@ -104,10 +102,10 @@ def matching_score(annotations, predictions):
     for annotation in annotations:
         for prediction in predictions:
             try:
-                matching_score = Metrics.apply(
+                matching = Metrics.apply(
                     {}, prediction['result'], annotation['result'], symmetric=True, per_label=False
                 )
-                score += matching_score
+                score += matching
                 tasks += 1
             except Exception as exc:
                 logger.error(
@@ -120,12 +118,3 @@ def matching_score(annotations, predictions):
         return score / tasks
     else:
         return None
-
-
-if __name__ == '__main__':
-    ls = Matcher()
-    ls.refresh()
-    #ls.load(r"C:\Temp\Screens\temp\project-38-at-2021-05-12-06-43-9a0c6c61.json")
-    print(ls._raw_data)
-    t = ls.get_score_per_prediction()
-    print(t)
