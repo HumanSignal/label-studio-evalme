@@ -85,7 +85,8 @@ class TextTagsEvalItem(EvalItem):
 class HTMLTagsEvalItem(TextTagsEvalItem):
     SHAPE_KEY = 'htmllabels'
 
-    def spans_iou(self, x, y):
+    def _spans_iou_by_start_end_offsets(self, x, y):
+        """This code handles IOU for spans, but fails when start/end point to different blocks"""
         s1, e1 = x['start'], x['end']
         s2, e2 = y['start'], y['end']
         if s1 != s2 or e1 != e2:
@@ -108,6 +109,53 @@ class HTMLTagsEvalItem(TextTagsEvalItem):
             return 0
         iou = intersection / union
         return iou
+
+    def _spans_iou_by_text(self, x, y):
+        text1 = x['text']
+        text2 = y['text']
+        # if one of the texts are empty return 0 match
+        if len(text1) == 0 or len(text2) == 0:
+            return 0
+
+        # check if text is a full part of another annotation
+        if text1 in text2:
+            return len(text1) / len(text2)
+        if text2 in text1:
+            return len(text2) / len(text1)
+
+        def _most_common_ends(text1, text2):
+            # check if most common part of second text start is the end of text1
+            ind = 0
+            for i in range(1, len(text2)):
+                if text2[:i] in text1:
+                    ind = i
+                    continue
+                else:
+                    break
+            if text1.endswith(text2[:ind]):
+                return ind / (len(text1) + len(text2) - ind)
+            else:
+                return -1
+
+        iou1 = _most_common_ends(text1, text2)
+        iou2 = _most_common_ends(text2, text1)
+        m = max(iou1, iou2)
+        if m > 0:
+            return m
+        else:
+            return 0
+
+    def spans_iou(self, x, y):
+        # if labels are different returning 0 match
+        if not (set(x[self._shape_key]) == set(y[self._shape_key])):
+            return 0
+
+        # in case when substrings are presented - when can compute IOU using them
+        if x.get('text') is not None and y.get('text') is not None:
+            return self._spans_iou_by_text(x, y)
+        # otherwise try using startOffset/endOffset for IOU
+        else:
+            return self._spans_iou_by_start_end_offsets(x, y)
 
 
 class TextAreaEvalItem(EvalItem):
