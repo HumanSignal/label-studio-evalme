@@ -1,6 +1,6 @@
+import numpy
 import numpy as np
 
-from functools import partial
 from collections import defaultdict
 
 from shapely.geometry import Polygon, MultiPolygon, LineString
@@ -70,6 +70,10 @@ class ObjectDetectionEvalItem(EvalItem):
         return np.average(ious, weights=weights) if ious else 0.0
 
     def _precision_recall_at_iou_per_label(self, item, iou_threshold):
+        """
+        :return: precision dict {label: float[0..1]}
+                 recall dict {label: float[0..1]}
+        """
         shapes = item.get_values()
         tp, fp, fn = defaultdict(int), defaultdict(int), defaultdict(int)
 
@@ -158,6 +162,36 @@ class ObjectDetectionEvalItem(EvalItem):
             return 0
         return 2 * precision * recall / (precision + recall)
 
+    def mAP_at_iou(self, item, iou_threshold=0.5, label_weights=None, per_label=False):
+        if per_label:
+            precisions = defaultdict(list)
+            recalls = defaultdict(list)
+        else:
+            precisions = []
+            recalls = []
+        thresholds = numpy.arange(start=0.2, stop=iou_threshold, step=0.05)
+        for threshold in thresholds:
+            precision, recall = self._precision_recall_at_iou(item, threshold, label_weights, per_label)
+            if per_label:
+                for label in precision:
+                    precisions[label].append(precision[label])
+                    recalls[label].append(recalls[label])
+            else:
+                precisions.append(precision)
+                recalls.append(recall)
+        precisions.append(1)
+        recalls.append(0)
+        #TODO add 0 and 1 to per_label dicts
+        if per_label:
+            AP = {}
+            for label in precisions:
+                AP[label] = numpy.sum((recalls[label][:-1] - recalls[label][1:]) * precisions[label][:-1])
+        else:
+            recalls = numpy.array(recalls)
+            precisions = numpy.array(precisions)
+            AP = numpy.sum((recalls[:-1] - recalls[1:]) * precisions[:-1])
+
+        return AP
 
 class BboxObjectDetectionEvalItem(ObjectDetectionEvalItem):
     SHAPE_KEY = 'rectanglelabels'
@@ -275,3 +309,8 @@ def f1_polygons(item_gt, item_pred, iou_threshold=0.5, label_weights=None, shape
     item_gt = _as_polygons(item_gt, shape_key=shape_key)
     item_pred = _as_polygons(item_pred, shape_key=shape_key)
     return item_pred.f1_at_iou(item_gt, iou_threshold, label_weights, per_label=per_label)
+
+def mAP_bboxes(item_gt, item_pred, iou_threshold=0.5, label_weights=None, shape_key=None, per_label=False):
+    item_gt = _as_bboxes(item_gt, shape_key=shape_key)
+    item_pred = _as_bboxes(item_pred, shape_key=shape_key)
+    return item_pred.mAP_at_iou(item_gt, iou_threshold, label_weights, per_label=per_label)

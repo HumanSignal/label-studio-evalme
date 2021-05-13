@@ -8,7 +8,7 @@ from collections import defaultdict
 from copy import deepcopy
 
 from evalme.classification import exact_matching_choices
-from evalme.image.object_detection import iou_bboxes
+from evalme.image.object_detection import iou_bboxes, mAP_bboxes
 from evalme.text import intersection_text_tagging
 import logging
 
@@ -53,6 +53,14 @@ class Metrics(object):
         return next((m for m in cls._metrics.values() if m.tag == tag and m.is_default), None)
 
     @classmethod
+    def get_default_metric_for_name_tag(cls, tag, name):
+        metric = cls._metrics.get(name)
+        if (metric is not None) & (metric.tag == tag):
+            return metric
+        else:
+            cls.get_default_metric_for_tag(tag)
+
+    @classmethod
     def filter_results_by_from_name(cls, results, from_name):
         return list(filter(lambda r: r.get('from_name') == from_name, results))
 
@@ -70,7 +78,7 @@ class Metrics(object):
         return t
 
     @classmethod
-    def apply(cls, project, result_first, result_second, symmetric=False, per_label=False):
+    def apply(cls, project, result_first, result_second, symmetric=False, per_label=False, metric_name=None, iou_threshold=None):
         """
         Compute matching score between first and second completion results
         Args:
@@ -78,7 +86,7 @@ class Metrics(object):
             result_first: first completion.result
             result_second: second completion.result
             symmetric: symmetric result doesn't depend on the first/second results order
-
+            metric_name: name of metric to use
         Returns:
             Matching score averaged over all different "from_name"s with corresponding weights taken from project.control_weights  # noqa
         """
@@ -96,12 +104,15 @@ class Metrics(object):
                 continue
             all_controls[r['from_name']] = cls.get_type(r)
 
-        def get_matching_func(control_type):
+        def get_matching_func(control_type, name=None):
             # TODO support metric_name
             # if project.metric_name and len(all_controls) == 1:
             #     # user specified which matching score function to use, supported only with one control tag
             #     return cls._metrics.get(project.metric_name)
-            return cls.get_default_metric_for_tag(control_type)
+            if name:
+                return cls.get_default_metric_for_name_tag(control_type, name)
+            else:
+                return cls.get_default_metric_for_tag(control_type)
 
         def symmetrize(a, b):
             if a is None:
@@ -127,8 +138,10 @@ class Metrics(object):
             control_params = deepcopy(params)
             control_params['label_weights'] = label_weights
             control_params['per_label'] = per_label
+            if iou_threshold:
+                control_params['iou_threshold'] = iou_threshold
 
-            matching_func = get_matching_func(control_type)
+            matching_func = get_matching_func(control_type, metric_name)
             if not matching_func:
                 raise NotImplementedError(f'No matching function found for control type {control_type} in {project}')
 
@@ -225,6 +238,14 @@ Metrics.register(
     tag='RectangleLabels',
     func=iou_bboxes,
     desc='IOU for bounding boxes'
+)
+
+Metrics.register(
+    name='mAP_bboxes',
+    form=None,
+    tag='RectangleLabels',
+    func=mAP_bboxes,
+    desc='mAP for bounding boxes'
 )
 
 Metrics.register(
