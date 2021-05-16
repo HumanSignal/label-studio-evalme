@@ -19,31 +19,28 @@ class ClassificationEvalItem(EvalItem):
         else:
             total_weight = 0
         for x, y in zip(self.get_values_iter(), item.get_values_iter()):
-
+            labels = x[self._shape_key]
+            if not isinstance(labels, list):
+                labels = [labels]
             # choices are mismatched
-            if x[self._shape_key] != y[self._shape_key]:
-                if per_label and isinstance(x[self._shape_key], list):
-                    for l in x[self._shape_key]:
+            if labels != y[self._shape_key]:
+                if per_label:
+                    for l in labels:
                         total_weight[l] = 0
                 else:
                     return 0
 
             # choices are matched
             else:
-                if per_label and isinstance(x[self._shape_key], list):
+                if per_label:
                     # per label mode: label weights are unimportant
-                    for l in x[self._shape_key]:
+                    for l in labels:
                         total_weight[l] = 1
                 else:
                     # aggregation mode: average scores by label weights
-                    if isinstance(x[self._shape_key], list):
-                        weight = sum(label_weights.get(l, 1) for l in x[self._shape_key])
-                        total_weight += weight
-                        n += len(x[self._shape_key])
-                    else:
-                        weight = 1
-                        total_weight += weight
-                        n += 1
+                    weight = sum(label_weights.get(l, 1) for l in labels)
+                    total_weight += weight
+                    n += len(labels)
         if per_label:
             return total_weight
         if n == 0:
