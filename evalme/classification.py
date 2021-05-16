@@ -23,7 +23,10 @@ class ClassificationEvalItem(EvalItem):
             if not isinstance(labels, list):
                 labels = [labels]
             # choices are mismatched
-            if labels != y[self._shape_key]:
+            y_labels = y[self._shape_key]
+            if not isinstance(y_labels, list):
+                y_labels = [y_labels]
+            if labels != y_labels:
                 if per_label:
                     for l in labels:
                         total_weight[l] = 0
