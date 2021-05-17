@@ -413,7 +413,7 @@ def prediction_bboxes(item_gt, item_pred, iou_threshold=0.5, shape_key=None):
     return item_pred.prediction_result_at_iou_for_all_bbox(item_gt, iou_threshold)
 
 
-def matrix_iou_bboxes(item_gt, item_pred, iou_threshold=0.5, label_weights=None, shape_key=None, per_label=False):
+def matrix_iou_bboxes(item_gt, item_pred, label_weights=None, shape_key=None, per_label=False):
     item_gt = _as_bboxes(item_gt, shape_key=shape_key)
     item_pred = _as_bboxes(item_pred, shape_key=shape_key)
     return item_gt.total_iou_matrix(item_pred, label_weights, per_label=per_label)

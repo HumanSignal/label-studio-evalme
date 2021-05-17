@@ -28,9 +28,13 @@ class Matcher:
         }
         self._raw_data = {}
         self._export_url = url + f'/api/projects/{project}/export?exportType=JSON'
+        self._project_url = url + f'/api/projects/{project}'
+        self._control_weights = {}
 
     def _load_data(self):
         response = requests.get(self._export_url, headers=self._headers)
+        control_weights = requests.get(self._project_url, headers=self._headers)
+        self._control_weights = json.loads(control_weights.text)
         self._raw_data = json.loads(response.text)
 
     def refresh(self):
@@ -43,7 +47,6 @@ class Matcher:
     def load(self, filename):
         self._load_from_file(filename)
 
-    # noinspection SpellCheckingInspection
     def get_iou_score(self):
         """
         One evaluation score per N predictions vs all annotations
@@ -84,6 +87,7 @@ class Matcher:
                         }
         """
         scores = {}
+        control_weights = self._control_weights or {}
         for item in self._raw_data:
             annotations = item['annotations']
             predictions = item['predictions']
@@ -99,7 +103,7 @@ class Matcher:
                 for annotation in annotations:
                     try:
                         matching = Metrics.apply(
-                            {}, prediction['result'], annotation['result'], symmetric=True, per_label=per_label
+                            control_weights, prediction['result'], annotation['result'], symmetric=True, per_label=per_label
                         )
                         if per_label:
                             for label in matching:
@@ -130,11 +134,12 @@ class Matcher:
         """
         score = 0
         tasks = 0
+        control_weights = self._control_weights or {}
         for annotation in annotations:
             for prediction in predictions:
                 try:
                     matching = Metrics.apply(
-                        {}, prediction['result'], annotation['result'], symmetric=True, per_label=False,
+                        control_weights, prediction['result'], annotation['result'], symmetric=True, per_label=False,
                         metric_name=metric_name, iou_threshold=iou_threshold
                     )
                     score += matching
@@ -158,11 +163,12 @@ class Matcher:
         """
         score = defaultdict(int)
         tasks = defaultdict(int)
+        control_weights = self._control_weights or {}
         for annotation in annotations:
             for prediction in predictions:
                 try:
                     matching = Metrics.apply(
-                        {}, prediction['result'], annotation['result'], symmetric=True, per_label=True,
+                        control_weights, prediction['result'], annotation['result'], symmetric=True, per_label=True,
                         metric_name=metric_name, iou_threshold=iou_threshold
                     )
                     for label in matching:
@@ -210,12 +216,14 @@ class Matcher:
 
     def get_results_comparision_matrix_by_task_iou(self, annotations, predictions):
         results = {}
+        label_weights = self._control_weights.get('control_weights', {}).get('label', {}).get('labels')
         for annotation in annotations:
             results[annotation['id']] = {}
             for prediction in predictions:
                 results[annotation['id']][prediction['id']] = {}
                 try:
-                    t = matrix_iou_bboxes(annotation['result'], prediction['result'])
+                    t = matrix_iou_bboxes(annotation['result'], prediction['result'],
+                                          label_weights=label_weights)
                     results[annotation['id']][prediction['id']] = t
                 except Exception as exc:
                     logger.error(
