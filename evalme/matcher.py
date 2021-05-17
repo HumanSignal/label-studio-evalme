@@ -4,7 +4,7 @@ import requests
 import json
 import logging
 
-from evalme.image.object_detection import prediction_bboxes
+from evalme.image.object_detection import prediction_bboxes, matrix_iou_bboxes
 from evalme.metrics import Metrics
 from evalme.utils import calculate_ap
 
@@ -70,14 +70,10 @@ class Matcher:
         agreement = []
 
         for item in self._raw_data:
-            score = 0
-            tasks = 0
             annotations = item['annotations']
             predictions = item['predictions']
-            score += self.matching_score(annotations, predictions)
-            tasks += 1
-            if tasks > 0:
-                agreement.append(score / tasks)
+            score = self.matching_score(annotations, predictions)
+            agreement.append(score)
         return agreement
 
     def get_score_per_prediction(self, per_label=False):
@@ -203,3 +199,29 @@ class Matcher:
                         print(e)
                 items_ars.append(calculate_ap(pred_results))
         return sum(items_ars) / len(items_ars)
+
+    def get_results_comparision_matrix_iou(self):
+        results = {}
+        for task in self._raw_data:
+            annotations = task['annotations']
+            predictions = task['predictions']
+            results[task['id']] = self.get_results_comparision_matrix_by_task_iou(annotations, predictions)
+        return results
+
+    def get_results_comparision_matrix_by_task_iou(self, annotations, predictions):
+        results = {}
+        for annotation in annotations:
+            results[annotation['id']] = {}
+            for prediction in predictions:
+                results[annotation['id']][prediction['id']] = {}
+                try:
+                    t = matrix_iou_bboxes(annotation['result'], prediction['result'])
+                    results[annotation['id']][prediction['id']] = t
+                except Exception as exc:
+                    logger.error(
+                        f"Can\'t compute matching score in similarity matrix for task=,"
+                        f"annotation={annotation}, prediction={prediction}, "
+                        f"Reason: {exc}",
+                        exc_info=True,
+                    )
+        return results

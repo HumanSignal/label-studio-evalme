@@ -182,6 +182,7 @@ class ObjectDetectionEvalItem(EvalItem):
             return Result.FN
 
     def prediction_result_at_iou_for_all_bbox_per_label(self, item, iou_threshold=0.5):
+        #TODO implement on demand
         pass
 
     def precision_at_iou(self, item, iou_threshold=0.5, label_weights=None, per_label=False):
@@ -243,6 +244,34 @@ class ObjectDetectionEvalItem(EvalItem):
             precisions = numpy.array(precisions)
             AP = numpy.sum((recalls[:-1] - recalls[1:]) * precisions[:-1])
         return AP
+
+    def total_iou_matrix(self, item, label_weights=None, algorithm=None, qval=None, per_label=False):
+        """
+        For each shape in current eval item, we compute IOU with identically labeled shape.
+        :param item: to be compared with self
+        :param label_weights: weight of particular label
+        :param algorithm: algorithm of comparing values
+        :param qval: q value
+        :param per_label: calculate per label or overall
+        :return:
+        """
+        label_weights = label_weights or {}
+        ious = []
+        comparator = get_text_comparator(algorithm, qval)
+        for gt in self.get_values_iter():
+            for pred in item.get_values_iter():
+                label_sim = texts_similarity(gt[self._shape_key], pred[self._shape_key], comparator)
+                if label_sim == 0:
+                    continue
+                iou = self._iou(gt, pred)
+                weight = sum(label_weights.get(l, 1) for l in gt[self._shape_key])
+                result = dict()
+                result['iou'] = iou * weight
+                result['weight'] = weight
+                result['prediction'] = pred
+                result['groundtruth'] = gt
+                ious.append(result)
+        return ious
 
 class BboxObjectDetectionEvalItem(ObjectDetectionEvalItem):
     SHAPE_KEY = 'rectanglelabels'
@@ -382,3 +411,9 @@ def prediction_bboxes(item_gt, item_pred, iou_threshold=0.5, shape_key=None):
     item_gt = _as_bboxes(item_gt, shape_key=shape_key)
     item_pred = _as_bboxes(item_pred, shape_key=shape_key)
     return item_pred.prediction_result_at_iou_for_all_bbox(item_gt, iou_threshold)
+
+
+def matrix_iou_bboxes(item_gt, item_pred, iou_threshold=0.5, label_weights=None, shape_key=None, per_label=False):
+    item_gt = _as_bboxes(item_gt, shape_key=shape_key)
+    item_pred = _as_bboxes(item_pred, shape_key=shape_key)
+    return item_gt.total_iou_matrix(item_pred, label_weights, per_label=per_label)
