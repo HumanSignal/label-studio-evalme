@@ -8,12 +8,11 @@ from collections import defaultdict
 from copy import deepcopy
 
 from evalme.classification import exact_matching_choices
-from evalme.image.object_detection import iou_bboxes, mAP_bboxes
+from evalme.image.object_detection import iou_bboxes, mAP_bboxes, prediction_bboxes
 from evalme.text import intersection_text_tagging
 import logging
 
 logger = logging.getLogger(__name__)
-
 
 
 @attr.s
@@ -78,15 +77,18 @@ class Metrics(object):
         return t
 
     @classmethod
-    def apply(cls, project, result_first, result_second, symmetric=False, per_label=False, metric_name=None, iou_threshold=None):
+    def apply(cls, project, result_first, result_second, symmetric=False, per_label=False,
+              metric_name=None, iou_threshold=None):
         """
         Compute matching score between first and second completion results
         Args:
-            project: Project object used for getting matching score function parameters
-            result_first: first completion.result
-            result_second: second completion.result
-            symmetric: symmetric result doesn't depend on the first/second results order
-            metric_name: name of metric to use
+        :param project: Project object used for getting matching score function parameters
+        :param result_first: first completion.result
+        :param result_second: second completion.result
+        :param symmetric: symmetric result doesn't depend on the first/second results order
+        :param metric_name: name of metric to use
+        :param per_label: per_label calculation or overall
+        :param iou_threshold: intersection over union threshold
         Returns:
             Matching score averaged over all different "from_name"s with corresponding weights taken from project.control_weights  # noqa
         """
@@ -149,17 +151,18 @@ class Metrics(object):
             results_second_by_from_name = cls.filter_results_by_from_name(result_second, control_name)
             s = matching_func.func(results_first_by_from_name, results_second_by_from_name, **control_params)
             if symmetric:
-                s_reversed = matching_func.func(results_second_by_from_name, results_first_by_from_name, **control_params)
+                s_reversed = matching_func.func(results_second_by_from_name, results_first_by_from_name,
+                                                **control_params)
                 if per_label:
-                    for l in set(list(s.keys()) + list(s_reversed.keys())):
-                        s[l] = symmetrize(s.get(l), s_reversed.get(l))
+                    for label in set(list(s.keys()) + list(s_reversed.keys())):
+                        s[label] = symmetrize(s.get(label), s_reversed.get(label))
                 else:
                     s = symmetrize(s, s_reversed)
 
             if per_label:
-                for l in s:
-                    score[l] += s[l] * overall_weight
-                    n[l] += overall_weight
+                for label in s:
+                    score[label] += s[label] * overall_weight
+                    n[label] += overall_weight
             else:
                 score += s * overall_weight
                 n += overall_weight
@@ -172,12 +175,12 @@ class Metrics(object):
             return s
 
         if per_label:
-            for l in score:
-                if n[l] > 0:
-                    score[l] /= float(n[l])
+            for label in score:
+                if n[label] > 0:
+                    score[label] /= float(n[label])
                 else:
-                    score[l] = 0
-                score[l] = clipped(score[l])
+                    score[label] = 0
+                score[label] = clipped(score[label])
             return score
 
         return clipped(score / float(n) if n > 0 else 0)
@@ -200,8 +203,10 @@ class Metrics(object):
     def group(cls, project, results, threshold=0.0, use_single_linkage_by_default=False):
         """
         Returns dict with groups, where key are group index and values are list of results indices
+        :param project: Project object used for getting matching score function parameters
         :param results: list of results
         :param threshold: the comparison between 2 results should be above this threshold to join them in one group
+        :param use_single_linkage_by_default:
         :return: {0: [1,2,3], 1: [4,5], 2: [6]}
         """
         num_results = len(results)
@@ -245,6 +250,14 @@ Metrics.register(
     form=None,
     tag='RectangleLabels',
     func=mAP_bboxes,
+    desc='mAP for bounding boxes'
+)
+
+Metrics.register(
+    name='prediction_bboxes',
+    form=None,
+    tag='RectangleLabels',
+    func=prediction_bboxes,
     desc='mAP for bounding boxes'
 )
 
