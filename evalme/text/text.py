@@ -121,6 +121,66 @@ class TextAreaEvalItem(EvalItem):
         return sum(all_scores) / max(len(all_scores), 1)
 
 
+class TaxonomyEvalItem(EvalItem):
+    SHAPE_KEY = 'taxonomy'
+
+    def spans_match(self, prediction):
+        """
+
+        """
+        gt = self.get_values_iter()
+        pred = prediction.get_values_iter()
+        matches = 0
+        not_found = 0
+        for item_pred in pred:
+            for item_gt in gt:
+                if item_gt == item_pred:
+                    matches += 1
+                    break
+            else:
+                not_found += 1
+        return matches / max((matches + not_found), 1)
+
+    def spans_iou(self, prediction):
+        gt = self.get_values_iter()
+        pred = prediction.get_values_iter()
+        matches = 0
+        tasks = 0
+        for item_pred in pred:
+            for item_gt in gt:
+                if item_gt == item_pred:
+                    matches += 1
+                    tasks += 1
+                    break
+                else:
+                    matches += self._iou(item_gt['taxonomy'], item_pred['taxonomy'])
+                    tasks += 1
+        return matches / tasks
+
+    def _iou(self, gt, pred):
+        if gt == pred:
+            return 1
+        else:
+            score = 0
+            tasks = 0
+            for item_gt in gt:
+                max_iou = 0
+                set_gt = set(item_gt)
+                for item_pred in pred:
+                    set_pred_gt = set(item_pred) | set_gt
+                    item_score = 0
+                    for item in item_pred:
+                        if item in set_gt:
+                            item_score += 1
+                    item_score = item_score / max(len(set_pred_gt), len(item_pred))
+                    max_iou = max(max_iou, item_score)
+                score += max_iou
+                tasks += 1
+            return score / max(tasks, 1)
+
+
+
+
 def _as_text_tags_eval_item(item, shape_key):
     if not isinstance(item, TextTagsEvalItem):
         return TextTagsEvalItem(item, shape_key=shape_key)
@@ -138,6 +198,11 @@ def _as_textarea_eval_item(item):
         return TextAreaEvalItem(item)
     return item
 
+
+def _as_taxonomy_eval_item(item):
+    if not isinstance(item, TaxonomyEvalItem):
+        return TaxonomyEvalItem(item)
+    return item
 
 def intersection_text_tagging(item_gt, item_pred, label_weights=None, shape_key=None, per_label=False, iou_threshold=None):
     item_gt = _as_text_tags_eval_item(item_gt, shape_key=shape_key)
@@ -165,3 +230,9 @@ def match_textareas(item_gt, item_pred, algorithm='Levenshtein', qval=1, **kwarg
         # per-label mode is not supported for the plain text area
         return {}
     return item_gt.match(item_pred, algorithm, qval)
+
+
+def intersection_taxonomy(item_gt, item_pred, label_weights=None, per_label=False):
+    item_gt = _as_taxonomy_eval_item(item_gt)
+    item_pred = _as_taxonomy_eval_item(item_pred)
+    return item_gt.spans_iou(item_pred)

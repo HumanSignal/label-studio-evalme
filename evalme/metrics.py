@@ -9,7 +9,7 @@ from copy import deepcopy
 
 from evalme.classification import exact_matching_choices
 from evalme.image.object_detection import iou_bboxes, mAP_bboxes, prediction_bboxes
-from evalme.text import intersection_text_tagging
+from evalme.text import intersection_text_tagging, intersection_taxonomy
 import logging
 
 logger = logging.getLogger(__name__)
@@ -275,4 +275,12 @@ Metrics.register(
     tag='Choices',
     func=exact_matching_choices,
     desc='Exact matching choices'
+)
+
+Metrics.register(
+    name='iou_taxonomy',
+    form=None,
+    tag='Taxonomy',
+    func=intersection_taxonomy,
+    desc='IOU matching taxonomy'
 )
