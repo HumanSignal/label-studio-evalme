@@ -72,3 +72,22 @@ def exact_matching_choices(item_gt, item_pred, label_weights=None, per_label=Fal
 
 def exact_matching_pairwise(item_gt, item_pred, label_weights=None, per_label=False):
     return _as_pairwise(item_gt).exact_match(_as_pairwise(item_pred), label_weights, per_label=per_label)
+
+
+def naive(x, y, per_label=False, **kwargs):
+    """
+    Naive comparison of annotations
+    """
+    if len(x) != len(y):
+        result = 0
+    else:
+        for i in range(len(x)):
+            if x[i]['value'] != y[i]['value']:
+                result = 0
+                break
+        else:
+            result = 1
+    if per_label:
+        return {'No-label': result}
+    else:
+        return result
