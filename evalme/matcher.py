@@ -103,7 +103,8 @@ class Matcher:
                 for annotation in annotations:
                     try:
                         matching = Metrics.apply(
-                            control_weights, prediction['result'], annotation['result'], symmetric=True, per_label=per_label
+                            control_weights, prediction['result'], annotation['result'],
+                            symmetric=True, per_label=per_label
                         )
                         if per_label:
                             for label in matching:
@@ -233,3 +234,20 @@ class Matcher:
                         exc_info=True,
                     )
         return results
+
+    def get_annotations_agreement(self, metric_name=None):
+        """
+        One evaluation score per all annotations
+        :return: agreement float[0..1] or None
+        """
+        score = 0
+        tasks = 0
+        for item in self._raw_data:
+            annotations = item['annotations']
+            score += self.matching_score(annotations, annotations, metric_name=metric_name)
+            tasks += 1
+        if tasks > 0:
+            agreement = score / tasks
+        else:
+            agreement = None
+        return agreement
