@@ -174,7 +174,7 @@ class TaxonomyEvalItem(EvalItem):
 
     def spans_match(self, prediction):
         """
-
+        Simple matching of labels in taxonomy
         """
         gt = self.get_values_iter()
         pred = prediction.get_values_iter()
@@ -189,21 +189,40 @@ class TaxonomyEvalItem(EvalItem):
                 not_found += 1
         return matches / max((matches + not_found), 1)
 
-    def spans_iou(self, prediction):
+    def spans_iou(self, prediction, per_label=False):
+        """
+        Matching of taxonomy labels depending on content
+        """
         gt = self.get_values_iter()
         pred = prediction.get_values_iter()
         matches = 0
         tasks = 0
-        for item_pred in pred:
-            for item_gt in gt:
-                if item_gt == item_pred:
-                    matches += 1
-                    tasks += 1
-                    break
-                else:
-                    matches += self._iou(item_gt['taxonomy'], item_pred['taxonomy'])
-                    tasks += 1
-        return matches / tasks
+        if per_label:
+            results = {}
+            for item_pred in pred:
+                for item_gt in gt:
+                    taxonomy_pred = item_pred['taxonomy']
+                    taxonomy_gt = item_gt['taxonomy']
+                    for item_pred_tx in taxonomy_pred:
+                        if item_pred_tx in taxonomy_gt:
+                            results[str(item_pred_tx)] = 1
+                        else:
+                            results[str(item_pred_tx)] = 0
+                    for item_gt_tx in taxonomy_gt:
+                        if item_gt_tx not in taxonomy_pred:
+                            results[str(item_gt_tx)] = 0
+            return results
+        else:
+            for item_pred in pred:
+                for item_gt in gt:
+                    if item_gt == item_pred:
+                        matches += 1
+                        tasks += 1
+                        break
+                    else:
+                        matches += self._iou(item_gt['taxonomy'], item_pred['taxonomy'])
+                        tasks += 1
+            return matches / tasks
 
     def _iou(self, gt, pred):
         if gt == pred:
@@ -225,8 +244,6 @@ class TaxonomyEvalItem(EvalItem):
                 score += max_iou
                 tasks += 1
             return score / max(tasks, 1)
-
-
 
 
 def _as_text_tags_eval_item(item, shape_key):
@@ -283,4 +300,4 @@ def match_textareas(item_gt, item_pred, algorithm='Levenshtein', qval=1, **kwarg
 def intersection_taxonomy(item_gt, item_pred, label_weights=None, per_label=False):
     item_gt = _as_taxonomy_eval_item(item_gt)
     item_pred = _as_taxonomy_eval_item(item_pred)
-    return item_gt.spans_iou(item_pred)
+    return item_gt.spans_iou(item_pred, per_label=per_label)
