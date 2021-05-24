@@ -107,10 +107,6 @@ class Metrics(object):
             all_controls[r['from_name']] = cls.get_type(r)
 
         def get_matching_func(control_type, name=None):
-            # TODO support metric_name
-            # if project.metric_name and len(all_controls) == 1:
-            #     # user specified which matching score function to use, supported only with one control tag
-            #     return cls._metrics.get(project.metric_name)
             if name:
                 return cls.get_default_metric_for_name_tag(control_type, name)
             else:
@@ -145,7 +141,9 @@ class Metrics(object):
 
             matching_func = get_matching_func(control_type, metric_name)
             if not matching_func:
-                raise NotImplementedError(f'No matching function found for control type {control_type} in {project}')
+                logger.error(f'No matching function found for control type {control_type} in {project}.'
+                             f'Using naive calculation.')
+                matching_func = cls._metrics.get('naive')
 
             results_first_by_from_name = cls.filter_results_by_from_name(result_first, control_name)
             results_second_by_from_name = cls.filter_results_by_from_name(result_second, control_name)
