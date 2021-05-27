@@ -10,6 +10,7 @@ pip install label-studio-evalme
 
 <details>
   <summary>Other installations</summary>
+  
 	Pip from source
 	```bash
 	# with git
