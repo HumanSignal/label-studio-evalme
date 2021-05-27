@@ -1,5 +1,5 @@
 import pytest
-from evalme.text.text import HTMLTagsEvalItem
+from evalme.text.text import HTMLTagsEvalItem, TaxonomyEvalItem, intersection_taxonomy
 
 
 def test_not_matching():
@@ -70,3 +70,164 @@ def test_hypertext_match():
     obj = HTMLTagsEvalItem(raw_data=test_data)
     assert obj.spans_iou(test_data[0], test_data[1]) == 0.5
     assert obj.spans_iou(test_data[1], test_data[0]) == 0.5
+
+
+def test_taxonomy_match():
+    test_data = [[
+        {
+            "id": "Xg1qPZoLf_",
+            "type": "taxonomy",
+            "value": {
+                "taxonomy": [
+                    [
+                        "Bacteria"
+                    ],
+                    [
+                        "Eukarya"
+                    ]
+                ]
+            },
+            "to_name": "text",
+            "from_name": "taxonomy"
+        }
+    ],
+        [
+            {
+                "id": "Xg1qPZoLf_",
+                "type": "taxonomy",
+                "value": {
+                    "taxonomy": [
+                        [
+                            "Archaea"
+                        ],
+                        [
+                            "Bacteria"
+                        ]
+                    ]
+                },
+                "to_name": "text",
+                "from_name": "taxonomy"
+            }
+        ]]
+    assert intersection_taxonomy(test_data[0], test_data[1]) == 0.5
+    assert intersection_taxonomy(test_data[1], test_data[0]) == 0.5
+
+
+def test_taxonomy_match_perlabel():
+    test_data = [[
+        {
+            "id": "Xg1qPZoLf_",
+            "type": "taxonomy",
+            "value": {
+                "taxonomy": [
+                    [
+                        "Bacteria"
+                    ],
+                    [
+                        "Eukarya"
+                    ]
+                ]
+            },
+            "to_name": "text",
+            "from_name": "taxonomy"
+        }
+    ],
+        [
+            {
+                "id": "Xg1qPZoLf_",
+                "type": "taxonomy",
+                "value": {
+                    "taxonomy": [
+                        [
+                            "Archaea"
+                        ],
+                        [
+                            "Bacteria"
+                        ]
+                    ]
+                },
+                "to_name": "text",
+                "from_name": "taxonomy"
+            }
+        ]]
+    assert intersection_taxonomy(test_data[0], test_data[1], per_label=True) == {"['Bacteria']": 1, "['Eukarya']": 0, "['Archaea']": 0}
+    assert intersection_taxonomy(test_data[1], test_data[0], per_label=True) == {"['Bacteria']": 1, "['Eukarya']": 0, "['Archaea']": 0}
+
+
+def test_taxonomy_doesn_match():
+    test_data = [[
+        {
+            "id": "Xg1qPZoLf_",
+            "type": "taxonomy",
+            "value": {
+                "taxonomy": [
+                    [
+                        "Bacteria"
+                    ],
+                    [
+                        "Eukarya"
+                    ]
+                ]
+            },
+            "to_name": "text",
+            "from_name": "taxonomy"
+        }
+    ],
+        [
+            {
+                "id": "Xg1qPZoLf_",
+                "type": "taxonomy",
+                "value": {
+                    "taxonomy": [
+                        [
+                            "Archaea"
+                        ],
+                        [
+                            "Bacteria1"
+                        ]
+                    ]
+                },
+                "to_name": "text",
+                "from_name": "taxonomy"
+            }
+        ]]
+    assert intersection_taxonomy(test_data[0], test_data[1]) == 0.0
+    assert intersection_taxonomy(test_data[1], test_data[0]) == 0.0
+
+
+def test_taxonomy_doesn_match_perlabel():
+    test_data = [[
+        {
+            "id": "Xg1qPZoLf_",
+            "type": "taxonomy",
+            "value": {
+                "taxonomy": [
+                    [
+                        "Bacteria"
+                    ],
+                    [
+                        "Eukarya"
+                    ]
+                ]
+            },
+            "to_name": "text",
+            "from_name": "taxonomy"
+        }
+    ],
+        [
+            {
+                "id": "Xg1qPZoLf_",
+                "type": "taxonomy",
+                "value": {
+                    "taxonomy": [
+                        [
+                            "Archaea"
+                        ],
+                    ]
+                },
+                "to_name": "text",
+                "from_name": "taxonomy"
+            }
+        ]]
+    assert intersection_taxonomy(test_data[0], test_data[1], per_label=True) == {"['Bacteria']": 0, "['Eukarya']": 0, "['Archaea']": 0}
+    assert intersection_taxonomy(test_data[1], test_data[0], per_label=True) == {"['Bacteria']": 0, "['Eukarya']": 0, "['Archaea']": 0}
