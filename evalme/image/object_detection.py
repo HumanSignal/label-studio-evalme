@@ -273,6 +273,7 @@ class ObjectDetectionEvalItem(EvalItem):
                 ious.append(result)
         return ious
 
+
 class BboxObjectDetectionEvalItem(ObjectDetectionEvalItem):
     SHAPE_KEY = 'rectanglelabels'
 

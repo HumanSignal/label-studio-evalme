@@ -7,9 +7,7 @@ from itertools import chain
 from collections import defaultdict
 from copy import deepcopy
 
-from evalme.classification import exact_matching_choices
-from evalme.image.object_detection import iou_bboxes, mAP_bboxes, prediction_bboxes
-from evalme.text import intersection_text_tagging, intersection_taxonomy
+from evalme.classification import naive
 import logging
 
 logger = logging.getLogger(__name__)
@@ -236,49 +234,9 @@ class Metrics(object):
 
 
 Metrics.register(
-    name='iou_bboxes',
+    name='naive',
     form=None,
-    tag='RectangleLabels',
-    func=iou_bboxes,
-    desc='IOU for bounding boxes'
-)
-
-Metrics.register(
-    name='mAP_bboxes',
-    form=None,
-    tag='RectangleLabels',
-    func=mAP_bboxes,
-    desc='mAP for bounding boxes'
-)
-
-Metrics.register(
-    name='prediction_bboxes',
-    form=None,
-    tag='RectangleLabels',
-    func=prediction_bboxes,
-    desc='mAP for bounding boxes'
-)
-
-Metrics.register(
-    name='1d_region_intersection',
-    form=None,
-    tag='Labels',
-    func=intersection_text_tagging,
-    desc='Intersection over 1D text spans'
-)
-
-Metrics.register(
-    name='exact_match_choices',
-    form=None,
-    tag='Choices',
-    func=exact_matching_choices,
-    desc='Exact matching choices'
-)
-
-Metrics.register(
-    name='iou_taxonomy',
-    form=None,
-    tag='Taxonomy',
-    func=intersection_taxonomy,
-    desc='IOU matching taxonomy'
+    tag='all',
+    func=naive,
+    desc='Naive comparison of result dict'
 )
