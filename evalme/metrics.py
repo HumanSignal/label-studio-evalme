@@ -117,9 +117,7 @@ class Metrics(object):
                 return a
             return min(a, b)
 
-        # TODO fix metric_params
-        # params = project.metric_params or {}
-        params = {}
+        params = project.get("metric_params", {})
         if per_label:
             score, n = defaultdict(int), defaultdict(int)
         else:
