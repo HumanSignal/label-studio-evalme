@@ -9,7 +9,7 @@ pip install label-studio-evalme
 ```
 
 <details>
-  <summary>Other installations</summary>
+  <summary>Other installation methods</summary>
   
 	Pip from source
 	```bash
@@ -19,23 +19,21 @@ pip install label-studio-evalme
 
 </details>
 
-## What is Evalme
-Evalme is a collection of Label Studio evaluation metrics implementations and an easy-to-use API to create custom metrics. It offers:
+## What is Evalme?
+Evalme is a collection of Label Studio evaluation metric implementations and an easy-to-use API to create custom metrics. It offers:
 
 * A standardized interface to increase reproducibility
-* Reduces boilerplate
-* Metrics optimized for Label Studio format
+* Reduced boilerplate
+* Optimized metrics for Label Studio
 
-You can use Evalme with any Label Studio verions or with Label Studio Enterprise.
+## Get started with Evalme
+You can use Evalme with any Label Studio versions or with Label Studio Enterprise.
 
+### Load existing data from Label Studio
 
-## Using Evalme
+Use the Label Studio REST API to load existing data from your instance of Label Studio or Label Studio Enterprise.
 
-### Loading existing data from Label Studio
-
-You can use Label Studio REST API to load existing data from your instance of Label Studio or Label Studio Enterprise.
-
-Specify your Label Studio url, access token and project id in the parametres:
+Specify your Label Studio URL, access token and project ID in the parameters:
 ``` python
 from evalme.matcher import Matcher
 
@@ -45,7 +43,7 @@ loader = Matcher(url="http://127.0.0.1:8000",
 loader.refresh()
 ```
 
-You can load data from file exported from [Label Studio](https://labelstud.io/guide/api.html#Export-annotations):
+You can also load data from exported annotation files from Label Studio, exported using [the API](https://labelstud.io/guide/api.html#Export-annotations) or the [Label Studio UI](https://labelstud.io/guide/export.html):
 ``` python
 from evalme.matcher import Matcher
 
@@ -53,15 +51,15 @@ loader = Matcher()
 loader.load('your_filename')
 ```
 
-Data is available in _raw_data field. 
+After you load data, it is available in the `_raw_data` field. 
 
 ### Built-in metrics
 
-By default there is a naive metric object. It evaluates difference with naive approach:
-if object is fully equals to the other one evaluation method returns 1,
-else it returns 0.
+By default there is a naive metric object. It evaluates annotation differences with a naive approach:
+if an object is fully equal to another one, the evaluation method returns 1,
+otherwise it returns 0.
 
-Using built-in metric case:
+To use the built-in metrics, do the following:
 
 ``` python
 from evalme.matcher import Matcher
@@ -74,10 +72,11 @@ matrix = loader.agreement_matrix()
 print(matrix)
 ```
 
-### Implementing your own metric
+### Implement your own metric
 
-Implementing your own metric is easy - create an evalution function and register it in Metrics class. 
-Simply, create an evaluation function with 2 parametres for compared objects.
+You can implement your own metric by creating an evaluation function and registering it in Metrics class. 
+
+For example, create an evaluation function with 2 parameters for compared objects:
 
 ```python
 from evalme.matcher import Matcher
@@ -113,11 +112,9 @@ print(matrix)
 ```
 
 ## Contribute!
-The Label Studio team is hard at work adding even more metrics.
-But we're looking for incredible contributors like you to submit new metrics
-and improve existing ones!
+The Label Studio team is hard at work adding even more metrics, but we're looking for incredible contributors like you to submit new metrics and improve existing ones!
 
-Join our [Slack](https://join.slack.com/t/label-studio/shared_invite/zt-cr8b7ygm-6L45z7biEBw4HXa5A2b5pw)
+Join our [Slack community](https://join.slack.com/t/label-studio/shared_invite/zt-cr8b7ygm-6L45z7biEBw4HXa5A2b5pw)
 to get help becoming a contributor!
 
 ## Community
