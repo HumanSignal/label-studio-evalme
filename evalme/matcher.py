@@ -146,15 +146,17 @@ class Matcher:
         agreement = {}
         control_weights = self._control_weights or {}
         for item in self._raw_data:
-            annotations = item['annotations']
+            annotations = item[self._result_name]
             num_results = len(annotations)
             matrix = np.full((num_results, num_results), np.nan)
             for i in range(num_results):
                 for j in range(i + 1, num_results):
+                    annotations_i = annotations[i] if self._new_format else annotations[i][0]
+                    annotations_j = annotations[j] if self._new_format else annotations[j][0]
                     matching_score = Metrics.apply(
                         control_weights,
-                        annotations[i],
-                        annotations[j],
+                        annotations_i,
+                        annotations_j,
                         symmetric=True,
                         per_label=per_label,
                         metric_name=metric_name,
@@ -205,8 +207,10 @@ class Matcher:
         for annotation in annotations:
             for prediction in predictions:
                 try:
+                    prediction_result = prediction['result'] if self._new_format else prediction['result'][0]
+                    annotation_result = annotation['result'] if self._new_format else annotation['result'][0]
                     matching = Metrics.apply(
-                        control_weights, prediction['result'], annotation['result'], symmetric=True, per_label=True,
+                        control_weights, prediction_result, annotation_result, symmetric=True, per_label=True,
                         metric_name=metric_name, iou_threshold=iou_threshold
                     )
                     for label in matching:
@@ -237,7 +241,9 @@ class Matcher:
                 pred_results = []
                 for annotation in annotations:
                     try:
-                        matching = prediction_bboxes(annotation['result'], prediction['result'], iou_threshold=0.5,)
+                        prediction_result = prediction['result'] if self._new_format else prediction['result'][0]
+                        annotation_result = annotation['result'] if self._new_format else annotation['result'][0]
+                        matching = prediction_bboxes(annotation_result, prediction_result, iou_threshold=0.5,)
                         pred_results.append(matching)
                     except Exception as e:
                         print(e)
@@ -294,3 +300,10 @@ class Matcher:
         else:
             agreement = None
         return agreement
+
+if __name__ == '__main__':
+    loader = Matcher(url="https://app.heartex.ai",
+                     token="654952aaee4635d08da8f5d0ebd98802fdb263e4",
+                     project='2088', new_format=False)
+    loader.refresh()
+    print(loader.agreement_matrix())
