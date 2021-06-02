@@ -1,0 +1,54 @@
+[{
+		"id": 6057960,
+		"completions": [{
+				"aggregated": true,
+				"aggregated_completed_by": [103],
+				"aggregated_ids": [800955],
+				"ground_truth": false,
+				"result": [[{
+							"id": "7tHQ-n6xfo",
+							"type": "choices",
+							"value": {
+								"choices": ["Neutral"]
+							},
+							"to_name": "text",
+							"from_name": "sentiment"
+						}
+					]]
+			}, {
+				"aggregated": true,
+				"aggregated_completed_by": [103],
+				"aggregated_ids": [800955],
+				"ground_truth": false,
+				"result": [[{
+							"id": "7tHQ-n6xfo",
+							"type": "choices",
+							"value": {
+								"choices": ["Evil"]
+							},
+							"to_name": "text",
+							"from_name": "sentiment"
+						}
+					]]
+			}, {
+				"aggregated": true,
+				"aggregated_completed_by": [103],
+				"aggregated_ids": [800955],
+				"ground_truth": false,
+				"result": [[{
+							"id": "7tHQ-n6xfo",
+							"type": "choices",
+							"value": {
+								"choices": ["Evil", "Neutral"]
+							},
+							"to_name": "text",
+							"from_name": "sentiment"
+						}
+					]]
+			}
+		]
+	}, {
+		"id": 6057964,
+		"completions": []
+	}
+]

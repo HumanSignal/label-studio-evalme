@@ -17,7 +17,7 @@ class Matcher:
     Class for loading data from label studio
     """
     def __init__(self, url='http://127.0.0.1:8000',
-                 token='', project=1):
+                 token='', project=1, new_format=True):
         """
         :param url: Label studio url
         :param token: access token
@@ -28,9 +28,15 @@ class Matcher:
             'Content-Type': 'application/json'
         }
         self._raw_data = {}
-        self._export_url = url + f'/api/projects/{project}/export?exportType=JSON'
         self._project_url = url + f'/api/projects/{project}'
         self._control_weights = {}
+        self._new_format = new_format
+        if new_format:
+            self._result_name = 'annotations'
+            self._export_url = url + f'/api/projects/{project}/export?exportType=JSON'
+        else:
+            self._result_name = 'completions'
+            self._export_url = url + f'/api/projects/{project}/results'
 
     def _load_data(self):
         response = requests.get(self._export_url, headers=self._headers)
@@ -56,7 +62,7 @@ class Matcher:
         score = 0
         tasks = 0
         for item in self._raw_data:
-            annotations = item['annotations']
+            annotations = item[self._result_name]
             predictions = item['predictions']
             score += self.matching_score(annotations, predictions, metric_name='iou_bboxes')
             tasks += 1
@@ -74,7 +80,7 @@ class Matcher:
         agreement = []
 
         for item in self._raw_data:
-            annotations = item['annotations']
+            annotations = item[self._result_name]
             predictions = item['predictions']
             score = self.matching_score(annotations, predictions, metric_name=metric_name)
             agreement.append(score)
@@ -90,7 +96,7 @@ class Matcher:
         scores = {}
         control_weights = self._control_weights or {}
         for item in self._raw_data:
-            annotations = item['annotations']
+            annotations = item[self._result_name]
             predictions = item['predictions']
             for prediction in predictions:
                 if per_label:
@@ -103,10 +109,11 @@ class Matcher:
                     tasks = 0
                 for annotation in annotations:
                     try:
+                        prediction_result = prediction['result'] if self._new_format else prediction['result'][0]
+                        annotation_result = annotation['result'] if self._new_format else annotation['result'][0]
                         matching = Metrics.apply(
-                            control_weights, prediction['result'], annotation['result'],
-                            symmetric=True, per_label=per_label,
-                            metric_name=metric_name
+                            control_weights, prediction_result, annotation_result,
+                            symmetric=True, per_label=per_label, metric_name=metric_name
                         )
                         if per_label:
                             for label in matching:
@@ -139,15 +146,17 @@ class Matcher:
         agreement = {}
         control_weights = self._control_weights or {}
         for item in self._raw_data:
-            annotations = item['annotations']
+            annotations = item[self._result_name]
             num_results = len(annotations)
             matrix = np.full((num_results, num_results), np.nan)
             for i in range(num_results):
                 for j in range(i + 1, num_results):
+                    annotations_i = annotations[i] if self._new_format else annotations[i][0]
+                    annotations_j = annotations[j] if self._new_format else annotations[j][0]
                     matching_score = Metrics.apply(
                         control_weights,
-                        annotations[i],
-                        annotations[j],
+                        annotations_i,
+                        annotations_j,
                         symmetric=True,
                         per_label=per_label,
                         metric_name=metric_name,
@@ -167,8 +176,10 @@ class Matcher:
         for annotation in annotations:
             for prediction in predictions:
                 try:
+                    prediction_result = prediction['result'] if self._new_format else prediction['result'][0]
+                    annotation_result = annotation['result'] if self._new_format else annotation['result'][0]
                     matching = Metrics.apply(
-                        control_weights, prediction['result'], annotation['result'], symmetric=True, per_label=False,
+                        control_weights, prediction_result, annotation_result, symmetric=True, per_label=False,
                         metric_name=metric_name, iou_threshold=iou_threshold
                     )
                     score += matching
@@ -196,8 +207,10 @@ class Matcher:
         for annotation in annotations:
             for prediction in predictions:
                 try:
+                    prediction_result = prediction['result'] if self._new_format else prediction['result'][0]
+                    annotation_result = annotation['result'] if self._new_format else annotation['result'][0]
                     matching = Metrics.apply(
-                        control_weights, prediction['result'], annotation['result'], symmetric=True, per_label=True,
+                        control_weights, prediction_result, annotation_result, symmetric=True, per_label=True,
                         metric_name=metric_name, iou_threshold=iou_threshold
                     )
                     for label in matching:
@@ -222,13 +235,15 @@ class Matcher:
         """
         items_ars = []
         for item in self._raw_data:
-            annotations = item['annotations']
+            annotations = item[self._result_name]
             predictions = item['predictions']
             for prediction in predictions:
                 pred_results = []
                 for annotation in annotations:
                     try:
-                        matching = prediction_bboxes(annotation['result'], prediction['result'], iou_threshold=0.5,)
+                        prediction_result = prediction['result'] if self._new_format else prediction['result'][0]
+                        annotation_result = annotation['result'] if self._new_format else annotation['result'][0]
+                        matching = prediction_bboxes(annotation_result, prediction_result, iou_threshold=0.5,)
                         pred_results.append(matching)
                     except Exception as e:
                         print(e)
@@ -241,7 +256,7 @@ class Matcher:
         """
         results = {}
         for task in self._raw_data:
-            annotations = task['annotations']
+            annotations = task[self._result_name]
             predictions = task['predictions']
             results[task['id']] = self.get_results_comparision_matrix_by_task_iou(annotations, predictions)
         return results
@@ -254,7 +269,9 @@ class Matcher:
             for prediction in predictions:
                 results[annotation['id']][prediction['id']] = {}
                 try:
-                    t = matrix_iou_bboxes(annotation['result'], prediction['result'],
+                    prediction_result = prediction['result'] if self._new_format else prediction['result'][0]
+                    annotation_result = annotation['result'] if self._new_format else annotation['result'][0]
+                    t = matrix_iou_bboxes(annotation_result, prediction_result,
                                           label_weights=label_weights)
                     results[annotation['id']][prediction['id']] = t
                 except Exception as exc:
@@ -274,8 +291,9 @@ class Matcher:
         score = 0
         tasks = 0
         for item in self._raw_data:
-            annotations = item['annotations']
-            score += self.matching_score(annotations, annotations, metric_name=metric_name)
+            annotations = item[self._result_name]
+            s = self.matching_score(annotations, annotations, metric_name=metric_name)
+            score += s if s else 0
             tasks += 1
         if tasks > 0:
             agreement = score / tasks
