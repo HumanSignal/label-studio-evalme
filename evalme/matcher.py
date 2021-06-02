@@ -16,7 +16,7 @@ class Matcher:
     Class for loading data from label studio
     """
     def __init__(self, url='http://127.0.0.1:8000',
-                 token='', project=1):
+                 token='', project=1, new_format=True):
         """
         :param url: Label studio url
         :param token: access token
@@ -30,6 +30,11 @@ class Matcher:
         self._export_url = url + f'/api/projects/{project}/export?exportType=JSON'
         self._project_url = url + f'/api/projects/{project}'
         self._control_weights = {}
+        self._new_format = new_format
+        if new_format:
+            self._result_name = 'annotations'
+        else:
+            self._result_name = 'completions'
 
     def _load_data(self):
         response = requests.get(self._export_url, headers=self._headers)
@@ -55,7 +60,7 @@ class Matcher:
         score = 0
         tasks = 0
         for item in self._raw_data:
-            annotations = item['annotations']
+            annotations = item[self._result_name]
             predictions = item['predictions']
             score += self.matching_score(annotations, predictions, metric_name='iou_bboxes')
             tasks += 1
@@ -73,7 +78,7 @@ class Matcher:
         agreement = []
 
         for item in self._raw_data:
-            annotations = item['annotations']
+            annotations = item[self._result_name]
             predictions = item['predictions']
             score = self.matching_score(annotations, predictions)
             agreement.append(score)
@@ -89,7 +94,7 @@ class Matcher:
         scores = {}
         control_weights = self._control_weights or {}
         for item in self._raw_data:
-            annotations = item['annotations']
+            annotations = item[self._result_name]
             predictions = item['predictions']
             for prediction in predictions:
                 if per_label:
@@ -102,8 +107,10 @@ class Matcher:
                     tasks = 0
                 for annotation in annotations:
                     try:
+                        prediction_result = prediction['result'] if self._new_format else prediction['result'][0]
+                        annotation_result = annotation['result'] if self._new_format else annotation['result'][0]
                         matching = Metrics.apply(
-                            control_weights, prediction['result'], annotation['result'],
+                            control_weights, prediction_result, annotation_result,
                             symmetric=True, per_label=per_label
                         )
                         if per_label:
@@ -139,8 +146,10 @@ class Matcher:
         for annotation in annotations:
             for prediction in predictions:
                 try:
+                    prediction_result = prediction['result'] if self._new_format else prediction['result'][0]
+                    annotation_result = annotation['result'] if self._new_format else annotation['result'][0]
                     matching = Metrics.apply(
-                        control_weights, prediction['result'], annotation['result'], symmetric=True, per_label=False,
+                        control_weights, prediction_result, annotation_result, symmetric=True, per_label=False,
                         metric_name=metric_name, iou_threshold=iou_threshold
                     )
                     score += matching
@@ -194,7 +203,7 @@ class Matcher:
         """
         items_ars = []
         for item in self._raw_data:
-            annotations = item['annotations']
+            annotations = item[self._result_name]
             predictions = item['predictions']
             for prediction in predictions:
                 pred_results = []
@@ -210,7 +219,7 @@ class Matcher:
     def get_results_comparision_matrix_iou(self):
         results = {}
         for task in self._raw_data:
-            annotations = task['annotations']
+            annotations = task[self._result_name]
             predictions = task['predictions']
             results[task['id']] = self.get_results_comparision_matrix_by_task_iou(annotations, predictions)
         return results
@@ -223,7 +232,9 @@ class Matcher:
             for prediction in predictions:
                 results[annotation['id']][prediction['id']] = {}
                 try:
-                    t = matrix_iou_bboxes(annotation['result'], prediction['result'],
+                    prediction_result = prediction['result'] if self._new_format else prediction['result'][0]
+                    annotation_result = annotation['result'] if self._new_format else annotation['result'][0]
+                    t = matrix_iou_bboxes(annotation_result, prediction_result,
                                           label_weights=label_weights)
                     results[annotation['id']][prediction['id']] = t
                 except Exception as exc:
@@ -243,8 +254,9 @@ class Matcher:
         score = 0
         tasks = 0
         for item in self._raw_data:
-            annotations = item['annotations']
-            score += self.matching_score(annotations, annotations, metric_name=metric_name)
+            annotations = item[self._result_name]
+            s = self.matching_score(annotations, annotations, metric_name=metric_name)
+            score += s if s else 0
             tasks += 1
         if tasks > 0:
             agreement = score / tasks
