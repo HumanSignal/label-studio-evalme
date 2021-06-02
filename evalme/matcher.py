@@ -1,5 +1,6 @@
 from collections import defaultdict
 
+import numpy as np
 import requests
 import json
 import logging
@@ -71,7 +72,7 @@ class Matcher:
             agreement = None
         return agreement
 
-    def get_score_per_task(self):
+    def get_score_per_task(self, metric_name=None):
         """
         One evaluation score per N predictions vs all annotations
         :return: agreement float[0..1] or None
@@ -81,11 +82,11 @@ class Matcher:
         for item in self._raw_data:
             annotations = item[self._result_name]
             predictions = item['predictions']
-            score = self.matching_score(annotations, predictions)
+            score = self.matching_score(annotations, predictions, metric_name=metric_name)
             agreement.append(score)
         return agreement
 
-    def get_score_per_prediction(self, per_label=False):
+    def get_score_per_prediction(self, per_label=False, metric_name=None):
         """
         N agreement scores per each prediction vs corresponding annotation
         :return: dict  {
@@ -112,7 +113,7 @@ class Matcher:
                         annotation_result = annotation['result'] if self._new_format else annotation['result'][0]
                         matching = Metrics.apply(
                             control_weights, prediction_result, annotation_result,
-                            symmetric=True, per_label=per_label
+                            symmetric=True, per_label=per_label, metric_name=metric_name
                         )
                         if per_label:
                             for label in matching:
@@ -135,6 +136,32 @@ class Matcher:
                     if tasks > 0:
                         scores[prediction['id']] = score / tasks
         return scores
+
+    def agreement_matrix(self, per_label=False, metric_name=None):
+        """
+        Per task agreement matrix for annotations
+        :return: { task.id: np.array(m, m) -> float[0..1]
+        }
+        """
+        agreement = {}
+        control_weights = self._control_weights or {}
+        for item in self._raw_data:
+            annotations = item['annotations']
+            num_results = len(annotations)
+            matrix = np.full((num_results, num_results), np.nan)
+            for i in range(num_results):
+                for j in range(i + 1, num_results):
+                    matching_score = Metrics.apply(
+                        control_weights,
+                        annotations[i],
+                        annotations[j],
+                        symmetric=True,
+                        per_label=per_label,
+                        metric_name=metric_name,
+                    )
+                    matrix[i][j] = matrix[j][i] = matching_score
+            agreement[item['id']] = matrix
+        return agreement
 
     def matching_score(self, annotations, predictions, metric_name=None, iou_threshold=None):
         """
@@ -218,6 +245,9 @@ class Matcher:
         return sum(items_ars) / len(items_ars)
 
     def get_results_comparision_matrix_iou(self):
+        """
+        Total IOU matrix for each shape in annotations
+        """
         results = {}
         for task in self._raw_data:
             annotations = task[self._result_name]
