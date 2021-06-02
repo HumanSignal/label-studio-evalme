@@ -27,14 +27,15 @@ class Matcher:
             'Content-Type': 'application/json'
         }
         self._raw_data = {}
-        self._export_url = url + f'/api/projects/{project}/export?exportType=JSON'
         self._project_url = url + f'/api/projects/{project}'
         self._control_weights = {}
         self._new_format = new_format
         if new_format:
             self._result_name = 'annotations'
+            self._export_url = url + f'/api/projects/{project}/export?exportType=JSON'
         else:
             self._result_name = 'completions'
+            self._export_url = url + f'/api/projects/{project}/results'
 
     def _load_data(self):
         response = requests.get(self._export_url, headers=self._headers)
