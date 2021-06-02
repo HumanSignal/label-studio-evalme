@@ -300,10 +300,3 @@ class Matcher:
         else:
             agreement = None
         return agreement
-
-if __name__ == '__main__':
-    loader = Matcher(url="https://app.heartex.ai",
-                     token="654952aaee4635d08da8f5d0ebd98802fdb263e4",
-                     project='2088', new_format=False)
-    loader.refresh()
-    print(loader.agreement_matrix())
