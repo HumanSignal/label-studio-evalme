@@ -51,6 +51,16 @@ class Matcher:
         with open(filename) as f:
             self._raw_data = json.load(f)
 
+    def _annotations_diff(self):
+        result = 0
+        for item in self._raw_data:
+            annotations = item[self._result_name]
+            if len(annotations) > 0:
+                num_results = len(annotations) if self._new_format else len(annotations[0].get('result'))
+                if num_results > 1:
+                    result += 1
+        return result
+
     def load(self, filename):
         self._load_from_file(filename)
 
@@ -97,7 +107,10 @@ class Matcher:
         control_weights = self._control_weights or {}
         for item in self._raw_data:
             annotations = item[self._result_name]
-            predictions = item['predictions']
+            predictions = item.get('predictions')
+            if predictions is None:
+                logger.warning('No predictions found in results.')
+                break
             for prediction in predictions:
                 if per_label:
                     scores[prediction['id']] = defaultdict(int)
@@ -147,12 +160,15 @@ class Matcher:
         control_weights = self._control_weights or {}
         for item in self._raw_data:
             annotations = item[self._result_name]
-            num_results = len(annotations)
+            if len(annotations) > 0:
+                num_results = len(annotations) if self._new_format else len(annotations[0]['result'])
+            else:
+                continue
             matrix = np.full((num_results, num_results), np.nan)
             for i in range(num_results):
                 for j in range(i + 1, num_results):
-                    annotations_i = annotations[i] if self._new_format else annotations[i][0]
-                    annotations_j = annotations[j] if self._new_format else annotations[j][0]
+                    annotations_i = annotations[i]['result'] if self._new_format else annotations[0]['result'][i]
+                    annotations_j = annotations[j]['result'] if self._new_format else annotations[0]['result'][j]
                     matching_score = Metrics.apply(
                         control_weights,
                         annotations_i,

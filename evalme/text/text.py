@@ -10,8 +10,8 @@ class TextTagsEvalItem(EvalItem):
     SHAPE_KEY = 'labels'
 
     def spans_iou(self, x, y):
-        s1, e1 = int(x['start']), int(x['end'])
-        s2, e2 = int(y['start']), int(y['end'])
+        s1, e1 = float(x['start']), float(x['end'])
+        s2, e2 = float(y['start']), float(y['end'])
         if s2 > e1 or s1 > e2:
             return 0
         intersection = min(e1, e2) - max(s1, s2)
