@@ -151,8 +151,8 @@ class Matcher:
             matrix = np.full((num_results, num_results), np.nan)
             for i in range(num_results):
                 for j in range(i + 1, num_results):
-                    annotations_i = annotations[i] if self._new_format else annotations[i][0]
-                    annotations_j = annotations[j] if self._new_format else annotations[j][0]
+                    annotations_i = annotations[i]['result'] if self._new_format else annotations[i]['result'][0]
+                    annotations_j = annotations[j]['result'] if self._new_format else annotations[j]['result'][0]
                     matching_score = Metrics.apply(
                         control_weights,
                         annotations_i,
