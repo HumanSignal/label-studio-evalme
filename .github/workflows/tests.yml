@@ -28,7 +28,7 @@ jobs:
 
       - name: Run functional tests
         run: |
-          cd label_studio_enterprise/
+          cd evalme/
           pytest --junitxml report.xml --cov=. -m "not integration_tests"
       - name: "Upload coverage to Codecov"
         uses: codecov/codecov-action@v1
