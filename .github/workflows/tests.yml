@@ -23,7 +23,6 @@ jobs:
           sudo apt-get clean
           sudo apt-get update
           sudo apt-get install virtualenv libsasl2-dev python-dev libldap2-dev libssl-dev
-          ./deploy/install_npm.sh
           pip install -U pip==20.2
           pip install -r requirements.txt 
 
