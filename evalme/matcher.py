@@ -17,7 +17,7 @@ class Matcher:
     Class for loading data from label studio
     """
     def __init__(self, url='http://127.0.0.1:8000',
-                 token='', project=1, new_format=True):
+                 token='', project=1, **kwargs):
         """
         :param url: Label studio url
         :param token: access token
@@ -30,19 +30,30 @@ class Matcher:
         self._raw_data = {}
         self._project_url = url + f'/api/projects/{project}'
         self._control_weights = {}
-        self._new_format = new_format
-        if new_format:
-            self._result_name = 'annotations'
-            self._export_url = url + f'/api/projects/{project}/export?exportType=JSON'
-        else:
-            self._result_name = 'completions'
-            self._export_url = url + f'/api/projects/{project}/results'
+        self._url = url
+        self._project = project
 
     def _load_data(self):
+        # initialize values
+        self._result_name = 'annotations'
+        self._new_format = True
+        self._export_url = self._url + f'/api/projects/{self._project}/export?exportType=JSON'
+        # request data from LS
         response = requests.get(self._export_url, headers=self._headers)
         control_weights = requests.get(self._project_url, headers=self._headers)
+        # check LS version
+        if 'export_files' in response.text:
+            self._result_name = 'completions'
+            self._new_format = False
+            self._export_url = self._url + f'/api/projects/{self._project}/results'
+            response = requests.get(self._export_url, headers=self._headers)
+        # load data and configuration
         self._control_weights = json.loads(control_weights.text)
         self._raw_data = json.loads(response.text)
+        # raise exception if access token is invalid
+        if isinstance(self._raw_data, dict):
+            if 'Invalid token' in self._raw_data.get('detail'):
+                raise ValueError('Invalid authorization token!')
 
     def refresh(self):
         self._load_data()
@@ -50,6 +61,16 @@ class Matcher:
     def _load_from_file(self, filename):
         with open(filename) as f:
             self._raw_data = json.load(f)
+        # check data for annotations tag
+        for item in self._raw_data:
+            if item.get('completions') is not None:
+                self._new_format = False
+                self._result_name = 'completions'
+                break
+            if item.get('annotations') is not None:
+                self._new_format = True
+                self._result_name = 'annotations'
+                break
 
     def _annotations_diff(self):
         result = 0
