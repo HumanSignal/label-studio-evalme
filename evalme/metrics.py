@@ -55,7 +55,7 @@ class Metrics(object):
         if metric is not None:
             return metric
         else:
-            cls.get_default_metric_for_tag(tag)
+            return cls.get_default_metric_for_tag(tag)
 
     @classmethod
     def filter_results_by_from_name(cls, results, from_name):
