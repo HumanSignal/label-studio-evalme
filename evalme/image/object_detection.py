@@ -321,6 +321,56 @@ class PolygonObjectDetectionEvalItem(ObjectDetectionEvalItem):
         return iou
 
 
+class KeyPointsEvalItem(EvalItem):
+    SHAPE_KEY = 'keypoints'
+
+    def equals(self, pred):
+        # pred - predicted value
+        results = [0] * len(self._raw_data)
+        for i in range(len(self._raw_data)):
+            result = 0
+            gt_item = self._raw_data[i]
+            for item in pred._raw_data:
+                if item.x == gt_item.x and item.y == gt_item.y:
+                    result = 1
+            results[i] = result
+        return sum(results) / len(results)
+
+    def distance(self, pred, local_range=1, label_weights=None, per_label=False):
+        if per_label:
+            results = defaultdict(float)
+            counts = defaultdict(int)
+        else:
+            results = 0
+        for i in range(len(self._raw_data)):
+            weight = 0
+            gt_item = self._raw_data[i]
+            gt_x = float(gt_item['value']['x'])
+            gt_y = float(gt_item['value']['y'])
+            gt_label = gt_item['value']['keypointlabels'][0]
+            for item in pred._raw_data:
+                pred_x = float(item['value']['x'])
+                pred_y = float(item['value']['y'])
+                pred_label = item['value']['keypointlabels'][0]
+                if (abs(pred_x - gt_x) < local_range) and (abs(pred_y - gt_y) < local_range) and (pred_label == gt_label):
+                    weight = label_weights[gt_label] if label_weights.get(gt_label) else 1
+                    break
+            if per_label:
+                results[gt_label] += weight
+                counts[gt_label] += 1
+            else:
+                results += weight
+
+        if per_label:
+            final_results = dict()
+            for key in counts:
+                final_results[key] = results[key] / counts[key]
+        else:
+            final_results = results / len(self._raw_data)
+
+        return final_results
+
+
 def _as_bboxes(item, shape_key=None):
     if not isinstance(item, BboxObjectDetectionEvalItem):
         return BboxObjectDetectionEvalItem(item, shape_key)
@@ -330,6 +380,12 @@ def _as_bboxes(item, shape_key=None):
 def _as_polygons(item, shape_key=None):
     if not isinstance(item, PolygonObjectDetectionEvalItem):
         return PolygonObjectDetectionEvalItem(item, shape_key)
+    return item
+
+
+def _as_keypoint(item):
+    if not isinstance(item, KeyPointsEvalItem):
+        return KeyPointsEvalItem(item)
     return item
 
 
@@ -418,3 +474,9 @@ def matrix_iou_bboxes(item_gt, item_pred, label_weights=None, shape_key=None, pe
     item_gt = _as_bboxes(item_gt, shape_key=shape_key)
     item_pred = _as_bboxes(item_pred, shape_key=shape_key)
     return item_gt.total_iou_matrix(item_pred, label_weights, per_label=per_label)
+
+
+def keypoints_distance(item_gt, item_pred, per_label=False, label_weights=None):
+    item_gt = _as_keypoint(item_gt)
+    item_pred = _as_keypoint(item_pred)
+    return item_gt.distance(item_pred, label_weights=label_weights, per_label=per_label)
