@@ -1,6 +1,6 @@
 import pytest
 
-from evalme.classification import ClassificationEvalItem, ChoicesEvalItem
+from evalme.classification import ClassificationEvalItem, ChoicesEvalItem, naive
 
 
 @pytest.mark.ClassificationEvalItem
@@ -129,6 +129,7 @@ def test_not_matching_per_label():
     assert obj1.exact_match(obj, per_label=True) == {'Error': 0}
     assert obj.exact_match(obj1, per_label=True) == {'Error': 0}
 
+
 def test_matching_type():
     test_data = [[
         {
@@ -181,3 +182,99 @@ def test_matching_type_per_label():
     obj1 = ChoicesEvalItem(raw_data=test_data[1])
     assert obj1.exact_match(obj, per_label=True) == {"Accessories": 1}
     assert obj.exact_match(obj1, per_label=True) == {"Accessories": 1}
+
+
+def test_naive_matching():
+    test_data = [[
+        {
+            "from_name": "labels",
+            "to_name": "image",
+            "type": "choices",
+            "value": {
+                "choices": ["Accessories"]
+            }
+        }
+    ],
+        [
+            {
+                "from_name": "labels",
+                "to_name": "image",
+                "type": "choices",
+                "value": {
+                    "choices": ["Accessories"]
+                }
+            }
+        ]]
+    assert naive(test_data[0], test_data[1]) == 1
+
+
+def test_naive_matching_per_label():
+    test_data = [[
+        {
+            "from_name": "labels",
+            "to_name": "image",
+            "type": "choices",
+            "value": {
+                "choices": ["Accessories", "1", "2"]
+            }
+        }
+    ],
+        [
+            {
+                "from_name": "labels",
+                "to_name": "image",
+                "type": "choices",
+                "value": {
+                    "choices": ["Accessories", "1", "2"]
+                }
+            }
+        ]]
+    assert naive(test_data[0], test_data[1], per_label=True) == {"Accessories\\1\\2": 1}
+
+
+def test_naive_not_matching():
+    test_data = [[
+        {
+            "from_name": "labels",
+            "to_name": "image",
+            "type": "choices",
+            "value": {
+                "choices": ["Accessories1"]
+            }
+        }
+    ],
+        [
+            {
+                "from_name": "labels",
+                "to_name": "image",
+                "type": "choices",
+                "value": {
+                    "choices": ["Accessories2"]
+                }
+            }
+        ]]
+    assert naive(test_data[0], test_data[1]) == 0
+
+
+def test_naive_not_matching_per_label():
+    test_data = [[
+        {
+            "from_name": "labels",
+            "to_name": "image",
+            "type": "choices",
+            "value": {
+                "choices": ["Accessories1"]
+            }
+        }
+    ],
+        [
+            {
+                "from_name": "labels",
+                "to_name": "image",
+                "type": "choices",
+                "value": {
+                    "choices": ["Accessories2"]
+                }
+            }
+        ]]
+    assert naive(test_data[0], test_data[1], per_label=True) == {"Accessories1": 0}
