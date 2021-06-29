@@ -24,8 +24,16 @@ Metrics.register(
     desc=3
 )
 
+Metrics.register(
+    name='Test4',
+    form='',
+    tag='all',
+    func='',
+    desc=4
+)
+
 def test_get_default_metric_for_name_tag_happy_path():
-    result = Metrics.get_default_metric_for_name_tag('Test', 'Test')
+    result = Metrics.get_default_metric_for_name_tag('test', 'Test')
     assert result.description == 1
 
 
@@ -34,5 +42,9 @@ def test_get_default_metric_for_name_tag_no_metric_for_name():
     assert result is None
 
 def test_get_default_metric_for_name_tag_no_metric_for_name_but_for_tag():
-    result = Metrics.get_default_metric_for_name_tag('Notfound', 'Test3')
+    result = Metrics.get_default_metric_for_name_tag('test3', 'Notfound')
     assert result.description == 3
+
+def test_get_default_metric_for_name_tag_happy_path():
+    result = Metrics.get_default_metric_for_name_tag(tag='Notfound', name='Test4')
+    assert result.description == 4
