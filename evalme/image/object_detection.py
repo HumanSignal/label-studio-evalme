@@ -282,8 +282,8 @@ class PolygonObjectDetectionEvalItem(ObjectDetectionEvalItem):
 
     SHAPE_KEY = 'polygonlabels'
 
-    def _area_close(self, p1, p2):
-        return abs(p1.area / max(p2.area, 1e-8) - 1) < 0.1
+    def _area_close(self, p1, p2, distance=0.1):
+        return abs(p1.area / max(p2.area, 1e-8) - 1) < distance
 
     def _try_build_poly(self, points):
         poly = Polygon(points)
@@ -309,6 +309,16 @@ class PolygonObjectDetectionEvalItem(ObjectDetectionEvalItem):
         convex_hull = poly.convex_hull
         if self._area_close(convex_hull, poly):
             return convex_hull
+        # trying to fix polygon with dilation
+        flag = True
+        distance = 0.01
+        while flag:
+            fixed_poly = poly.buffer(distance)
+            flag = self._area_close(fixed_poly, poly)
+            if not fixed_poly.geom_type == 'MultiPolygon' and flag:
+                return fixed_poly
+            else:
+                distance = distance * 2
 
         # We are failing to build polygon, this shall be reported via error log
         raise ValueError(f'Fail to build polygon from {points}')
