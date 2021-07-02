@@ -318,6 +318,8 @@ class PolygonObjectDetectionEvalItem(ObjectDetectionEvalItem):
             if not fixed_poly.geom_type == 'MultiPolygon' and flag:
                 return fixed_poly
             else:
+                if distance > 11:
+                    break
                 distance = distance * 2
 
         # We are failing to build polygon, this shall be reported via error log
