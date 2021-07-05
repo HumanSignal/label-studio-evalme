@@ -52,7 +52,7 @@ class Metrics(object):
     @classmethod
     def get_default_metric_for_name_tag(cls, tag, name):
         metric = cls._metrics.get(name)
-        if metric is not None:
+        if (metric is not None) and ((metric.tag == tag) or (metric.tag == 'all')):
             return metric
         else:
             return cls.get_default_metric_for_tag(tag)
