@@ -163,10 +163,7 @@ class Metrics(object):
 
         def clipped(s):
             if s > 1 or s < 0:
-                if isinstance(project, dict):
-                    project_id = project.get('id')
-                else:
-                    project_id = project.id
+                project_id = project.get('id')
                 logger.warning(f'Error in project {project_id}. Matching score {s} is not within [0, 1] interval '
                              f'for the following results:\nx={result_first}\ny={result_second}. It will be clipped')
                 return 0 if s < 0 else 1
