@@ -11,6 +11,8 @@ from shapely.ops import unary_union, polygonize
 from evalme.eval_item import EvalItem
 from evalme.utils import get_text_comparator, texts_similarity, Result
 
+from evalme.text.text import TextAreaEvalItem
+
 
 class ObjectDetectionEvalItem(EvalItem):
     SHAPE_KEY = 'undefined'
@@ -381,6 +383,85 @@ class KeyPointsEvalItem(EvalItem):
             final_results = results / len(self._raw_data)
 
         return final_results
+
+
+class OCREvalItem(ObjectDetectionEvalItem):
+    SHAPE_KEY = 'rectangle'
+
+    def compare(self, pred, threshold=0.5, algorithm='Levenshtein'):
+        results = dict()
+
+        gt_ids = self._get_ids_from_results()
+        pred_ids = pred._get_ids_from_results()
+
+        for id_gt in gt_ids:
+            gt_results = self._get_results_by_id(id_gt)
+            gt_types = self._get_types_from_results(gt_results)
+            for id_pred in pred_ids:
+                pred_results = pred._get_results_by_id(id_pred)
+                pred_types = self._get_types_from_results(pred_results)
+                if 'rectangle' in pred_types and 'rectangle' in gt_types:
+                    gt_results_rectangle = [item for item in gt_results if item['type'] == 'rectangle']
+                    pred_results_rectangle = [item for item in pred_results if item['type'] == 'rectangle']
+                    score = self._get_max_iou_rectangles(gt_results_rectangle, pred_results_rectangle, threshold)
+                    if score < threshold:
+                        results[id_gt] = 0
+                    else:
+                        gt_results_labels = [item['value']['labels'] for item in gt_results if item['type'] == 'labels']
+                        pred_results_labels = [item['value']['labels'] for item in pred_results if item['type'] == 'labels']
+                        if gt_results_labels == pred_results_labels:
+                            gt_results_text = TextAreaEvalItem([item for item in gt_results if item['type'] != 'labels' and item['type'] != 'rectangle'])
+                            pred_results_text = TextAreaEvalItem([item for item in pred_results if item['type'] != 'labels' and item['type'] != 'rectangle'])
+                            results[id_gt] = gt_results_text.match(item=pred_results_text, algorithm=algorithm)
+                        else:
+                            results[id_gt] = 0
+                else:
+                    continue
+
+        values = results.values()
+
+        return sum(values) / len(values) if len(values) > 0 else 0
+
+
+    def _get_max_iou_rectangles(self, gt, pred, threshold):
+        max_score = 0
+        for item in gt:
+            for pred_item in pred:
+                score = self._iou(item['value'], pred_item['value'])
+                max_score = max(max_score, score)
+        return max_score
+
+    def _get_types_from_results(self, results):
+        """
+        Get types from results
+        """
+        res = set()
+        for result in results:
+            r = result.get('type')
+            if r:
+                res.add(r)
+        return res
+
+    def _get_results_by_id(self, id):
+        """
+        Get results by ID
+        """
+        res = []
+        for result in self._raw_data:
+            if result.get('id') == id:
+                res.append(result)
+        return res
+
+    def _get_ids_from_results(self):
+        """
+        Get IDs from results to group
+        """
+        res = set()
+        for result in self._raw_data:
+            id = result.get('id')
+            if id:
+                res.add(id)
+        return list(res)
 
 
 def _as_bboxes(item, shape_key=None):
