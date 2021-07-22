@@ -75,7 +75,7 @@ class Metrics(object):
         return t
 
     @classmethod
-    def apply(cls, project, result_first, result_second, symmetric=False, per_label=False,
+    def apply(cls, project, result_first, result_second, symmetric=True, per_label=False,
               metric_name=None, iou_threshold=None):
         """
         Compute matching score between first and second completion results
