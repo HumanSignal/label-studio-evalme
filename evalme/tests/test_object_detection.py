@@ -1,6 +1,6 @@
 import pytest
 
-from evalme.image.object_detection import KeyPointsEvalItem, keypoints_distance, PolygonObjectDetectionEvalItem
+from evalme.image.object_detection import KeyPointsEvalItem, keypoints_distance, PolygonObjectDetectionEvalItem, OCREvalItem
 
 
 def test_keypoints_matching():
@@ -204,3 +204,256 @@ def test_object_detection_fixing_polygon():
     p = PolygonObjectDetectionEvalItem(raw_data=None)
     polygon = p._try_build_poly(points)
     assert polygon.is_valid
+
+
+def test_OCR_matching_function():
+    res1 = [{
+            "id": "rSbk_pk1g-",
+            "type": "rectangle",
+            "value": {
+                "x": 35.273972602739725,
+                "y": 6.481481481481482,
+                "width": 37.157534246575345,
+                "height": 17.12962962962963,
+                "rotation": 0
+            },
+            "to_name": "image",
+            "from_name": "bbox",
+            "image_rotation": 0,
+            "original_width": 584,
+            "original_height": 216
+        }, {
+            "id": "rSbk_pk1g-",
+            "type": "labels",
+            "value": {
+                "x": 35.273972602739725,
+                "y": 6.481481481481482,
+                "width": 37.157534246575345,
+                "height": 17.12962962962963,
+                "labels": ["Text"],
+                "rotation": 0
+            },
+            "to_name": "image",
+            "from_name": "label",
+            "image_rotation": 0,
+            "original_width": 584,
+            "original_height": 216
+        }, {
+            "id": "rSbk_pk1g-",
+            "type": "textarea",
+            "value": {
+                "x": 35.273972602739725,
+                "y": 6.481481481481482,
+                "text": ["oh no"],
+                "width": 37.157534246575345,
+                "height": 17.12962962962963,
+                "rotation": 0
+            },
+            "to_name": "image",
+            "from_name": "transcription",
+            "image_rotation": 0,
+            "original_width": 584,
+            "original_height": 216
+        }
+        ]
+
+    obj1 = OCREvalItem(res1)
+    obj2 = OCREvalItem(res1)
+
+    assert obj1.compare(obj2) == 1
+
+
+def test_OCR_matching_function_no_rectangle():
+    res1 = [{
+            "id": "rSbk_pk1g-",
+            "type": "rectangle",
+            "value": {
+                "x": 35.273972602739725,
+                "y": 6.481481481481482,
+                "width": 37.157534246575345,
+                "height": 17.12962962962963,
+                "rotation": 0
+            },
+            "to_name": "image",
+            "from_name": "bbox",
+            "image_rotation": 0,
+            "original_width": 584,
+            "original_height": 216
+        }, {
+            "id": "rSbk_pk1g-",
+            "type": "labels",
+            "value": {
+                "x": 35.273972602739725,
+                "y": 6.481481481481482,
+                "width": 37.157534246575345,
+                "height": 17.12962962962963,
+                "labels": ["Text"],
+                "rotation": 0
+            },
+            "to_name": "image",
+            "from_name": "label",
+            "image_rotation": 0,
+            "original_width": 584,
+            "original_height": 216
+        }, {
+            "id": "rSbk_pk1g-",
+            "type": "textarea",
+            "value": {
+                "x": 35.273972602739725,
+                "y": 6.481481481481482,
+                "text": ["oh no"],
+                "width": 37.157534246575345,
+                "height": 17.12962962962963,
+                "rotation": 0
+            },
+            "to_name": "image",
+            "from_name": "transcription",
+            "image_rotation": 0,
+            "original_width": 584,
+            "original_height": 216
+        }
+        ]
+    res2 = [ {
+            "id": "rSbk_pk1g",
+            "type": "labels",
+            "value": {
+                "x": 35.273972602739725,
+                "y": 6.481481481481482,
+                "width": 37.157534246575345,
+                "height": 17.12962962962963,
+                "labels": ["Text"],
+                "rotation": 0
+            },
+            "to_name": "image",
+            "from_name": "label",
+            "image_rotation": 0,
+            "original_width": 584,
+            "original_height": 216
+        }, {
+            "id": "rSbk_pk1g",
+            "type": "textarea",
+            "value": {
+                "x": 35.273972602739725,
+                "y": 6.481481481481482,
+                "text": ["oh no"],
+                "width": 37.157534246575345,
+                "height": 17.12962962962963,
+                "rotation": 0
+            },
+            "to_name": "image",
+            "from_name": "transcription",
+            "image_rotation": 0,
+            "original_width": 584,
+            "original_height": 216
+        }
+        ]
+
+    obj1 = OCREvalItem(res1)
+    obj2 = OCREvalItem(res2)
+
+    assert obj1.compare(obj2) == 0
+
+
+def test_OCR_matching_function_not_matching_text():
+    res1 = [{
+            "id": "rSbk_pk1g-",
+            "type": "rectangle",
+            "value": {
+                "x": 35.273972602739725,
+                "y": 6.481481481481482,
+                "width": 37.157534246575345,
+                "height": 17.12962962962963,
+                "rotation": 0
+            },
+            "to_name": "image",
+            "from_name": "bbox",
+            "image_rotation": 0,
+            "original_width": 584,
+            "original_height": 216
+        }, {
+            "id": "rSbk_pk1g-",
+            "type": "labels",
+            "value": {
+                "x": 35.273972602739725,
+                "y": 6.481481481481482,
+                "width": 37.157534246575345,
+                "height": 17.12962962962963,
+                "labels": ["Text"],
+                "rotation": 0
+            },
+            "to_name": "image",
+            "from_name": "label",
+            "image_rotation": 0,
+            "original_width": 584,
+            "original_height": 216
+        }, {
+            "id": "rSbk_pk1g-",
+            "type": "textarea",
+            "value": {
+                "x": 35.273972602739725,
+                "y": 6.481481481481482,
+                "text": ["oh no"],
+                "width": 37.157534246575345,
+                "height": 17.12962962962963,
+                "rotation": 0
+            },
+            "to_name": "image",
+            "from_name": "transcription",
+            "image_rotation": 0,
+            "original_width": 584,
+            "original_height": 216
+        }
+        ]
+    res2 = [{
+        "id": "rSbk_pk1g",
+        "type": "rectangle",
+        "value": {
+            "x": 35.273972602739725,
+            "y": 6.481481481481482,
+            "width": 37.157534246575345,
+            "height": 17.12962962962963,
+            "rotation": 0
+        },
+        "to_name": "image",
+        "from_name": "bbox",
+        "image_rotation": 0,
+        "original_width": 584,
+        "original_height": 216
+    }, {
+        "id": "rSbk_pk1g",
+        "type": "labels",
+        "value": {
+            "x": 35.273972602739725,
+            "y": 6.481481481481482,
+            "width": 37.157534246575345,
+            "height": 17.12962962962963,
+            "labels": ["Text"],
+            "rotation": 0
+        },
+        "to_name": "image",
+        "from_name": "label",
+        "image_rotation": 0,
+        "original_width": 584,
+        "original_height": 216
+    }, {
+        "id": "rSbk_pk1g",
+        "type": "textarea",
+        "value": {
+            "x": 35.273972602739725,
+            "y": 6.481481481481482,
+            "text": ["ayyes"],
+            "width": 37.157534246575345,
+            "height": 17.12962962962963,
+            "rotation": 0
+        },
+        "to_name": "image",
+        "from_name": "transcription",
+        "image_rotation": 0,
+        "original_width": 584,
+        "original_height": 216
+    }
+    ]
+    obj1 = OCREvalItem(res1)
+    obj2 = OCREvalItem(res2)
+
+    assert obj1.compare(obj2) == 0

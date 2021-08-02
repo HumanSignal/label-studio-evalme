@@ -59,6 +59,8 @@ class Metrics(object):
 
     @classmethod
     def filter_results_by_from_name(cls, results, from_name):
+        if from_name == 'rectangle':
+            return results
         return list(filter(lambda r: r.get('from_name') == from_name, results))
 
     @classmethod
@@ -102,7 +104,12 @@ class Metrics(object):
             if 'from_name' not in r:
                 # we skip all non-control tag results like relations, etc.
                 continue
-            all_controls[r['from_name']] = cls.get_type(r)
+            result_type = cls.get_type(r)
+            if result_type == 'rectangle':
+                # keep only rectangle if any and skip other control types
+                all_controls = {r['from_name']: result_type}
+                break
+            all_controls[r['from_name']] = result_type
 
         def get_matching_func(control_type, name=None):
             if name:

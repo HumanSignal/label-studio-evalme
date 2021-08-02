@@ -231,3 +231,4 @@ def test_taxonomy_doesn_match_perlabel():
         ]]
     assert intersection_taxonomy(test_data[0], test_data[1], per_label=True) == {"['Bacteria']": 0, "['Eukarya']": 0, "['Archaea']": 0}
     assert intersection_taxonomy(test_data[1], test_data[0], per_label=True) == {"['Bacteria']": 0, "['Eukarya']": 0, "['Archaea']": 0}
+
