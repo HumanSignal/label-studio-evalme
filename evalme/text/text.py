@@ -182,14 +182,17 @@ class TaxonomyEvalItem(EvalItem):
         pred = prediction.get_values_iter()
         matches = 0
         not_found = 0
-        for item_pred in pred:
-            for item_gt in gt:
-                if item_gt == item_pred:
-                    matches += 1
-                    break
-            else:
-                not_found += 1
-        return matches / max((matches + not_found), 1)
+        if per_label:
+            return {}
+        else:
+            for item_pred in pred:
+                for item_gt in gt:
+                    if item_gt == item_pred:
+                        matches += 1
+                        break
+                else:
+                    not_found += 1
+            return matches / max((matches + not_found), 1)
 
     def spans_iou(self, prediction, per_label=False, label_config=None):
         """

@@ -149,7 +149,7 @@ class Metrics(object):
                 logger.error(f'No matching function found for control type {control_type} in {project}.'
                              f'Using naive calculation.')
                 matching_func = cls._metrics.get('naive')
-            func_args = inspect.getfullargspec(matching_func)
+            func_args = inspect.getfullargspec(matching_func.func)
             if 'label_config' in func_args[0]:
                 control_params['label_config'] = project.get("label_config")
 

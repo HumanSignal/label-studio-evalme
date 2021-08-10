@@ -82,9 +82,6 @@ def test_taxonomy_match():
                     [
                         "Bacteria"
                     ],
-                    [
-                        "Eukarya"
-                    ]
                 ]
             },
             "to_name": "text",
@@ -98,19 +95,16 @@ def test_taxonomy_match():
                 "value": {
                     "taxonomy": [
                         [
-                            "Archaea"
-                        ],
-                        [
                             "Bacteria"
-                        ]
+                        ],
                     ]
                 },
                 "to_name": "text",
                 "from_name": "taxonomy"
             }
         ]]
-    assert intersection_taxonomy(test_data[0], test_data[1]) == 0.5
-    assert intersection_taxonomy(test_data[1], test_data[0]) == 0.5
+    assert intersection_taxonomy(test_data[0], test_data[1]) == 1
+    assert intersection_taxonomy(test_data[1], test_data[0]) == 1
 
 
 def test_taxonomy_match_perlabel():
@@ -150,8 +144,8 @@ def test_taxonomy_match_perlabel():
                 "from_name": "taxonomy"
             }
         ]]
-    assert intersection_taxonomy(test_data[0], test_data[1], per_label=True) == {"['Bacteria']": 1, "['Eukarya']": 0, "['Archaea']": 0}
-    assert intersection_taxonomy(test_data[1], test_data[0], per_label=True) == {"['Bacteria']": 1, "['Eukarya']": 0, "['Archaea']": 0}
+    assert intersection_taxonomy(test_data[0], test_data[1], per_label=True) == {}
+    assert intersection_taxonomy(test_data[1], test_data[0], per_label=True) == {}
 
 
 def test_taxonomy_doesn_match():
@@ -229,8 +223,8 @@ def test_taxonomy_doesn_match_perlabel():
                 "from_name": "taxonomy"
             }
         ]]
-    assert intersection_taxonomy(test_data[0], test_data[1], per_label=True) == {"['Bacteria']": 0, "['Eukarya']": 0, "['Archaea']": 0}
-    assert intersection_taxonomy(test_data[1], test_data[0], per_label=True) == {"['Bacteria']": 0, "['Eukarya']": 0, "['Archaea']": 0}
+    assert intersection_taxonomy(test_data[0], test_data[1], per_label=True) == {}
+    assert intersection_taxonomy(test_data[1], test_data[0], per_label=True) == {}
 
 tree1 = [{"value": {
         "taxonomy": [
