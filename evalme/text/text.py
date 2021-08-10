@@ -267,8 +267,11 @@ class TaxonomyEvalItem(EvalItem):
         if node is None:
             return dict()
         subtree = dict()
-        for subnode in node:
-            subtree[subnode['@value']] = TaxonomyEvalItem._subtree(subnode.get('Choice'))
+        if isinstance(node, list):
+            for subnode in node:
+                subtree[subnode['@value']] = TaxonomyEvalItem._subtree(subnode.get('Choice'))
+        else:
+            subtree[node['@value']] = TaxonomyEvalItem._subtree(node.get('Choice'))
         return subtree
 
     @staticmethod
