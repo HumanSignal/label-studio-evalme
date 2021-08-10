@@ -226,6 +226,7 @@ def test_taxonomy_doesn_match_perlabel():
     assert intersection_taxonomy(test_data[0], test_data[1], per_label=True) == {}
     assert intersection_taxonomy(test_data[1], test_data[0], per_label=True) == {}
 
+
 tree1 = [{"value": {
         "taxonomy": [
             [
@@ -313,10 +314,12 @@ def test_taxonomy_tree_with_parents_per_label():
                                "BA": 1, "BB": 0, "BC": 1,
                                "CA": 1, "CB": 0, "CC": 1}
 
+
 empty_tree = [{'value': {
         "taxonomy": [
         ]
     }}]
+
 
 def test_taxonomy_empty_tree_with_parents():
     """
@@ -338,3 +341,82 @@ def test_taxonomy_empty_tree_with_parents_per_label():
     assert pred_label_vice == {"AAB": 0, "AAC": 0, "AB": 0, "AC": 0,
                                "BA": 0, "BB": 0, "BC": 0,
                                "CA": 0, "CB": 0, "CC": 0}
+
+
+first_leaf_tree = [{'value': {
+        "taxonomy": [
+            [
+                "A",
+                "AA"
+            ],
+        ]
+    }}]
+
+second_leaf_tree = [{'value': {
+        "taxonomy": [
+            [
+                "C",
+                "CA"
+            ],
+        ]
+    }}]
+
+
+def test_taxonomy_one_leaf_tree():
+    """
+    Test for full tree with empty tree
+    """
+    pred = intersection_taxonomy(first_leaf_tree, second_leaf_tree, label_config=label_config)
+    assert pred == 0
+    pred_vice = intersection_taxonomy(second_leaf_tree, first_leaf_tree, label_config=label_config)
+    assert pred_vice == 0
+
+
+def test_taxonomy_one_leaf_tree_per_label():
+    """
+    Test for full tree with empty tree
+    """
+    pred = intersection_taxonomy(first_leaf_tree, second_leaf_tree, label_config=label_config, per_label=True)
+    assert pred == {'CA': 0}
+    pred_vice = intersection_taxonomy(second_leaf_tree, first_leaf_tree, label_config=label_config, per_label=True)
+    assert pred_vice == {'AAB': 0, 'AAC': 0}
+
+
+label_config_with_leaf = r"""<View>
+  <Text name="text" value="$text"/>
+  <Taxonomy name="taxonomy" toName="text">
+    <Choice value="A">
+      <Choice value="AA"/>
+    </Choice>
+    <Choice value="B">
+      <Choice value="BA">
+        <Choice value="AAA"/>
+      </Choice>
+    </Choice>
+    <Choice value="C">
+      <Choice value="CA"/>
+      <Choice value="CB"/>
+      <Choice value="CC"/>
+    </Choice>
+    </Taxonomy>
+</View>"""
+
+
+def test_taxonomy_one_leaf_tree_with_leaf():
+    """
+    Test for full tree with empty tree
+    """
+    pred = intersection_taxonomy(first_leaf_tree, second_leaf_tree, label_config=label_config_with_leaf)
+    assert pred == 0
+    pred_vice = intersection_taxonomy(second_leaf_tree, first_leaf_tree, label_config=label_config_with_leaf)
+    assert pred_vice == 0
+
+
+def test_taxonomy_one_leaf_tree_with_leaf_per_label():
+    """
+    Test for full tree with empty tree
+    """
+    pred = intersection_taxonomy(first_leaf_tree, second_leaf_tree, label_config=label_config_with_leaf, per_label=True)
+    assert pred == {'CA': 0}
+    pred_vice = intersection_taxonomy(second_leaf_tree, first_leaf_tree, label_config=label_config_with_leaf, per_label=True)
+    assert pred_vice == {'AA': 0}
