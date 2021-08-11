@@ -255,8 +255,27 @@ class TaxonomyEvalItem(EvalItem):
         """
         Creating Tree from label_config
         """
+
+        def recursive_lookup(d, k='Taxonomy'):
+            if not isinstance(d, dict):
+                return None
+            if k in list(d.keys()):
+                return d[k]
+            for v in d.values():
+                if isinstance(v, dict):
+                    a = recursive_lookup(v, k)
+                    if a is not None:
+                        return a
+                if isinstance(v, list):
+                    for item in v:
+                        a = recursive_lookup(item, k)
+                        if a is not None:
+                            return a
+            return None
+
         temp = parse_config_to_json(label_config)
-        tree = TaxonomyEvalItem._subtree(temp['View']['Taxonomy'].get('Choice'))
+        res = recursive_lookup(temp)
+        tree = TaxonomyEvalItem._subtree(res.get('Choice'))
         return tree
 
     @staticmethod
