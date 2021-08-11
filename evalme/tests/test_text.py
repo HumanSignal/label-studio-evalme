@@ -420,3 +420,74 @@ def test_taxonomy_one_leaf_tree_with_leaf_per_label():
     assert pred == {'CA': 0}
     pred_vice = intersection_taxonomy(second_leaf_tree, first_leaf_tree, label_config=label_config_with_leaf, per_label=True)
     assert pred_vice == {'AA': 0}
+
+
+label_config_subview = """
+<View>
+<Header value="This is test header" size="5" />
+<Text name="url" value="$url" />
+<View style="display: flex">
+<View style="margin-left: auto">
+<HyperText name="ht-1" value="$original_url_html"></HyperText>
+</View>
+</View>
+<View>
+<Taxonomy name="final_class" toName="extracted_content">
+<Choice value="A" />
+<Choice value="B" >
+<Choice value="B_A" />
+<Choice value="B_B" />
+<Choice value="B_C" />
+<Choice value="B_D" />
+</Choice>
+<Choice value="C" >
+<Choice value="C_A" />
+<Choice value="C_B" />
+<Choice value="C_C" />
+<Choice value="C_D" />
+<Choice value="C_E" />
+<Choice value="C_F" />
+<Choice value="C_G" />
+<Choice value="C_H" />
+<Choice value="C_I" />
+<Choice value="C_J" />
+<Choice value="C_K" />
+<Choice value="C_L" />
+<Choice value="C_M" />
+</Choice>
+<Choice value="D" >
+<Choice value="D_A" />
+<Choice value="D_B" />
+<Choice value="D_C" />
+<Choice value="D_D" />
+<Choice value="D_E" />
+</Choice>
+</Taxonomy>
+</View>
+</View>
+"""
+
+tree_subview_1 = [{'value': {
+        "taxonomy": [
+            [
+                "B",
+                "B_A"
+            ],
+        ]
+    }}]
+tree_subview_2 = [{'value': {
+        "taxonomy": [
+            [
+                "B"
+            ],
+        ]
+    }}]
+
+def test_taxonomy_nested_label_config():
+    """
+    Test for full tree with empty tree
+    """
+    pred = intersection_taxonomy(tree_subview_1, tree_subview_2, label_config=label_config_subview)
+    assert pred == 1
+    pred_vice = intersection_taxonomy(tree_subview_2, tree_subview_1, label_config=label_config_subview)
+    assert pred_vice == 0.25
