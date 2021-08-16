@@ -1,4 +1,6 @@
 import itertools
+import re
+import random
 
 import numpy
 import numpy as np
@@ -10,6 +12,7 @@ from shapely.ops import unary_union, polygonize
 
 from evalme.eval_item import EvalItem
 from evalme.utils import get_text_comparator, texts_similarity, Result
+from shapely.validation import explain_validity
 
 from evalme.text.text import TextAreaEvalItem
 
@@ -312,20 +315,68 @@ class PolygonObjectDetectionEvalItem(ObjectDetectionEvalItem):
         if self._area_close(convex_hull, poly):
             return convex_hull
         # trying to fix polygon with dilation
-        flag = True
         distance = 0.01
-        while flag:
+        while distance < 11:
             fixed_poly = poly.buffer(distance)
             flag = self._area_close(fixed_poly, poly)
-            if not fixed_poly.geom_type == 'MultiPolygon' and flag:
+            if fixed_poly.is_valid and flag:
                 return fixed_poly
             else:
-                if distance > 11:
-                    break
                 distance = distance * 2
+
+        # trying to fix polygon with errosion
+        distance = -0.01
+        while distance > -11:
+            fixed_poly = poly.buffer(distance)
+            flag = self._area_close(fixed_poly, poly)
+            if fixed_poly.is_valid and flag:
+                return fixed_poly
+            else:
+                distance = distance * 2
+
+        # trying to delete points near loop
+        poly1 = self._remove_points(poly, points)
+        if poly1.is_valid and self._area_close(poly1, poly):
+            return poly1
 
         # We are failing to build polygon, this shall be reported via error log
         raise ValueError(f'Fail to build polygon from {points}')
+
+    def _remove_points(self, poly, points):
+        """
+        Trying to remove some points to make polygon valid
+        """
+        removed_points = []
+        invalidity = explain_validity(poly)
+        for i in range(len(points)-4):
+            match = re.findall("\d+\.\d+", invalidity)
+            min_distance = poly.area
+            min_point = None
+            if match:
+                intersect_point = (float(match[0]), float(match[1]))
+                for point in points:
+                    distance = abs(point[0] - intersect_point[0]) + abs(point[1] - intersect_point[1])
+                    if distance < min_distance:
+                        min_distance = distance
+                        min_point = point
+                removed_points.append(min_point)
+                points.remove(min_point)
+                poly1 = Polygon(points)
+            if poly1.is_valid:
+                break
+            invalidity = explain_validity(poly1)
+        if self._area_close(poly, poly1):
+            return poly1
+        random.shuffle(removed_points)
+        for item in removed_points:
+            points.append(item)
+            poly2 = Polygon(points)
+            poly2 = poly2.buffer(0)
+            if poly2.is_valid:
+                continue
+            else:
+                points.remove(item)
+        return poly2
 
     def _iou(self, polyA, polyB):
         pA = self._try_build_poly(polyA['points'])
