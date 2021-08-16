@@ -96,34 +96,37 @@ def naive(x, y, per_label=False, **kwargs):
     Naive comparison of annotations
     """
     if len(x) == 0 or len(y) == 0:
-        return 0
+        return {} if per_label else 0
     if len(x) != len(y):
-        result = 0
+        return {} if per_label else 0
     else:
         if per_label:
             result = dict()
             # temp counters
             results = defaultdict(int)
             counts = defaultdict(int)
-            for i in range(len(x)):
-                t = x[i]['type']
-                # trying to extract label from annotation
-                try:
-                    label = x[i]['value'][t]
-                    if isinstance(label, list):
-                        if len(label) == 1:
-                            label = label[0]
-                        else:
-                            label = "\\".join(label)
-                # No-label if exception occurs
-                except Exception as e:
-                    logger.error("Can't assign result for label.", exc_info=True)
-                    label = 'No-label'
-                if x[i]['value'] == y[i]['value']:
-                    results[label] += 1
-                counts[label] += 1
-            for label in counts:
-                result[label] = results[label] / counts[label]
+            try:
+                for i in range(len(x)):
+                    t = x[i]['type']
+                    # trying to extract label from annotation
+                    try:
+                        label = x[i]['value'][t]
+                        if isinstance(label, list):
+                            if len(label) == 1:
+                                label = str(label[0])
+                            else:
+                                label = str("\\".join(label))
+                    # No-label if exception occurs
+                    except Exception as e:
+                        logger.error("Can't assign result for label.", exc_info=True)
+                        label = 'No-label'
+                    if x[i]['value'] == y[i]['value']:
+                        results[label] += 1
+                    counts[label] += 1
+                for label in counts:
+                    result[label] = results[label] / counts[label]
+            except:
+                result = {}
         else:
             result = 0
             for i in range(len(x)):

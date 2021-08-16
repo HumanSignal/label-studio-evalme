@@ -1,3 +1,5 @@
+import inspect
+
 import numpy as np
 import attr
 
@@ -59,6 +61,8 @@ class Metrics(object):
 
     @classmethod
     def filter_results_by_from_name(cls, results, from_name):
+        if from_name == 'rectangle':
+            return results
         return list(filter(lambda r: r.get('from_name') == from_name, results))
 
     @classmethod
@@ -75,7 +79,7 @@ class Metrics(object):
         return t
 
     @classmethod
-    def apply(cls, project, result_first, result_second, symmetric=False, per_label=False,
+    def apply(cls, project, result_first, result_second, symmetric=True, per_label=False,
               metric_name=None, iou_threshold=None):
         """
         Compute matching score between first and second completion results
@@ -102,7 +106,12 @@ class Metrics(object):
             if 'from_name' not in r:
                 # we skip all non-control tag results like relations, etc.
                 continue
-            all_controls[r['from_name']] = cls.get_type(r)
+            result_type = cls.get_type(r)
+            if result_type == 'rectangle':
+                # keep only rectangle if any and skip other control types
+                all_controls = {r['from_name']: result_type}
+                break
+            all_controls[r['from_name']] = result_type
 
         def get_matching_func(control_type, name=None):
             if name:
@@ -140,6 +149,9 @@ class Metrics(object):
                 logger.error(f'No matching function found for control type {control_type} in {project}.'
                              f'Using naive calculation.')
                 matching_func = cls._metrics.get('naive')
+            func_args = inspect.getfullargspec(matching_func.func)
+            if 'label_config' in func_args[0]:
+                control_params['label_config'] = project.get("label_config")
 
             results_first_by_from_name = cls.filter_results_by_from_name(result_first, control_name)
             results_second_by_from_name = cls.filter_results_by_from_name(result_second, control_name)
