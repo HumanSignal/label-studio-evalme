@@ -1,7 +1,5 @@
 import pytest
-from evalme.text.text import HTMLTagsEvalItem, TaxonomyEvalItem, intersection_taxonomy
-
-from text import path_match_taxonomy
+from evalme.text.text import HTMLTagsEvalItem, TaxonomyEvalItem, intersection_taxonomy, path_match_taxonomy
 
 
 def test_not_matching():
