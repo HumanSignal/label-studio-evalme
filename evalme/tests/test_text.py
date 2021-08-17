@@ -392,6 +392,16 @@ def test_taxonomy_one_leaf_tree():
     assert pred_vice == 0
 
 
+def test_taxonomy_one_leaf_tree_2():
+    """
+    Test for full tree with empty tree
+    """
+    pred = path_match_taxonomy(first_leaf_tree, second_leaf_tree)
+    assert pred == 0
+    pred_vice = path_match_taxonomy(second_leaf_tree, first_leaf_tree)
+    assert pred_vice == 0
+
+
 def test_taxonomy_one_leaf_tree_per_label():
     """
     Test for full tree with empty tree
