@@ -1,3 +1,4 @@
+import itertools
 from copy import deepcopy
 from functools import partial
 from collections import defaultdict
@@ -194,7 +195,7 @@ class TaxonomyEvalItem(EvalItem):
                     not_found += 1
             return matches / max((matches + not_found), 1)
 
-    def spans_iou(self, prediction, per_label=False, label_config=None):
+    def spans_iou(self, prediction, per_label=False, label_config=None, label_weights=dict()):
         """
         Matching of taxonomy labels depending on content
         """
@@ -222,9 +223,7 @@ class TaxonomyEvalItem(EvalItem):
                         taxonomy_gt_list.extend(TaxonomyEvalItem._transform_tree(master_tree, item_gt_tx))
                     for item in taxonomy_pred_list:
                         if item in taxonomy_gt_list:
-                            results[str(item[-1])] = 1
-                        else:
-                            results[str(item[-1])] = 0
+                            results[str(item[-1])] = label_weights.get(str(item[-1]), 1)
             return results
         else:
             for item_pred in pred:
@@ -249,6 +248,33 @@ class TaxonomyEvalItem(EvalItem):
                         matches += (temp / max(len(taxonomy_gt_list), 1))
                         tasks += 1
             return matches / tasks
+
+    def path_matches(self, prediction, per_label=False, label_weights=dict()):
+        gt = self.get_values_iter()
+        pred = prediction.get_values_iter()
+        if per_label:
+            results = dict()
+            for item_gt in gt:
+                item_gt_labels = item_gt['taxonomy']
+                for item_pred in pred:
+                    item_pred_labels = item_pred['taxonomy']
+                    for item in itertools.product(item_gt_labels, item_pred_labels):
+                        if item[0] == item[1]:
+                            results[item[0][-1]] = label_weights.get(item[0][-1], 1)
+            return results
+        else:
+            matches = 0
+            tasks = 0
+            for item_gt in gt:
+                score = 0
+                item_gt_labels = item_gt['taxonomy']
+                for item_pred in pred:
+                    item_pred_labels = item_pred['taxonomy']
+                    for item in itertools.product(item_gt_labels, item_pred_labels):
+                        score = max(score, TaxonomyEvalItem._compare_list(item[0], item[1]))
+                tasks += 1
+                matches += score
+            return matches / max(tasks, 1)
 
     @staticmethod
     def _tree(label_config):
@@ -331,6 +357,16 @@ class TaxonomyEvalItem(EvalItem):
 
         return nodes
 
+    @staticmethod
+    def _compare_list(gt, pred):
+        score = 0
+        for p, g in zip(pred, gt):
+            if p == g:
+                score += 1
+            else:
+                break
+        return score / max(len(gt), 1)
+
 
 def _as_text_tags_eval_item(item, shape_key):
     if not isinstance(item, TextTagsEvalItem):
@@ -383,7 +419,13 @@ def match_textareas(item_gt, item_pred, algorithm='Levenshtein', qval=1, **kwarg
     return item_gt.match(item_pred, algorithm, qval)
 
 
-def intersection_taxonomy(item_gt, item_pred, label_weights=None, per_label=False, label_config=None):
+def intersection_taxonomy(item_gt, item_pred, label_weights=dict(), per_label=False, label_config=None):
     item_gt = _as_taxonomy_eval_item(item_gt)
     item_pred = _as_taxonomy_eval_item(item_pred)
-    return item_gt.spans_iou(item_pred, per_label=per_label, label_config=label_config)
+    return item_gt.spans_iou(item_pred, per_label=per_label, label_config=label_config, label_weights=label_weights)
+
+
+def path_match_taxonomy(item_gt, item_pred, label_weights=dict(), per_label=False):
+    item_gt = _as_taxonomy_eval_item(item_gt)
+    item_pred = _as_taxonomy_eval_item(item_pred)
+    return item_gt.path_matches(item_pred, per_label=per_label, label_weights=label_weights)

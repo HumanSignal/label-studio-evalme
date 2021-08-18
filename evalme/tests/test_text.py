@@ -1,5 +1,5 @@
 import pytest
-from evalme.text.text import HTMLTagsEvalItem, TaxonomyEvalItem, intersection_taxonomy
+from evalme.text.text import HTMLTagsEvalItem, TaxonomyEvalItem, intersection_taxonomy, path_match_taxonomy
 
 
 def test_not_matching():
@@ -303,6 +303,16 @@ def test_taxonomy_tree_with_parents():
     assert pred_vice == 1
 
 
+def test_taxonomy_tree_with_parents_2():
+    """
+    Test for full tree with sparse tree
+    """
+    pred = path_match_taxonomy(tree1, tree2)
+    assert pred == 1
+    pred_vice = path_match_taxonomy(tree2, tree1)
+    assert pred_vice == 0.5
+
+
 def test_taxonomy_tree_with_parents_per_label():
     """
     Test for full tree with sparse tree per label
@@ -310,9 +320,19 @@ def test_taxonomy_tree_with_parents_per_label():
     pred_label = intersection_taxonomy(tree1, tree2, label_config=label_config, per_label=True)
     assert pred_label == {"AAB": 1, "AAC": 1, "AC": 1, "BA": 1, "BC": 1, "CA": 1, "CC": 1}
     pred_label_vice = intersection_taxonomy(tree2, tree1, label_config=label_config, per_label=True)
-    assert pred_label_vice == {"AAB": 1, "AAC": 1, "AB":0, "AC": 1,
-                               "BA": 1, "BB": 0, "BC": 1,
-                               "CA": 1, "CB": 0, "CC": 1}
+    assert pred_label_vice == {"AAB": 1, "AAC": 1, "AC": 1,
+                               "BA": 1, "BC": 1,
+                               "CA": 1, "CC": 1}
+
+
+def test_taxonomy_tree_with_parents_per_label_2():
+    """
+    Test for full tree with sparse tree per label
+    """
+    pred_label = path_match_taxonomy(tree1, tree2, per_label=True)
+    assert pred_label == {}
+    pred_label_vice = path_match_taxonomy(tree2, tree1, per_label=True)
+    assert pred_label_vice == {}
 
 
 empty_tree = [{'value': {
@@ -338,9 +358,7 @@ def test_taxonomy_empty_tree_with_parents_per_label():
     pred_label = intersection_taxonomy(tree1, empty_tree, label_config=label_config, per_label=True)
     assert pred_label == {}
     pred_label_vice = intersection_taxonomy(empty_tree, tree1, label_config=label_config, per_label=True)
-    assert pred_label_vice == {"AAB": 0, "AAC": 0, "AB": 0, "AC": 0,
-                               "BA": 0, "BB": 0, "BC": 0,
-                               "CA": 0, "CB": 0, "CC": 0}
+    assert pred_label_vice == {}
 
 
 first_leaf_tree = [{'value': {
@@ -372,14 +390,24 @@ def test_taxonomy_one_leaf_tree():
     assert pred_vice == 0
 
 
+def test_taxonomy_one_leaf_tree_2():
+    """
+    Test for full tree with empty tree
+    """
+    pred = path_match_taxonomy(first_leaf_tree, second_leaf_tree)
+    assert pred == 0
+    pred_vice = path_match_taxonomy(second_leaf_tree, first_leaf_tree)
+    assert pred_vice == 0
+
+
 def test_taxonomy_one_leaf_tree_per_label():
     """
     Test for full tree with empty tree
     """
     pred = intersection_taxonomy(first_leaf_tree, second_leaf_tree, label_config=label_config, per_label=True)
-    assert pred == {'CA': 0}
+    assert pred == {}
     pred_vice = intersection_taxonomy(second_leaf_tree, first_leaf_tree, label_config=label_config, per_label=True)
-    assert pred_vice == {'AAB': 0, 'AAC': 0}
+    assert pred_vice == {}
 
 
 label_config_with_leaf = r"""<View>
@@ -417,9 +445,9 @@ def test_taxonomy_one_leaf_tree_with_leaf_per_label():
     Test for full tree with empty tree
     """
     pred = intersection_taxonomy(first_leaf_tree, second_leaf_tree, label_config=label_config_with_leaf, per_label=True)
-    assert pred == {'CA': 0}
+    assert pred == {}
     pred_vice = intersection_taxonomy(second_leaf_tree, first_leaf_tree, label_config=label_config_with_leaf, per_label=True)
-    assert pred_vice == {'AA': 0}
+    assert pred_vice == {}
 
 
 label_config_subview = """
@@ -491,3 +519,13 @@ def test_taxonomy_nested_label_config():
     assert pred == 1
     pred_vice = intersection_taxonomy(tree_subview_2, tree_subview_1, label_config=label_config_subview)
     assert pred_vice == 0.25
+
+
+def test_taxonomy_nested_label_config_2():
+    """
+    Test for full tree with empty tree
+    """
+    pred = path_match_taxonomy(tree_subview_1, tree_subview_2)
+    assert pred == 0.5
+    pred_vice = path_match_taxonomy(tree_subview_2, tree_subview_1)
+    assert pred_vice == 1
