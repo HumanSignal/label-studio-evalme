@@ -228,7 +228,7 @@ def test_object_detection_fixing_polygon():
 def test_OCR_matching_function():
     res1 = [{
             "id": "rSbk_pk1g-",
-            "type": "Rectangle",
+            "type": "rectangle",
             "value": {
                 "x": 35.273972602739725,
                 "y": 6.481481481481482,
@@ -285,7 +285,7 @@ def test_OCR_matching_function():
 def test_OCR_matching_function_no_rectangle():
     res1 = [{
             "id": "rSbk_pk1g-",
-            "type": "Rectangle",
+            "type": "rectangle",
             "value": {
                 "x": 35.273972602739725,
                 "y": 6.481481481481482,
@@ -376,7 +376,7 @@ def test_OCR_matching_function_no_rectangle():
 def test_OCR_matching_function_not_matching_text():
     res1 = [{
             "id": "rSbk_pk1g-",
-            "type": "Rectangle",
+            "type": "rectangle",
             "value": {
                 "x": 35.273972602739725,
                 "y": 6.481481481481482,
@@ -425,7 +425,7 @@ def test_OCR_matching_function_not_matching_text():
         ]
     res2 = [{
         "id": "rSbk_pk1g",
-        "type": "Rectangle",
+        "type": "rectangle",
         "value": {
             "x": 35.273972602739725,
             "y": 6.481481481481482,
