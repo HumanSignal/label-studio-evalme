@@ -533,6 +533,12 @@ def _as_keypoint(item):
     return item
 
 
+def _as_ocreval(item):
+    if not isinstance(item, OCREvalItem):
+        return OCREvalItem(item)
+    return item
+
+
 def iou_bboxes(item_gt, item_pred, label_weights=None, shape_key=None, per_label=False):
     item_gt = _as_bboxes(item_gt, shape_key=shape_key)
     item_pred = _as_bboxes(item_pred, shape_key=shape_key)
@@ -624,3 +630,9 @@ def keypoints_distance(item_gt, item_pred, per_label=False, label_weights=None):
     item_gt = _as_keypoint(item_gt)
     item_pred = _as_keypoint(item_pred)
     return item_gt.distance(item_pred, label_weights=label_weights, per_label=per_label)
+
+
+def ocr_compare(item_gt, item_pred, per_label=False, iou_threshold=0.5, algorithm='Levenshtein', label_weights=None):
+    item_gt = _as_ocreval(item_gt)
+    item_pred = _as_ocreval(item_pred)
+    return item_gt.compare(item_pred, per_label=per_label, threshold=iou_threshold, algorithm=algorithm)
