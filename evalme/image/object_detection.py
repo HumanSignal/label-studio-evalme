@@ -470,8 +470,9 @@ class OCREvalItem(ObjectDetectionEvalItem):
                             res = gt_results_text.match(item=pred_results_text, algorithm=algorithm)
                             if per_label:
                                 for item in pred_results_labels:
-                                    results[item] += res
-                                    num_results[item] += 1
+                                    for subitem in item:
+                                        results[subitem] += res
+                                        num_results[subitem] += 1
                             else:
                                 results[id_gt] = res
                         else:
