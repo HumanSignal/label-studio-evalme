@@ -439,8 +439,12 @@ class KeyPointsEvalItem(EvalItem):
 class OCREvalItem(ObjectDetectionEvalItem):
     SHAPE_KEY = 'rectangle'
 
-    def compare(self, pred, threshold=0.5, algorithm='Levenshtein'):
-        results = dict()
+    def compare(self, pred, threshold=0.5, algorithm='Levenshtein', per_label=False):
+        if per_label:
+            results = defaultdict(float)
+            num_results = defaultdict(int)
+        else:
+            results = dict()
 
         gt_ids = self._get_ids_from_results()
         pred_ids = pred._get_ids_from_results()
@@ -463,15 +467,27 @@ class OCREvalItem(ObjectDetectionEvalItem):
                         if gt_results_labels == pred_results_labels:
                             gt_results_text = TextAreaEvalItem([item for item in gt_results if item['type'] != 'labels' and item['type'] != 'rectangle'])
                             pred_results_text = TextAreaEvalItem([item for item in pred_results if item['type'] != 'labels' and item['type'] != 'rectangle'])
-                            results[id_gt] = gt_results_text.match(item=pred_results_text, algorithm=algorithm)
+                            res = gt_results_text.match(item=pred_results_text, algorithm=algorithm)
+                            if per_label:
+                                for item in pred_results_labels:
+                                    for subitem in item:
+                                        results[subitem] += res
+                                        num_results[subitem] += 1
+                            else:
+                                results[id_gt] = res
                         else:
                             results[id_gt] = 0
                 else:
                     continue
 
-        values = results.values()
-
-        return sum(values) / len(values) if len(values) > 0 else 0
+        if per_label:
+            final_results = {}
+            for item in results:
+                final_results[item] = results[item] / max(num_results[item], 1)
+            return final_results
+        else:
+            values = results.values()
+            return sum(values) / len(values) if len(values) > 0 else 0
 
 
     def _get_max_iou_rectangles(self, gt, pred, threshold):
@@ -530,6 +546,12 @@ def _as_polygons(item, shape_key=None):
 def _as_keypoint(item):
     if not isinstance(item, KeyPointsEvalItem):
         return KeyPointsEvalItem(item)
+    return item
+
+
+def _as_ocreval(item):
+    if not isinstance(item, OCREvalItem):
+        return OCREvalItem(item)
     return item
 
 
@@ -624,3 +646,9 @@ def keypoints_distance(item_gt, item_pred, per_label=False, label_weights=None):
     item_gt = _as_keypoint(item_gt)
     item_pred = _as_keypoint(item_pred)
     return item_gt.distance(item_pred, label_weights=label_weights, per_label=per_label)
+
+
+def ocr_compare(item_gt, item_pred, per_label=False, iou_threshold=0.5, algorithm='Levenshtein', label_weights=None):
+    item_gt = _as_ocreval(item_gt)
+    item_pred = _as_ocreval(item_pred)
+    return item_gt.compare(item_pred, per_label=per_label, threshold=iou_threshold, algorithm=algorithm)
