@@ -437,6 +437,7 @@ class KeyPointsEvalItem(EvalItem):
 
 
 class OCREvalItem(ObjectDetectionEvalItem):
+    OCR_geo_tags = ['Rectangle', 'RectangleLabels', 'BrushLabels', 'PolygonLabels']
     SHAPE_KEY = 'rectangle'
 
     def compare(self, pred, threshold=0.5, algorithm='Levenshtein', per_label=False):
@@ -455,9 +456,12 @@ class OCREvalItem(ObjectDetectionEvalItem):
             for id_pred in pred_ids:
                 pred_results = pred._get_results_by_id(id_pred)
                 pred_types = self._get_types_from_results(pred_results)
-                if 'rectangle' in pred_types and 'rectangle' in gt_types:
-                    gt_results_rectangle = [item for item in gt_results if item['type'] == 'rectangle']
-                    pred_results_rectangle = [item for item in pred_results if item['type'] == 'rectangle']
+                for item in OCREvalItem.OCR_geo_tags:
+                    if item in pred_types and item in gt_types:
+                        rec_type = item
+                if rec_type in pred_types and rec_type in gt_types:
+                    gt_results_rectangle = [item for item in gt_results if item['type'] == rec_type]
+                    pred_results_rectangle = [item for item in pred_results if item['type'] == rec_type]
                     score = self._get_max_iou_rectangles(gt_results_rectangle, pred_results_rectangle, threshold)
                     if score < threshold:
                         results[id_gt] = 0
@@ -489,8 +493,7 @@ class OCREvalItem(ObjectDetectionEvalItem):
             values = results.values()
             return sum(values) / len(values) if len(values) > 0 else 0
 
-
-    def _get_max_iou_rectangles(self, gt, pred, threshold):
+    def _get_max_iou_rectangles(self, gt, pred):
         max_score = 0
         for item in gt:
             for pred_item in pred:
