@@ -532,13 +532,13 @@ class OCREvalItem(ObjectDetectionEvalItem):
         return list(res)
 
 
-class BrushEvalItem(EvalItem):
-    SHAPE_KEY = 'rle'
+class BrushEvalItem(ObjectDetectionEvalItem):
+    SHAPE_KEY = 'brushlabels'
 
     @staticmethod
     def _iou(gt, pred):
-        gt = decode_rle(gt)
-        pred = decode_rle(pred)
+        gt = decode_rle(gt['rle'])
+        pred = decode_rle(pred['rle'])
         union = 0
         intersection = 0
         for item in zip(gt, pred):
@@ -546,13 +546,11 @@ class BrushEvalItem(EvalItem):
                 pass
             else:
                 union = union + 1
-                if item[0] == item[1] and item[1] == 1:
+                if item[0] == item[1] and item[1] != 0:
                     intersection = intersection + 1
         return intersection / max(union, 1)
 
     def iou(self, pred_item, per_label=False, label_weights=None):
-        # get label type
-        label_type = self._raw_data[0]['type']
         if per_label:
             ious = defaultdict(list)
         else:
@@ -560,16 +558,15 @@ class BrushEvalItem(EvalItem):
         for gt in self.get_values_iter():
             max_iou = 0
             for pred in pred_item.get_values_iter():
-                if not gt[label_type] == pred[label_type]:
+                if not gt[self._shape_key] == pred[self._shape_key]:
                     continue
                 iou = self._iou(gt, pred)
                 max_iou = max(iou, max_iou)
             if per_label:
-                for l in gt[label_type]:
+                for l in gt[self._shape_key]:
                     ious[l].append(max_iou)
             else:
-                weight = sum(label_weights.get(l, 1) for l in gt[label_type])
-                weight = weight / max(len(weight), 1)
+                weight = sum(label_weights.get(l, 1) for l in gt[self._shape_key]) / max(len(gt[self._shape_key]), 1)
                 ious.append(max_iou * weight)
                 weights.append(weight)
         if per_label:
@@ -601,7 +598,7 @@ def _as_ocreval(item):
     return item
 
 
-def _as_erl(item):
+def _as_brush(item):
     if not isinstance(item, BrushEvalItem):
         return BrushEvalItem(item)
     return item
@@ -706,7 +703,25 @@ def ocr_compare(item_gt, item_pred, per_label=False, iou_threshold=0.5, algorith
     return item_gt.compare(item_pred, per_label=per_label, threshold=iou_threshold, algorithm=algorithm)
 
 
-def rle_compare(item_gt, item_pred, per_label=False, label_weights=None):
-    item_gt = _as_erl(item_gt)
-    item_pred = _as_erl(item_pred)
+def iou_brush(item_gt, item_pred, per_label=False, label_weights=None):
+    item_gt = _as_brush(item_gt)
+    item_pred = _as_brush(item_pred)
     return item_gt.iou(item_pred, per_label=per_label, label_weights=label_weights)
+
+
+def precision_brush(item_gt, item_pred, iou_threshold=0.5, label_weights=None, per_label=False):
+    item_gt = _as_brush(item_gt)
+    item_pred = _as_brush(item_pred)
+    return item_gt.precision_at_iou(item_pred, iou_threshold, label_weights, per_label=per_label)
+
+
+def recall_brush(item_gt, item_pred, iou_threshold=0.5, label_weights=None, per_label=False):
+    item_gt = _as_brush(item_gt)
+    item_pred = _as_brush(item_pred)
+    return item_gt.recall_at_iou(item_pred, iou_threshold, label_weights, per_label=per_label)
+
+
+def f1_brush(item_gt, item_pred, iou_threshold=0.5, label_weights=None, per_label=False):
+    item_gt = _as_brush(item_gt)
+    item_pred = _as_brush(item_pred)
+    return item_gt.f1_at_iou(item_pred, iou_threshold, label_weights, per_label=per_label)
