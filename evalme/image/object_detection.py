@@ -7,6 +7,7 @@ import numpy as np
 
 from collections import defaultdict, Counter
 
+from label_studio_converter.brush import decode_rle
 from shapely.geometry import Polygon, MultiPolygon, LineString
 from shapely.ops import unary_union, polygonize
 
@@ -531,6 +532,51 @@ class OCREvalItem(ObjectDetectionEvalItem):
         return list(res)
 
 
+class BrushEvalItem(EvalItem):
+    SHAPE_KEY = 'rle'
+
+    @staticmethod
+    def _iou(gt, pred):
+        gt = decode_rle(gt)
+        pred = decode_rle(pred)
+        union = 0
+        intersection = 0
+        for item in zip(gt, pred):
+            if item[0] == item[1] and item[0] == 0:
+                pass
+            else:
+                union = union + 1
+                if item[0] == item[1] and item[1] == 1:
+                    intersection = intersection + 1
+        return intersection / max(union, 1)
+
+    def iou(self, pred_item, per_label=False, label_weights=None):
+        # get label type
+        label_type = self._raw_data[0]['type']
+        if per_label:
+            ious = defaultdict(list)
+        else:
+            ious, weights = [], []
+        for gt in self.get_values_iter():
+            max_iou = 0
+            for pred in pred_item.get_values_iter():
+                if not gt[label_type] == pred[label_type]:
+                    continue
+                iou = self._iou(gt, pred)
+                max_iou = max(iou, max_iou)
+            if per_label:
+                for l in gt[label_type]:
+                    ious[l].append(max_iou)
+            else:
+                weight = sum(label_weights.get(l, 1) for l in gt[label_type])
+                weight = weight / max(len(weight), 1)
+                ious.append(max_iou * weight)
+                weights.append(weight)
+        if per_label:
+            return {l: float(np.mean(v)) for l, v in ious.items()}
+        return np.average(ious, weights=weights) if ious else 0.0
+
+
 def _as_bboxes(item, shape_key=None):
     if not isinstance(item, BboxObjectDetectionEvalItem):
         return BboxObjectDetectionEvalItem(item, shape_key)
@@ -552,6 +598,12 @@ def _as_keypoint(item):
 def _as_ocreval(item):
     if not isinstance(item, OCREvalItem):
         return OCREvalItem(item)
+    return item
+
+
+def _as_erl(item):
+    if not isinstance(item, BrushEvalItem):
+        return BrushEvalItem(item)
     return item
 
 
@@ -652,3 +704,9 @@ def ocr_compare(item_gt, item_pred, per_label=False, iou_threshold=0.5, algorith
     item_gt = _as_ocreval(item_gt)
     item_pred = _as_ocreval(item_pred)
     return item_gt.compare(item_pred, per_label=per_label, threshold=iou_threshold, algorithm=algorithm)
+
+
+def rle_compare(item_gt, item_pred, per_label=False, label_weights=None):
+    item_gt = _as_erl(item_gt)
+    item_pred = _as_erl(item_pred)
+    return item_gt.iou(item_pred, per_label=per_label, label_weights=label_weights)
