@@ -539,8 +539,8 @@ class BrushEvalItem(ObjectDetectionEvalItem):
     def _iou(gt, pred):
         gt = decode_rle(gt['rle'])
         pred = decode_rle(pred['rle'])
-        union = np.sum(np.logical_or(gt, pred).astype(np.int))
-        intersection = np.sum(np.logical_and(gt, pred).astype(np.int))
+        union = np.logical_or(gt, pred).sum()
+        intersection = np.logical_and(gt, pred).sum()
         return intersection / max(union, 1)
 
     def iou(self, pred_item, per_label=False, label_weights=None):
