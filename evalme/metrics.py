@@ -110,7 +110,12 @@ class Metrics(object):
             if 'from_name' not in r:
                 # we skip all non-control tag results like relations, etc.
                 continue
-            all_controls[r['from_name']] = cls.get_type(r)
+            result_type = cls.get_type(r)
+            if result_type == 'rectangle':
+                # keep only rectangle if any and skip other control types
+                all_controls = {result_type: result_type}
+                break
+            all_controls[r['from_name']] = result_type
 
         def get_matching_func(control_type, name=None):
             if name:
@@ -160,11 +165,11 @@ class Metrics(object):
                 if iou_threshold:
                     control_params['iou_threshold'] = iou_threshold
 
-                matching_func = get_matching_func(control_type, metric_name)
-                if not matching_func:
-                    logger.error(f'No matching function found for control type {control_type} in {project}.'
-                                 f'Using naive calculation.')
-                    matching_func = cls._metrics.get('naive')
+            matching_func = get_matching_func(control_type, metric_name)
+            if not matching_func:
+                logger.error(f'No matching function found for control type {control_type} in {project}.'
+                             f'Using naive calculation.')
+                matching_func = cls._metrics.get('naive')
 
                 results_first_by_from_name = cls.filter_results_by_from_name(result_first, control_name)
                 results_second_by_from_name = cls.filter_results_by_from_name(result_second, control_name)

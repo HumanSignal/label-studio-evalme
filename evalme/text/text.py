@@ -1,9 +1,12 @@
+import itertools
+from copy import deepcopy
 from functools import partial
 from collections import defaultdict
 
 from evalme.eval_item import EvalItem
-from evalme.utils import texts_similarity, get_text_comparator
-
+from evalme.utils import texts_similarity, get_text_comparator, parse_config_to_json
+import logging
+logger = logging.getLogger(__name__)
 
 class TextTagsEvalItem(EvalItem):
 
@@ -172,7 +175,7 @@ class TextAreaEvalItem(EvalItem):
 class TaxonomyEvalItem(EvalItem):
     SHAPE_KEY = 'taxonomy'
 
-    def spans_match(self, prediction):
+    def spans_match(self, prediction, per_label=False):
         """
         Simple matching of labels in taxonomy
         """
@@ -180,19 +183,28 @@ class TaxonomyEvalItem(EvalItem):
         pred = prediction.get_values_iter()
         matches = 0
         not_found = 0
-        for item_pred in pred:
-            for item_gt in gt:
-                if item_gt == item_pred:
-                    matches += 1
-                    break
-            else:
-                not_found += 1
-        return matches / max((matches + not_found), 1)
+        if per_label:
+            return {}
+        else:
+            for item_pred in pred:
+                for item_gt in gt:
+                    if item_gt == item_pred:
+                        matches += 1
+                        break
+                else:
+                    not_found += 1
+            return matches / max((matches + not_found), 1)
 
-    def spans_iou(self, prediction, per_label=False):
+    def spans_iou(self, prediction, per_label=False, label_config=None, label_weights=dict()):
         """
         Matching of taxonomy labels depending on content
         """
+        if label_config is None:
+            logger.warning("No label config - returning simple score.")
+            return self.spans_match(prediction, per_label=per_label)
+
+        master_tree = TaxonomyEvalItem._tree(label_config)
+
         gt = self.get_values_iter()
         pred = prediction.get_values_iter()
         matches = 0
@@ -203,47 +215,157 @@ class TaxonomyEvalItem(EvalItem):
                 for item_gt in gt:
                     taxonomy_pred = item_pred['taxonomy']
                     taxonomy_gt = item_gt['taxonomy']
+                    taxonomy_pred_list = list()
+                    taxonomy_gt_list = list()
                     for item_pred_tx in taxonomy_pred:
-                        if item_pred_tx in taxonomy_gt:
-                            results[str(item_pred_tx)] = 1
-                        else:
-                            results[str(item_pred_tx)] = 0
+                        taxonomy_pred_list.extend(TaxonomyEvalItem._transform_tree(master_tree, item_pred_tx))
                     for item_gt_tx in taxonomy_gt:
-                        if item_gt_tx not in taxonomy_pred:
-                            results[str(item_gt_tx)] = 0
+                        taxonomy_gt_list.extend(TaxonomyEvalItem._transform_tree(master_tree, item_gt_tx))
+                    for item in taxonomy_pred_list:
+                        if item in taxonomy_gt_list:
+                            results[str(item[-1])] = label_weights.get(str(item[-1]), 1)
             return results
         else:
             for item_pred in pred:
                 for item_gt in gt:
-                    if item_gt == item_pred:
+                    taxonomy_pred = item_pred['taxonomy']
+                    taxonomy_pred_list = []
+                    taxonomy_gt = item_gt['taxonomy']
+                    taxonomy_gt_list = []
+                    if taxonomy_pred == taxonomy_gt:
                         matches += 1
                         tasks += 1
                         break
                     else:
-                        matches += self._iou(item_gt['taxonomy'], item_pred['taxonomy'])
+                        temp = 0
+                        for item_pred_tx in taxonomy_pred:
+                            taxonomy_pred_list.extend(TaxonomyEvalItem._transform_tree(master_tree, item_pred_tx))
+                        for item_gt_tx in taxonomy_gt:
+                            taxonomy_gt_list.extend(TaxonomyEvalItem._transform_tree(master_tree, item_gt_tx))
+                        for item in taxonomy_pred_list:
+                            if item in taxonomy_gt_list:
+                                temp += 1
+                        matches += (temp / max(len(taxonomy_gt_list), 1))
                         tasks += 1
             return matches / tasks
 
-    def _iou(self, gt, pred):
-        if gt == pred:
-            return 1
+    def path_matches(self, prediction, per_label=False, label_weights=dict()):
+        gt = self.get_values_iter()
+        pred = prediction.get_values_iter()
+        if per_label:
+            results = dict()
+            for item_gt in gt:
+                item_gt_labels = item_gt['taxonomy']
+                for item_pred in pred:
+                    item_pred_labels = item_pred['taxonomy']
+                    for item in itertools.product(item_gt_labels, item_pred_labels):
+                        if item[0] == item[1]:
+                            results[item[0][-1]] = label_weights.get(item[0][-1], 1)
+            return results
         else:
-            score = 0
+            matches = 0
             tasks = 0
             for item_gt in gt:
-                max_iou = 0
-                set_gt = set(item_gt)
+                score = 0
+                item_gt_labels = item_gt['taxonomy']
                 for item_pred in pred:
-                    set_pred_gt = set(item_pred) | set_gt
-                    item_score = 0
-                    for item in item_pred:
-                        if item in set_gt:
-                            item_score += 1
-                    item_score = item_score / max(len(set_pred_gt), len(item_pred))
-                    max_iou = max(max_iou, item_score)
-                score += max_iou
+                    item_pred_labels = item_pred['taxonomy']
+                    for item in itertools.product(item_gt_labels, item_pred_labels):
+                        score = max(score, TaxonomyEvalItem._compare_list(item[0], item[1]))
                 tasks += 1
-            return score / max(tasks, 1)
+                matches += score
+            return matches / max(tasks, 1)
+
+    @staticmethod
+    def _tree(label_config):
+        """
+        Creating Tree from label_config
+        """
+
+        def recursive_lookup(d, k='Taxonomy'):
+            if not isinstance(d, dict):
+                return None
+            if k in list(d.keys()):
+                return d[k]
+            for v in d.values():
+                if isinstance(v, dict):
+                    a = recursive_lookup(v, k)
+                    if a is not None:
+                        return a
+                if isinstance(v, list):
+                    for item in v:
+                        a = recursive_lookup(item, k)
+                        if a is not None:
+                            return a
+            return None
+
+        temp = parse_config_to_json(label_config)
+        res = recursive_lookup(temp)
+        tree = TaxonomyEvalItem._subtree(res.get('Choice'))
+        return tree
+
+    @staticmethod
+    def _subtree(node):
+        """
+        Create dict() from Tree
+        """
+        if node is None:
+            return dict()
+        subtree = dict()
+        if isinstance(node, list):
+            for subnode in node:
+                subtree[subnode['@value']] = TaxonomyEvalItem._subtree(subnode.get('Choice'))
+        else:
+            subtree[node['@value']] = TaxonomyEvalItem._subtree(node.get('Choice'))
+        return subtree
+
+    @staticmethod
+    def _transform_tree(config, node):
+        """
+        Transform tree to paths list
+        """
+        import operator
+        from functools import reduce
+
+        def paths(self):
+            """
+            Get all paths from Tree
+            """
+            if not self.keys():
+                return []
+            local_paths = []
+            for child in self:
+                child_paths = paths(self[child])
+                if child_paths:
+                    for path in child_paths:
+                        local_paths.append([child] + path)
+                else:
+                    local_paths.append([child])
+            return local_paths
+
+        nodes = []
+
+        items = reduce(operator.getitem, node, config)
+        path_list = paths(items)
+        if path_list:
+            for path in path_list:
+                temp_node = deepcopy(node)
+                temp_node.extend(path)
+                nodes.append(temp_node)
+        else:
+            nodes.append(node)
+
+        return nodes
+
+    @staticmethod
+    def _compare_list(gt, pred):
+        score = 0
+        for p, g in zip(pred, gt):
+            if p == g:
+                score += 1
+            else:
+                break
+        return score / max(len(gt), 1)
 
 
 def _as_text_tags_eval_item(item, shape_key):
@@ -297,7 +419,13 @@ def match_textareas(item_gt, item_pred, algorithm='Levenshtein', qval=1, **kwarg
     return item_gt.match(item_pred, algorithm, qval)
 
 
-def intersection_taxonomy(item_gt, item_pred, label_weights=None, per_label=False):
+def intersection_taxonomy(item_gt, item_pred, label_weights=dict(), per_label=False, label_config=None):
     item_gt = _as_taxonomy_eval_item(item_gt)
     item_pred = _as_taxonomy_eval_item(item_pred)
-    return item_gt.spans_iou(item_pred, per_label=per_label)
+    return item_gt.spans_iou(item_pred, per_label=per_label, label_config=label_config, label_weights=label_weights)
+
+
+def path_match_taxonomy(item_gt, item_pred, label_weights=dict(), per_label=False):
+    item_gt = _as_taxonomy_eval_item(item_gt)
+    item_pred = _as_taxonomy_eval_item(item_pred)
+    return item_gt.path_matches(item_pred, per_label=per_label, label_weights=label_weights)

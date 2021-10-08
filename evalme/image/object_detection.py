@@ -1,15 +1,21 @@
 import itertools
+import re
+import random
 
 import numpy
 import numpy as np
 
 from collections import defaultdict, Counter
 
+from label_studio_converter.brush import decode_rle
 from shapely.geometry import Polygon, MultiPolygon, LineString
 from shapely.ops import unary_union, polygonize
 
 from evalme.eval_item import EvalItem
 from evalme.utils import get_text_comparator, texts_similarity, Result
+from shapely.validation import explain_validity
+
+from evalme.text.text import TextAreaEvalItem
 
 
 class ObjectDetectionEvalItem(EvalItem):
@@ -310,20 +316,68 @@ class PolygonObjectDetectionEvalItem(ObjectDetectionEvalItem):
         if self._area_close(convex_hull, poly):
             return convex_hull
         # trying to fix polygon with dilation
-        flag = True
         distance = 0.01
-        while flag:
+        while distance < 11:
             fixed_poly = poly.buffer(distance)
             flag = self._area_close(fixed_poly, poly)
-            if not fixed_poly.geom_type == 'MultiPolygon' and flag:
+            if fixed_poly.is_valid and flag:
                 return fixed_poly
             else:
-                if distance > 11:
-                    break
                 distance = distance * 2
+
+        # trying to fix polygon with errosion
+        distance = -0.01
+        while distance > -11:
+            fixed_poly = poly.buffer(distance)
+            flag = self._area_close(fixed_poly, poly)
+            if fixed_poly.is_valid and flag:
+                return fixed_poly
+            else:
+                distance = distance * 2
+
+        # trying to delete points near loop
+        poly1 = self._remove_points(poly, points)
+        if poly1.is_valid and self._area_close(poly1, poly):
+            return poly1
 
         # We are failing to build polygon, this shall be reported via error log
         raise ValueError(f'Fail to build polygon from {points}')
+
+    def _remove_points(self, poly, points):
+        """
+        Trying to remove some points to make polygon valid
+        """
+        removed_points = []
+        invalidity = explain_validity(poly)
+        for i in range(len(points)-4):
+            match = re.findall("\d+\.\d+", invalidity)
+            min_distance = poly.area
+            min_point = None
+            if match:
+                intersect_point = (float(match[0]), float(match[1]))
+                for point in points:
+                    distance = abs(point[0] - intersect_point[0]) + abs(point[1] - intersect_point[1])
+                    if distance < min_distance:
+                        min_distance = distance
+                        min_point = point
+                removed_points.append(min_point)
+                points.remove(min_point)
+                poly1 = Polygon(points)
+            if poly1.is_valid:
+                break
+            invalidity = explain_validity(poly1)
+        if self._area_close(poly, poly1):
+            return poly1
+        random.shuffle(removed_points)
+        for item in removed_points:
+            points.append(item)
+            poly2 = Polygon(points)
+            poly2 = poly2.buffer(0)
+            if poly2.is_valid:
+                continue
+            else:
+                points.remove(item)
+        return poly2
 
     def _iou(self, polyA, polyB):
         pA = self._try_build_poly(polyA['points'])
@@ -383,6 +437,143 @@ class KeyPointsEvalItem(EvalItem):
         return final_results
 
 
+class OCREvalItem(ObjectDetectionEvalItem):
+    SHAPE_KEY = 'rectangle'
+
+    def compare(self, pred, threshold=0.5, algorithm='Levenshtein', per_label=False):
+        if per_label:
+            results = defaultdict(float)
+            num_results = defaultdict(int)
+        else:
+            results = dict()
+
+        gt_ids = self._get_ids_from_results()
+        pred_ids = pred._get_ids_from_results()
+
+        for id_gt in gt_ids:
+            gt_results = self._get_results_by_id(id_gt)
+            gt_types = self._get_types_from_results(gt_results)
+            for id_pred in pred_ids:
+                pred_results = pred._get_results_by_id(id_pred)
+                pred_types = self._get_types_from_results(pred_results)
+                if 'rectangle' in pred_types and 'rectangle' in gt_types:
+                    gt_results_rectangle = [item for item in gt_results if item['type'] == 'rectangle']
+                    pred_results_rectangle = [item for item in pred_results if item['type'] == 'rectangle']
+                    score = self._get_max_iou_rectangles(gt_results_rectangle, pred_results_rectangle, threshold)
+                    if score < threshold:
+                        results[id_gt] = 0
+                    else:
+                        gt_results_labels = [item['value']['labels'] for item in gt_results if item['type'] == 'labels']
+                        pred_results_labels = [item['value']['labels'] for item in pred_results if item['type'] == 'labels']
+                        if gt_results_labels == pred_results_labels:
+                            gt_results_text = TextAreaEvalItem([item for item in gt_results if item['type'] != 'labels' and item['type'] != 'rectangle'])
+                            pred_results_text = TextAreaEvalItem([item for item in pred_results if item['type'] != 'labels' and item['type'] != 'rectangle'])
+                            res = gt_results_text.match(item=pred_results_text, algorithm=algorithm)
+                            if per_label:
+                                for item in pred_results_labels:
+                                    for subitem in item:
+                                        results[subitem] += res
+                                        num_results[subitem] += 1
+                            else:
+                                results[id_gt] = res
+                        else:
+                            results[id_gt] = 0
+                else:
+                    continue
+
+        if per_label:
+            final_results = {}
+            for item in results:
+                final_results[item] = results[item] / max(num_results[item], 1)
+            return final_results
+        else:
+            values = results.values()
+            return sum(values) / len(values) if len(values) > 0 else 0
+
+
+    def _get_max_iou_rectangles(self, gt, pred, threshold):
+        max_score = 0
+        for item in gt:
+            for pred_item in pred:
+                score = self._iou(item['value'], pred_item['value'])
+                max_score = max(max_score, score)
+        return max_score
+
+    def _get_types_from_results(self, results):
+        """
+        Get types from results
+        """
+        res = set()
+        for result in results:
+            r = result.get('type')
+            if r:
+                res.add(r)
+        return res
+
+    def _get_results_by_id(self, id):
+        """
+        Get results by ID
+        """
+        res = []
+        for result in self._raw_data:
+            if result.get('id') == id:
+                res.append(result)
+        return res
+
+    def _get_ids_from_results(self):
+        """
+        Get IDs from results to group
+        """
+        res = set()
+        for result in self._raw_data:
+            id = result.get('id')
+            if id:
+                res.add(id)
+        return list(res)
+
+
+class BrushEvalItem(ObjectDetectionEvalItem):
+    SHAPE_KEY = 'brushlabels'
+
+    @staticmethod
+    def _iou(gt, pred):
+        gt = decode_rle(gt['rle'])
+        pred = decode_rle(pred['rle'])
+        union = 0
+        intersection = 0
+        for item in zip(gt, pred):
+            if item[0] == item[1] and item[0] == 0:
+                pass
+            else:
+                union = union + 1
+                if item[0] == item[1] and item[1] != 0:
+                    intersection = intersection + 1
+        return intersection / max(union, 1)
+
+    def iou(self, pred_item, per_label=False, label_weights=None):
+        if per_label:
+            ious = defaultdict(list)
+        else:
+            ious, weights = [], []
+        for gt in self.get_values_iter():
+            max_iou = 0
+            for pred in pred_item.get_values_iter():
+                if not gt[self._shape_key] == pred[self._shape_key]:
+                    continue
+                iou = self._iou(gt, pred)
+                max_iou = max(iou, max_iou)
+            if per_label:
+                for l in gt[self._shape_key]:
+                    ious[l].append(max_iou)
+            else:
+                weight = sum(label_weights.get(l, 1) for l in gt[self._shape_key]) / max(len(gt[self._shape_key]), 1)
+                ious.append(max_iou * weight)
+                weights.append(weight)
+        if per_label:
+            return {l: float(np.mean(v)) for l, v in ious.items()}
+        return np.average(ious, weights=weights) if ious else 0.0
+
+
 def _as_bboxes(item, shape_key=None):
     if not isinstance(item, BboxObjectDetectionEvalItem):
         return BboxObjectDetectionEvalItem(item, shape_key)
@@ -398,6 +589,18 @@ def _as_polygons(item, shape_key=None):
 def _as_keypoint(item):
     if not isinstance(item, KeyPointsEvalItem):
         return KeyPointsEvalItem(item)
+    return item
+
+
+def _as_ocreval(item):
+    if not isinstance(item, OCREvalItem):
+        return OCREvalItem(item)
+    return item
+
+
+def _as_brush(item):
+    if not isinstance(item, BrushEvalItem):
+        return BrushEvalItem(item)
     return item
 
 
@@ -492,3 +695,33 @@ def keypoints_distance(item_gt, item_pred, per_label=False, label_weights=None):
     item_gt = _as_keypoint(item_gt)
     item_pred = _as_keypoint(item_pred)
     return item_gt.distance(item_pred, label_weights=label_weights, per_label=per_label)
+
+
+def ocr_compare(item_gt, item_pred, per_label=False, iou_threshold=0.5, algorithm='Levenshtein', label_weights=None):
+    item_gt = _as_ocreval(item_gt)
+    item_pred = _as_ocreval(item_pred)
+    return item_gt.compare(item_pred, per_label=per_label, threshold=iou_threshold, algorithm=algorithm)
+
+
+def iou_brush(item_gt, item_pred, per_label=False, label_weights=None):
+    item_gt = _as_brush(item_gt)
+    item_pred = _as_brush(item_pred)
+    return item_gt.iou(item_pred, per_label=per_label, label_weights=label_weights)
+
+
+def precision_brush(item_gt, item_pred, iou_threshold=0.5, label_weights=None, per_label=False):
+    item_gt = _as_brush(item_gt)
+    item_pred = _as_brush(item_pred)
+    return item_gt.precision_at_iou(item_pred, iou_threshold, label_weights, per_label=per_label)
+
+
+def recall_brush(item_gt, item_pred, iou_threshold=0.5, label_weights=None, per_label=False):
+    item_gt = _as_brush(item_gt)
+    item_pred = _as_brush(item_pred)
+    return item_gt.recall_at_iou(item_pred, iou_threshold, label_weights, per_label=per_label)
+
+
+def f1_brush(item_gt, item_pred, iou_threshold=0.5, label_weights=None, per_label=False):
+    item_gt = _as_brush(item_gt)
+    item_pred = _as_brush(item_pred)
+    return item_gt.f1_at_iou(item_pred, iou_threshold, label_weights, per_label=per_label)

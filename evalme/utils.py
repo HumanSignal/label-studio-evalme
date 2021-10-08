@@ -1,5 +1,7 @@
 from collections import Counter
 from enum import Enum
+from lxml import etree
+import xmljson
 
 import textdistance
 
@@ -88,3 +90,12 @@ def calculate_ap(results):
         else:
             s += res[key]
     return s / 11
+
+
+def parse_config_to_json(config_string):
+    parser = etree.XMLParser(recover=False)
+    xml = etree.fromstring(config_string, parser)
+    if xml is None:
+        raise etree.XMLSchemaParseError('xml is empty or incorrect')
+    config = xmljson.badgerfish.data(xml)
+    return config
