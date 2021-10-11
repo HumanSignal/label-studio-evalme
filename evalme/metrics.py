@@ -141,7 +141,7 @@ class Metrics(object):
 
         if annotations_or_result:
             # get matching score over annotations as a hole
-            if params == {}:
+            if project == {}:
                 control_params = {}
             else:
                 control_weights = project.get("control_weights", {})
