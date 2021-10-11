@@ -174,25 +174,25 @@ class Metrics(object):
                              f'Using naive calculation.')
                 matching_func = cls._metrics.get('naive')
 
-                results_first_by_from_name = cls.filter_results_by_from_name(result_first, control_name)
-                results_second_by_from_name = cls.filter_results_by_from_name(result_second, control_name)
-                s = matching_func.func(results_first_by_from_name, results_second_by_from_name, **control_params)
-                if symmetric:
-                    s_reversed = matching_func.func(results_second_by_from_name, results_first_by_from_name,
-                                                    **control_params)
-                    if per_label:
-                        for label in set(list(s.keys()) + list(s_reversed.keys())):
-                            s[label] = symmetrize(s.get(label), s_reversed.get(label))
-                    else:
-                        s = symmetrize(s, s_reversed)
-
+            results_first_by_from_name = cls.filter_results_by_from_name(result_first, control_name)
+            results_second_by_from_name = cls.filter_results_by_from_name(result_second, control_name)
+            s = matching_func.func(results_first_by_from_name, results_second_by_from_name, **control_params)
+            if symmetric:
+                s_reversed = matching_func.func(results_second_by_from_name, results_first_by_from_name,
+                                                **control_params)
                 if per_label:
-                    for label in s:
-                        score[label] += s[label] * overall_weight
-                        n[label] += overall_weight
+                    for label in set(list(s.keys()) + list(s_reversed.keys())):
+                        s[label] = symmetrize(s.get(label), s_reversed.get(label))
                 else:
-                    score += s * overall_weight
-                    n += overall_weight
+                    s = symmetrize(s, s_reversed)
+
+            if per_label:
+                for label in s:
+                    score[label] += s[label] * overall_weight
+                    n[label] += overall_weight
+            else:
+                score += s * overall_weight
+                n += overall_weight
 
         def clipped(s):
             if s > 1 or s < 0:
