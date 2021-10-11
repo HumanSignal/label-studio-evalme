@@ -141,10 +141,13 @@ class Metrics(object):
 
         if annotations_or_result:
             # get matching score over annotations as a hole
-            control_weights = project.get("control_weights", {})
-            control_params = deepcopy(params)
-            control_params['control_weights'] = control_weights
-            control_params['per_label'] = per_label
+            if params == {}:
+                control_params = {}
+            else:
+                control_weights = project.get("control_weights", {})
+                control_params = deepcopy(params)
+                control_params['control_weights'] = control_weights
+                control_params['per_label'] = per_label
 
             matching_func = get_matching_func_annotation(name=metric_name)
             if per_label:
