@@ -1,3 +1,5 @@
+import inspect
+
 import numpy as np
 import attr
 
@@ -173,6 +175,10 @@ class Metrics(object):
                 logger.error(f'No matching function found for control type {control_type} in {project}.'
                              f'Using naive calculation.')
                 matching_func = cls._metrics.get('naive')
+            # identify if label config need
+            func_args = inspect.getfullargspec(matching_func.func)
+            if 'label_config' in func_args[0]:
+                control_params['label_config'] = project.get("label_config")
 
             results_first_by_from_name = cls.filter_results_by_from_name(result_first, control_name)
             results_second_by_from_name = cls.filter_results_by_from_name(result_second, control_name)
