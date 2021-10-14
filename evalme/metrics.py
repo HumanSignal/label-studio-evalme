@@ -61,8 +61,6 @@ class Metrics(object):
 
     @classmethod
     def filter_results_by_from_name(cls, results, from_name):
-        if cls._norm_tag(from_name) == 'rectangle':
-            return results
         return list(filter(lambda r: r.get('from_name') == from_name, results))
 
     @classmethod
@@ -94,6 +92,14 @@ class Metrics(object):
         Returns:
             Matching score averaged over all different "from_name"s with corresponding weights taken from project.control_weights  # noqa
         """
+        annotations_or_result = None
+        # decide which object to use annotation-based or result-based
+        if isinstance(result_first, dict) and isinstance(result_second, dict):
+            annotations_or_result = True
+        elif isinstance(result_first, list) and isinstance(result_second, list):
+            annotations_or_result = False
+        else:
+            raise ValueError('Both inputs should be Annotation(dict) or Results(list)')
 
         if not result_first and not result_second:
             if per_label:
@@ -119,6 +125,9 @@ class Metrics(object):
             else:
                 return cls.get_default_metric_for_tag(control_type)
 
+        def get_matching_func_annotation(name=None):
+            return cls.get_default_metric_for_name_tag('all', name)
+
         def symmetrize(a, b):
             if a is None:
                 return b
@@ -132,23 +141,41 @@ class Metrics(object):
         else:
             score, n = 0, 0
 
-        # aggregate matching scores over all existed controls
-        for control_name, control_type in all_controls.items():
-            control_weights = project.get("control_weights", {})
-            control_weights = control_weights.get(control_name, {})
-            overall_weight = control_weights.get('overall', 1)
-            label_weights = control_weights.get('labels')
-            control_params = deepcopy(params)
-            control_params['label_weights'] = label_weights
-            control_params['per_label'] = per_label
-            if iou_threshold:
-                control_params['iou_threshold'] = iou_threshold
+        if annotations_or_result:
+            # get matching score over annotations as a hole
+            if project == {}:
+                control_params = {}
+            else:
+                control_weights = project.get("control_weights", {})
+                control_params = deepcopy(params)
+                control_params['control_weights'] = control_weights
+                control_params['per_label'] = per_label
+
+            matching_func = get_matching_func_annotation(name=metric_name)
+            if per_label:
+                score, n = matching_func.func(result_first, result_second, **control_params)
+            else:
+                score = matching_func.func(result_first, result_second, **control_params)
+                n = 1
+        else:
+            # aggregate matching scores over all existed controls
+            for control_name, control_type in all_controls.items():
+                control_weights = project.get("control_weights", {})
+                control_weights = control_weights.get(control_name, {})
+                overall_weight = control_weights.get('overall', 1)
+                label_weights = control_weights.get('labels')
+                control_params = deepcopy(params)
+                control_params['label_weights'] = label_weights
+                control_params['per_label'] = per_label
+                if iou_threshold:
+                    control_params['iou_threshold'] = iou_threshold
 
             matching_func = get_matching_func(control_type, metric_name)
             if not matching_func:
                 logger.error(f'No matching function found for control type {control_type} in {project}.'
                              f'Using naive calculation.')
                 matching_func = cls._metrics.get('naive')
+            # identify if label config need
             func_args = inspect.getfullargspec(matching_func.func)
             if 'label_config' in func_args[0]:
                 control_params['label_config'] = project.get("label_config")
