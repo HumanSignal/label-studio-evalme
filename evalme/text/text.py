@@ -247,7 +247,7 @@ class TaxonomyEvalItem(EvalItem):
                                 temp += 1
                         matches += (temp / max(len(taxonomy_gt_list), 1))
                         tasks += 1
-            return matches / tasks
+            return matches / max(tasks, 1)
 
     def path_matches(self, prediction, per_label=False, label_weights=dict()):
         gt = self.get_values_iter()
