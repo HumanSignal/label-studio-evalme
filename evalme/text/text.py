@@ -160,6 +160,12 @@ class HTMLTagsEvalItem(TextTagsEvalItem):
         else:
             return self._spans_iou_by_start_end_offsets(x, y)
 
+    def _match(self, x, y, f):
+        x_res = x.get(self._shape_key) or x.get('htmllabels')
+        y_res = y.get(self._shape_key) or y.get('htmllabels')
+        labels_match = texts_similarity(x_res, y_res, f)
+        spans_match = self.spans_iou(x, y)
+        return labels_match * spans_match
 
 class TextAreaEvalItem(EvalItem):
     SHAPE_KEY = 'text'
