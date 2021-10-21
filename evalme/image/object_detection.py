@@ -380,10 +380,13 @@ class PolygonObjectDetectionEvalItem(ObjectDetectionEvalItem):
         return poly2
 
     def _iou(self, polyA, polyB):
-        pA = self._try_build_poly(polyA['points'])
-        pB = self._try_build_poly(polyB['points'])
-        inter_area = pA.intersection(pB).area
-        iou = inter_area / (pA.area + pB.area - inter_area)
+        if polyA.get('points') and polyB.get('points'):
+            pA = self._try_build_poly(polyA['points'])
+            pB = self._try_build_poly(polyB['points'])
+            inter_area = pA.intersection(pB).area
+            iou = inter_area / (pA.area + pB.area - inter_area)
+        else:
+            iou = 0
         return iou
 
 
