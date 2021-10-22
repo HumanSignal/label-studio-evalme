@@ -529,3 +529,14 @@ def test_taxonomy_nested_label_config_2():
     assert pred == 0.5
     pred_vice = path_match_taxonomy(tree_subview_2, tree_subview_1)
     assert pred_vice == 1
+
+
+def test_htmltags_migration():
+    """
+    Test html tags migration
+    """
+    item_old = [{"id": "bEJvtrlNWk", "type": "hypertextlabels", "value": {"end": "/text()[1]", "text": "he other reviewers has mentioned that after watching just 1 Oz episode you ll be hooked. They are right, as this is exactly what happened with ", "start": "/text()[1]", "endOffset": 151, "htmllabels": ["Title"], "startOffset": 8, "globalOffsets": {"end": 151, "start": 8}}, "origin": "manual", "to_name": "text", "from_name": "ner"}]
+    item_new = [{"id": "j_TEwQ0aZc", "type": "hypertextlabels", "value": {"end": "/text()[1]", "text": "One of the other reviewers has mentioned that after watching just 1 Oz episode you ll be hooked. They are right, as this is exactly what happened with me.", "start": "/text()[1]", "endOffset": 154, "startOffset": 0, "globalOffsets": {"end": 154, "start": 0}, "hypertextlabels": ["Title"]}, "origin": "manual", "to_name": "text", "from_name": "ner"}]
+    html_tags1 = HTMLTagsEvalItem(raw_data=item_old, shape_key="hypertextlabels")
+    html_tags2 = HTMLTagsEvalItem(raw_data=item_new, shape_key="hypertextlabels")
+    assert html_tags1.intersection(html_tags2) > 0.9

@@ -150,7 +150,9 @@ class HTMLTagsEvalItem(TextTagsEvalItem):
 
     def spans_iou(self, x, y):
         # if labels are different returning 0 match
-        if not (set(x[self._shape_key]) == set(y[self._shape_key])):
+        x_set = set(x.get(self._shape_key, [])) or set(x.get('htmllabels', []))
+        y_set = set(y.get(self._shape_key, [])) or set(y.get('htmllabels', []))
+        if not (x_set == y_set):
             return 0
 
         # in case when substrings are presented - when can compute IOU using them
