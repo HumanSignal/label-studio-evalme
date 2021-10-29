@@ -9,7 +9,7 @@ class VideoObjectDetectionEvalItem(EvalItem):
             sequence = result['value']['sequence']
             if len(sequence) < 1:
                 continue
-            label = result['value'][result['type']]
+            label = result['value']['labels']
             sequence = sorted(sequence, key=lambda d: d['frame'])
             if len(sequence) < 2:
                 element = sequence.pop()
