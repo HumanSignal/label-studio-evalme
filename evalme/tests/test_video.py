@@ -6,9 +6,9 @@ def test_simple_example():
     example = [
         {
             "id": "tJhYZLMC9G",
-            "type": "videorectanglelabels",
+            "type": "videorectangle",
             "value": {
-                "videorectanglelabels": [
+                "labels": [
                     "Airplane"
                 ],
                 "sequence": [
