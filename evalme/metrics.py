@@ -137,7 +137,7 @@ class Metrics(object):
         # get metric params
         params = project.get("metric_params", {})
         # remove backup parameters
-        map(params.pop, [item for item in params if item.startswith("__")])
+        list(map(params.pop, [item for item in params if item.startswith("__")]))
         if per_label:
             score, n = defaultdict(int), defaultdict(int)
         else:
