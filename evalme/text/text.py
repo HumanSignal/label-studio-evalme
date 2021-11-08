@@ -58,7 +58,11 @@ class TextTagsEvalItem(EvalItem):
                 prefix = pred_value.get('when_label_value', '')
                 if prefix:
                     prefix += ':'
-                for l in pred_value[self._shape_key]:
+                if self._shape_key in pred_value:
+                    shape = self._shape_key
+                else:
+                    shape = self.SHAPE_KEY
+                for l in pred_value[shape]:
                     total_score[prefix + l] += best_matching_score
                     total_weight[prefix + l] += 1
             else:

@@ -540,3 +540,16 @@ def test_htmltags_migration():
     html_tags1 = HTMLTagsEvalItem(raw_data=item_old, shape_key="hypertextlabels")
     html_tags2 = HTMLTagsEvalItem(raw_data=item_new, shape_key="hypertextlabels")
     assert html_tags1.intersection(html_tags2) > 0.9
+    assert html_tags2.intersection(html_tags1) > 0.9
+
+
+def test_htmltags_migration_per_label():
+    """
+    Test html tags migration per label
+    """
+    item_old = [{"id": "bEJvtrlNWk", "type": "hypertextlabels", "value": {"end": "/text()[1]", "text": "he other reviewers has mentioned that after watching just 1 Oz episode you ll be hooked. They are right, as this is exactly what happened with ", "start": "/text()[1]", "endOffset": 151, "htmllabels": ["Title"], "startOffset": 8, "globalOffsets": {"end": 151, "start": 8}}, "origin": "manual", "to_name": "text", "from_name": "ner"}]
+    item_new = [{"id": "j_TEwQ0aZc", "type": "hypertextlabels", "value": {"end": "/text()[1]", "text": "One of the other reviewers has mentioned that after watching just 1 Oz episode you ll be hooked. They are right, as this is exactly what happened with me.", "start": "/text()[1]", "endOffset": 154, "startOffset": 0, "globalOffsets": {"end": 154, "start": 0}, "hypertextlabels": ["Title"]}, "origin": "manual", "to_name": "text", "from_name": "ner"}]
+    html_tags1 = HTMLTagsEvalItem(raw_data=item_old, shape_key="hypertextlabels")
+    html_tags2 = HTMLTagsEvalItem(raw_data=item_new, shape_key="hypertextlabels")
+    assert html_tags1.intersection(html_tags2, per_label=True) == {'Title': 0.9285714285714286}
+    assert html_tags2.intersection(html_tags1, per_label=True) == {'Title': 0.9285714285714286}
