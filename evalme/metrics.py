@@ -278,3 +278,31 @@ Metrics.register(
     func=naive,
     desc='Naive comparison of result dict'
 )
+
+
+def get_agreement(annotation_from,
+                  annotation_to,
+                  project_params={},
+                  per_label=False,
+                  metric_name=None):
+    """
+    Calculate scores between 2 Annotation instances
+    :param annotation_from: Ground truth annotation instance
+    :param annotation_to: Predicted annotation instance
+    :param project_params: Project parameters for matching score function [e.g. iou the project]
+    :param per_label: per_label calculation or overall
+    :param metric_name: Registred metric name for matching function
+    """
+
+    if per_label:
+        score = Metrics.apply(project_params,
+                              annotation_from,
+                              annotation_to,
+                              per_label=True,
+                              metric_name=metric_name)
+    else:
+        score = Metrics.apply(project_params,
+                              annotation_from,
+                              annotation_to,
+                              metric_name=metric_name)
+    return score
