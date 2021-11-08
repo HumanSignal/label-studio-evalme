@@ -289,7 +289,7 @@ def get_agreement(annotation_from,
     Calculate scores between 2 Annotation instances
     :param annotation_from: Ground truth annotation instance
     :param annotation_to: Predicted annotation instance
-    :param project_params: Project parameters for matching score function [e.g. iou the project]
+    :param project_params: Project parameters for matching score function [e.g. iou threshold]
     :param per_label: per_label calculation or overall
     :param metric_name: Registred metric name for matching function
     """

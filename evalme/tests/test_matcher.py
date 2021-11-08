@@ -1,6 +1,6 @@
 from evalme.matcher import Matcher
 
-from metrics import get_agreement
+from evalme.metrics import get_agreement
 
 
 def test_agreement_matrix():
