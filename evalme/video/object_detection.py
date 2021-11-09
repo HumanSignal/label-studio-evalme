@@ -4,6 +4,10 @@ class VideoObjectDetectionEvalItem(EvalItem):
     SHAPE_KEY = 'videorectanglelabels'
 
     def extract_key_frames(self):
+        """
+        Extract frames from key frames
+        :return: List of frames
+        """
         final_results = []
         for result in self._raw_data:
             sequence = result['value']['sequence']
@@ -13,63 +17,77 @@ class VideoObjectDetectionEvalItem(EvalItem):
             sequence = sorted(sequence, key=lambda d: d['frame'])
             if len(sequence) < 2:
                 element = sequence.pop()
-                final_results.append(
-                    {
-                        "id": result['id'],
-                        "type": "rectanglelabels",
-                        "value": {
-                            "rectanglelabels": label if isinstance(label, list) else [label],
-                            "x": element["x"],
-                            "y": element["y"],
-                            "width": element["width"],
-                            "height": element["height"],
-                            "rotation": element["rotation"],
-                            "frame": element["frame"]
-                        }
-                    }
+                final_results.extend(
+                    self._construct_result_from_frames(frame1=element,
+                                                       frame2={},
+                                                       res_type="rectanglelabels",
+                                                       res_id=result['id'],
+                                                       label=label,
+                                                       frameCount=result["value"].get("frameCount", 0),
+                                                       exclude_first=False)
                 )
             else:
-                for i in range(len(sequence)-1):
+                exclude_first = False
+                for i in range(len(sequence)):
                     frame_a = sequence[i]
-                    frame_b = sequence[i+1]
-                    final_results.extend(self._construct_result_from_frames(frame_a,
-                                                                            frame_b,
-                                                                            "rectanglelabels",
-                                                                            result['id'],
-                                                                            label))
+                    frame_b = {} if i == len(sequence)-1 else sequence[i+1]
+                    final_results.extend(self._construct_result_from_frames(frame1=frame_a,
+                                                                            frame2=frame_b,
+                                                                            res_type="rectanglelabels",
+                                                                            res_id=result['id'],
+                                                                            label=label,
+                                                                            frameCount=result["value"].get("frameCount", 0),
+                                                                            exclude_first=exclude_first))
+                    exclude_first = frame_a['enabled']
         return final_results
 
     @staticmethod
-    def _construct_result_from_frames(frame1, frame2, res_type, res_id, label):
+    def _construct_result_from_frames(frame1,
+                                      frame2,
+                                      res_type,
+                                      res_id,
+                                      label,
+                                      frameCount=0,
+                                      exclude_first=True):
+        """
+        Construct frames between 2 keyframes
+        :param frame1: First frame in sequence
+        :param frame2: Next frame in sequence
+        :param res_type: Result type (e.g. rectanglelabels)
+        :param res_id: Result id
+        :param label: Result label
+        :param frameCount: Total frame count in the video
+        :param exclude_first: Exclude first result to deduplicate results
+        :return: List of frames
+        """
         final_results = []
-        if frame1['frame'] > frame2['frame'] or (not frame1["enabled"]):
+        if not frame1["enabled"]:
             return []
-        frame_count = frame2['frame'] - frame1['frame'] + (1 if frame2["enabled"] else 0) # including both ends if frame2 enabled
-        for i in range(frame_count):
-            new_frame = {}
+        if len(frame2) > 0:
+            if frame1['frame'] > frame2['frame']:
+                return []
+            frame_count = frame2['frame'] - frame1['frame'] + 1
+        else:
+            frame_count = frameCount - frame1['frame'] + 1
+        start_i = 1 if exclude_first else 0
+        for i in range(start_i, frame_count):
             frame_number = i + frame1['frame']
-            not_moving = frame1["x"] == frame2["x"] and frame1["y"] == frame2["y"] and frame1["rotation"] == frame2["rotation"]
-            not_changing = frame1["width"] == frame2["width"] and frame1["height"] == frame2["height"]
-            new_frame["x"] = frame1["x"] if not_moving \
-                else (frame1["x"] + (frame2["x"] - frame1["x"]) * i / (frame_count - 1))
-            new_frame["y"] = frame1["y"] if not_moving \
-                else (frame1["y"] + (frame2["y"] - frame1["y"]) * i / (frame_count - 1))
-            new_frame["rotation"] = frame1["rotation"] if not_moving \
-                else (frame1["rotation"] + (frame2["rotation"] - frame1["rotation"]) * i / (frame_count - 1))
-            new_frame["width"] = frame1["width"] if not_changing \
-                else (frame1["width"] + (frame2["width"] - frame1["width"]) * i / (frame_count - 1))
-            new_frame["height"] = frame1["height"] if not_changing \
-                else (frame1["height"] + (frame2["height"] - frame1["height"]) * i / (frame_count - 1))
+            delta = i / (frame_count - 1)
+            x_delta = 0 if (frame1["x"] == frame2.get("x") or frame2 == {}) else (frame2.get("x", 0) - frame1["x"]) * delta
+            y_delta = 0 if (frame1["y"] == frame2.get("y") or frame2 == {}) else (frame2.get("y", 0) - frame1["y"]) * delta
+            rot_delta = 0 if (frame1["rotation"] == frame2.get("rotation") or frame2 == {}) else (frame2.get("rotation", 0) - frame1["rotation"]) * delta
+            width_delta = 0 if (frame1["width"] == frame2.get("width") or frame2 == {}) else (frame2.get("width", 0) - frame1["width"]) * delta
+            height_delta = 0 if (frame1["height"] == frame2.get("height") or frame2 == {}) else (frame2.get("height", 0) - frame1["height"]) * delta
             result = {
                 "id": res_id,
                 "type": res_type,
                 "value": {
                     res_type: label if isinstance(label, list) else [label],
-                    "x": new_frame["x"],
-                    "y": new_frame["y"],
-                    "width": new_frame["width"],
-                    "height": new_frame["height"],
-                    "rotation": new_frame["rotation"],
+                    "x": frame1["x"] + x_delta,
+                    "y": frame1["y"] + y_delta,
+                    "width": frame1["width"] + width_delta,
+                    "height": frame1["height"] + height_delta,
+                    "rotation": frame1["rotation"] + rot_delta,
                     "frame": frame_number
                 }
             }
