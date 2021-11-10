@@ -134,8 +134,10 @@ class Metrics(object):
             if b is None:
                 return a
             return min(a, b)
-
+        # get metric params
         params = project.get("metric_params", {})
+        # remove backup parameters
+        list(map(params.pop, [item for item in params if item.startswith("__")]))
         if per_label:
             score, n = defaultdict(int), defaultdict(int)
         else:
