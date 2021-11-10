@@ -292,17 +292,17 @@ def get_agreement(annotation_from,
     :param project_params: Project parameters for matching score function [e.g. iou threshold]
     :param per_label: per_label calculation or overall
     :param metric_name: Registred metric name for matching function
+    :return: For overall: float[0..1], for per_label tuple(Float[0..1], dict(Float[0..1]))
     """
-
+    score = Metrics.apply(project_params,
+                          annotation_from,
+                          annotation_to,
+                          metric_name=metric_name)
     if per_label:
-        score = Metrics.apply(project_params,
+        score_per_label = Metrics.apply(project_params,
                               annotation_from,
                               annotation_to,
                               per_label=True,
                               metric_name=metric_name)
-    else:
-        score = Metrics.apply(project_params,
-                              annotation_from,
-                              annotation_to,
-                              metric_name=metric_name)
+        return score, score_per_label
     return score

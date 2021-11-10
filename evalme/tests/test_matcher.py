@@ -56,6 +56,6 @@ def test_get_agreement_per_label():
                  "origin": "manual", "to_name": "text", "from_name": "ner"}]
 
     t1 = get_agreement(item_old, item_new, per_label=True)
-    assert t1 == {'No-label': 0.0, 'Title': 0.0}
+    assert t1[1] == {'No-label': 0.0, 'Title': 0.0}
     t2 = get_agreement(item_new, item_old, per_label=True)
-    assert t2 == {'No-label': 0.0, 'Title': 0.0}
+    assert t2[1] == {'No-label': 0.0, 'Title': 0.0}
