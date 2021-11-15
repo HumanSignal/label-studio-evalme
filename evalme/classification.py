@@ -95,6 +95,10 @@ def naive(x, y, per_label=False, **kwargs):
     """
     Naive comparison of annotations
     """
+    # extract results from annotations
+    if isinstance(x, dict) and isinstance(y, dict):
+        x = x.get("result", [])
+        y = y.get("result", [])
     if len(x) == 0 or len(y) == 0:
         return {} if per_label else 0
     if len(x) != len(y):
