@@ -92,7 +92,6 @@ class Metrics(object):
         Returns:
             Matching score averaged over all different "from_name"s with corresponding weights taken from project.control_weights  # noqa
         """
-        annotations_or_result = None
         # decide which object to use annotation-based or result-based
         if isinstance(result_first, dict) and isinstance(result_second, dict):
             annotations_or_result = True
@@ -115,7 +114,8 @@ class Metrics(object):
             result_type = cls.get_type(r)
             if result_type == 'rectangle':
                 # keep only rectangle if any and skip other control types
-                all_controls = {result_type: result_type}
+                # TODO: how we choose "label" and "text" region types here?
+                all_controls = {r['from_name']: result_type}
                 break
             all_controls[r['from_name']] = result_type
 
@@ -172,6 +172,7 @@ class Metrics(object):
                 if iou_threshold:
                     control_params['iou_threshold'] = iou_threshold
 
+            # TODO: control_type is taken from loop above - why is that?
             matching_func = get_matching_func(control_type, metric_name)
             if not matching_func:
                 logger.error(f'No matching function found for control type {control_type} in {project}.'

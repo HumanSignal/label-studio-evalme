@@ -476,3 +476,11 @@ def test_OCR_matching_function_not_matching_text():
     obj2 = OCREvalItem(res2)
 
     assert obj1.compare(obj2) == 0
+
+
+def test_simple_OCR_matching():
+    from evalme.metrics import Metrics
+    ann1 = [{'original_width': 768, 'original_height': 576, 'image_rotation': 0, 'value': {'x': 64.53333333333333, 'y': 59.502664298401434, 'width': 19.19999999999997, 'height': 12.07815275310836, 'rotation': 0}, 'id': '9VXbGdgh0T', 'from_name': 'bbox', 'to_name': 'image', 'type': 'rectangle', 'origin': 'manual'}, {'original_width': 768, 'original_height': 576, 'image_rotation': 0, 'value': {'x': 64.53333333333333, 'y': 59.502664298401434, 'width': 19.19999999999997, 'height': 12.07815275310836, 'rotation': 0, 'labels': ['Text']}, 'id': '9VXbGdgh0T', 'from_name': 'label', 'to_name': 'image', 'type': 'labels', 'origin': 'manual'}, {'original_width': 768, 'original_height': 576, 'image_rotation': 0, 'value': {'x': 64.53333333333333, 'y': 59.502664298401434, 'width': 19.19999999999997, 'height': 12.07815275310836, 'rotation': 0, 'text': ['17-RX-RR']}, 'id': '9VXbGdgh0T', 'from_name': 'transcription', 'to_name': 'image', 'type': 'textarea', 'origin': 'manual'}]
+    ann2 = [{'id': 'buquXLcKOL', 'type': 'rectangle', 'value': {'x': 63.6, 'y': 60.92362344582593, 'width': 20.666666666666668, 'height': 10.8348134991119, 'rotation': 0}, 'origin': 'manual', 'to_name': 'image', 'from_name': 'bbox', 'image_rotation': 0, 'original_width': 768, 'original_height': 576}, {'id': 'buquXLcKOL', 'type': 'labels', 'value': {'x': 63.6, 'y': 60.92362344582593, 'width': 20.666666666666668, 'height': 10.8348134991119, 'labels': ['Text'], 'rotation': 0}, 'origin': 'manual', 'to_name': 'image', 'from_name': 'label', 'image_rotation': 0, 'original_width': 768, 'original_height': 576}, {'id': 'buquXLcKOL', 'type': 'textarea', 'value': {'x': 63.6, 'y': 60.92362344582593, 'text': ['17-RX-RR'], 'width': 20.666666666666668, 'height': 10.8348134991119, 'rotation': 0}, 'origin': 'manual', 'to_name': 'image', 'from_name': 'transcription', 'image_rotation': 0, 'original_width': 768, 'original_height': 576}]
+    score = Metrics.apply({}, ann1, ann2, metric_name='OCR')
+    assert score > 0
