@@ -2,6 +2,8 @@ import pytest
 
 from evalme.image.object_detection import KeyPointsEvalItem, keypoints_distance, PolygonObjectDetectionEvalItem, OCREvalItem
 
+from object_detection import ocr_compare
+
 
 def test_keypoints_matching():
     '''
@@ -226,7 +228,7 @@ def test_object_detection_fixing_polygon():
 
     
 def test_OCR_matching_function():
-    res1 = [{
+    res1 = {"result": [{
             "id": "rSbk_pk1g-",
             "type": "rectangle",
             "value": {
@@ -273,8 +275,8 @@ def test_OCR_matching_function():
             "image_rotation": 0,
             "original_width": 584,
             "original_height": 216
-        }
-        ]
+            }
+        ]}
 
     obj1 = OCREvalItem(res1)
     obj2 = OCREvalItem(res1)
@@ -283,7 +285,7 @@ def test_OCR_matching_function():
 
 
 def test_OCR_matching_function_no_rectangle():
-    res1 = [{
+    res1 ={"result": [{
             "id": "rSbk_pk1g-",
             "type": "rectangle",
             "value": {
@@ -331,8 +333,8 @@ def test_OCR_matching_function_no_rectangle():
             "original_width": 584,
             "original_height": 216
         }
-        ]
-    res2 = [ {
+        ]}
+    res2 = {"result": [ {
             "id": "rSbk_pk1g",
             "type": "labels",
             "value": {
@@ -365,7 +367,7 @@ def test_OCR_matching_function_no_rectangle():
             "original_width": 584,
             "original_height": 216
         }
-        ]
+        ]}
 
     obj1 = OCREvalItem(res1)
     obj2 = OCREvalItem(res2)
@@ -374,7 +376,7 @@ def test_OCR_matching_function_no_rectangle():
 
 
 def test_OCR_matching_function_not_matching_text():
-    res1 = [{
+    res1 = {"result": [{
             "id": "rSbk_pk1g-",
             "type": "rectangle",
             "value": {
@@ -422,8 +424,8 @@ def test_OCR_matching_function_not_matching_text():
             "original_width": 584,
             "original_height": 216
         }
-        ]
-    res2 = [{
+        ]}
+    res2 = {"result": [{
         "id": "rSbk_pk1g",
         "type": "rectangle",
         "value": {
@@ -471,7 +473,7 @@ def test_OCR_matching_function_not_matching_text():
         "original_width": 584,
         "original_height": 216
     }
-    ]
+    ]}
     obj1 = OCREvalItem(res1)
     obj2 = OCREvalItem(res2)
 
@@ -480,7 +482,16 @@ def test_OCR_matching_function_not_matching_text():
 
 def test_simple_OCR_matching():
     from evalme.metrics import Metrics
-    ann1 = [{'original_width': 768, 'original_height': 576, 'image_rotation': 0, 'value': {'x': 64.53333333333333, 'y': 59.502664298401434, 'width': 19.19999999999997, 'height': 12.07815275310836, 'rotation': 0}, 'id': '9VXbGdgh0T', 'from_name': 'bbox', 'to_name': 'image', 'type': 'rectangle', 'origin': 'manual'}, {'original_width': 768, 'original_height': 576, 'image_rotation': 0, 'value': {'x': 64.53333333333333, 'y': 59.502664298401434, 'width': 19.19999999999997, 'height': 12.07815275310836, 'rotation': 0, 'labels': ['Text']}, 'id': '9VXbGdgh0T', 'from_name': 'label', 'to_name': 'image', 'type': 'labels', 'origin': 'manual'}, {'original_width': 768, 'original_height': 576, 'image_rotation': 0, 'value': {'x': 64.53333333333333, 'y': 59.502664298401434, 'width': 19.19999999999997, 'height': 12.07815275310836, 'rotation': 0, 'text': ['17-RX-RR']}, 'id': '9VXbGdgh0T', 'from_name': 'transcription', 'to_name': 'image', 'type': 'textarea', 'origin': 'manual'}]
-    ann2 = [{'id': 'buquXLcKOL', 'type': 'rectangle', 'value': {'x': 63.6, 'y': 60.92362344582593, 'width': 20.666666666666668, 'height': 10.8348134991119, 'rotation': 0}, 'origin': 'manual', 'to_name': 'image', 'from_name': 'bbox', 'image_rotation': 0, 'original_width': 768, 'original_height': 576}, {'id': 'buquXLcKOL', 'type': 'labels', 'value': {'x': 63.6, 'y': 60.92362344582593, 'width': 20.666666666666668, 'height': 10.8348134991119, 'labels': ['Text'], 'rotation': 0}, 'origin': 'manual', 'to_name': 'image', 'from_name': 'label', 'image_rotation': 0, 'original_width': 768, 'original_height': 576}, {'id': 'buquXLcKOL', 'type': 'textarea', 'value': {'x': 63.6, 'y': 60.92362344582593, 'text': ['17-RX-RR'], 'width': 20.666666666666668, 'height': 10.8348134991119, 'rotation': 0}, 'origin': 'manual', 'to_name': 'image', 'from_name': 'transcription', 'image_rotation': 0, 'original_width': 768, 'original_height': 576}]
+
+    Metrics.register(
+        name='OCR',
+        form='empty_form',
+        tag='all',
+        func=ocr_compare,
+        desc='OCR distance'
+    )
+
+    ann1 = {"result": [{'original_width': 768, 'original_height': 576, 'image_rotation': 0, 'value': {'x': 64.53333333333333, 'y': 59.502664298401434, 'width': 19.19999999999997, 'height': 12.07815275310836, 'rotation': 0}, 'id': '9VXbGdgh0T', 'from_name': 'bbox', 'to_name': 'image', 'type': 'rectangle', 'origin': 'manual'}, {'original_width': 768, 'original_height': 576, 'image_rotation': 0, 'value': {'x': 64.53333333333333, 'y': 59.502664298401434, 'width': 19.19999999999997, 'height': 12.07815275310836, 'rotation': 0, 'labels': ['Text']}, 'id': '9VXbGdgh0T', 'from_name': 'label', 'to_name': 'image', 'type': 'labels', 'origin': 'manual'}, {'original_width': 768, 'original_height': 576, 'image_rotation': 0, 'value': {'x': 64.53333333333333, 'y': 59.502664298401434, 'width': 19.19999999999997, 'height': 12.07815275310836, 'rotation': 0, 'text': ['17-RX-RR']}, 'id': '9VXbGdgh0T', 'from_name': 'transcription', 'to_name': 'image', 'type': 'textarea', 'origin': 'manual'}]}
+    ann2 = {"result": [{'id': 'buquXLcKOL', 'type': 'rectangle', 'value': {'x': 63.6, 'y': 60.92362344582593, 'width': 20.666666666666668, 'height': 10.8348134991119, 'rotation': 0}, 'origin': 'manual', 'to_name': 'image', 'from_name': 'bbox', 'image_rotation': 0, 'original_width': 768, 'original_height': 576}, {'id': 'buquXLcKOL', 'type': 'labels', 'value': {'x': 63.6, 'y': 60.92362344582593, 'width': 20.666666666666668, 'height': 10.8348134991119, 'labels': ['Text'], 'rotation': 0}, 'origin': 'manual', 'to_name': 'image', 'from_name': 'label', 'image_rotation': 0, 'original_width': 768, 'original_height': 576}, {'id': 'buquXLcKOL', 'type': 'textarea', 'value': {'x': 63.6, 'y': 60.92362344582593, 'text': ['17-RX-RR'], 'width': 20.666666666666668, 'height': 10.8348134991119, 'rotation': 0}, 'origin': 'manual', 'to_name': 'image', 'from_name': 'transcription', 'image_rotation': 0, 'original_width': 768, 'original_height': 576}]}
     score = Metrics.apply({}, ann1, ann2, metric_name='OCR')
     assert score > 0
