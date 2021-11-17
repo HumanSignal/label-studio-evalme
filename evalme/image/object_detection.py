@@ -475,20 +475,17 @@ class OCREvalItem(ObjectDetectionEvalItem):
                             if per_label:
                                 for item in pred_results_labels:
                                     for subitem in item:
-                                        results[subitem] += res
+                                        results[subitem] += res * score
                                         num_results[subitem] += 1
                             else:
-                                results[id_gt] = res
+                                results[id_gt] = res * score
                         else:
                             results[id_gt] = 0
                 else:
                     continue
 
         if per_label:
-            final_results = {}
-            for item in results:
-                final_results[item] = results[item] / max(num_results[item], 1)
-            return final_results
+            return results, num_results
         else:
             values = results.values()
             return sum(values) / len(values) if len(values) > 0 else 0
@@ -518,7 +515,7 @@ class OCREvalItem(ObjectDetectionEvalItem):
         Get results by ID
         """
         res = []
-        for result in self._raw_data:
+        for result in self._raw_data['result']:
             if result.get('id') == id:
                 res.append(result)
         return res
@@ -528,7 +525,7 @@ class OCREvalItem(ObjectDetectionEvalItem):
         Get IDs from results to group
         """
         res = set()
-        for result in self._raw_data:
+        for result in self._raw_data['result']:
             id = result.get('id')
             if id:
                 res.add(id)
@@ -693,7 +690,7 @@ def keypoints_distance(item_gt, item_pred, per_label=False, label_weights=None):
     return item_gt.distance(item_pred, label_weights=label_weights, per_label=per_label)
 
 
-def ocr_compare(item_gt, item_pred, per_label=False, iou_threshold=0.5, algorithm='Levenshtein', label_weights=None):
+def ocr_compare(item_gt, item_pred, per_label=False, iou_threshold=0.5, algorithm='Levenshtein', label_weights=None, control_weights=None):
     item_gt = _as_ocreval(item_gt)
     item_pred = _as_ocreval(item_pred)
     return item_gt.compare(item_pred, per_label=per_label, threshold=iou_threshold, algorithm=algorithm)
