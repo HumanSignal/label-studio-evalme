@@ -5,7 +5,11 @@ with open('README.md', 'r') as f:
 
 
 with open('requirements.txt') as f:
-    requirements = f.read().splitlines()
+    for line in f.read().splitlines():
+        if line.startswith('-e git+') or line.startswith('http'):
+            dependency_links.append(line.replace('-e ', ''))
+        else:
+            requirements.append(line)
 
 setuptools.setup(
     name='label-studio-evalme',
@@ -23,5 +27,6 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     install_requires=requirements,
+	dependency_links=dependency_links,
     python_requires='>=3.6',
 )
