@@ -3,7 +3,8 @@ import setuptools
 with open('README.md', 'r') as f:
     long_description = f.read()
 
-
+# Module dependencies
+requirements, dependency_links = [], []
 with open('requirements.txt') as f:
     for line in f.read().splitlines():
         if line.startswith('-e git+') or line.startswith('http'):
