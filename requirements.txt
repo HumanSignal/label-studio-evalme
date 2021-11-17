@@ -7,4 +7,4 @@ scipy==1.4.1
 attr==0.3.1
 xmljson==0.2.0
 lxml>=4.2.5
-label-studio-converter
+https://github.com/heartexlabs/label-studio-tools/archive/455e9c1d73d5737c1b31b8ca2fc1d2e018ac7665.zip
