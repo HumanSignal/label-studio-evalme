@@ -1,8 +1,6 @@
 import pytest
 
-from evalme.image.object_detection import KeyPointsEvalItem, keypoints_distance, PolygonObjectDetectionEvalItem, OCREvalItem
-
-from object_detection import ocr_compare
+from evalme.image.object_detection import KeyPointsEvalItem, keypoints_distance, PolygonObjectDetectionEvalItem, OCREvalItem, ocr_compare
 
 
 def test_keypoints_matching():
