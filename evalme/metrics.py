@@ -172,35 +172,35 @@ class Metrics(object):
                 if iou_threshold:
                     control_params['iou_threshold'] = iou_threshold
 
-            matching_func = get_matching_func(control_type, metric_name)
-            if not matching_func:
-                logger.error(f'No matching function found for control type {control_type} in {project}.'
-                             f'Using naive calculation.')
-                matching_func = cls._metrics.get('naive')
-            # identify if label config need
-            func_args = inspect.getfullargspec(matching_func.func)
-            if 'label_config' in func_args[0]:
-                control_params['label_config'] = project.get("label_config")
+                matching_func = get_matching_func(control_type, metric_name)
+                if not matching_func:
+                    logger.error(f'No matching function found for control type {control_type} in {project}.'
+                                 f'Using naive calculation.')
+                    matching_func = cls._metrics.get('naive')
+                # identify if label config need
+                func_args = inspect.getfullargspec(matching_func.func)
+                if 'label_config' in func_args[0]:
+                    control_params['label_config'] = project.get("label_config")
 
-            results_first_by_from_name = cls.filter_results_by_from_name(result_first, control_name)
-            results_second_by_from_name = cls.filter_results_by_from_name(result_second, control_name)
-            s = matching_func.func(results_first_by_from_name, results_second_by_from_name, **control_params)
-            if symmetric:
-                s_reversed = matching_func.func(results_second_by_from_name, results_first_by_from_name,
-                                                **control_params)
+                results_first_by_from_name = cls.filter_results_by_from_name(result_first, control_name)
+                results_second_by_from_name = cls.filter_results_by_from_name(result_second, control_name)
+                s = matching_func.func(results_first_by_from_name, results_second_by_from_name, **control_params)
+                if symmetric:
+                    s_reversed = matching_func.func(results_second_by_from_name, results_first_by_from_name,
+                                                    **control_params)
+                    if per_label:
+                        for label in set(list(s.keys()) + list(s_reversed.keys())):
+                            s[label] = symmetrize(s.get(label), s_reversed.get(label))
+                    else:
+                        s = symmetrize(s, s_reversed)
+    
                 if per_label:
-                    for label in set(list(s.keys()) + list(s_reversed.keys())):
-                        s[label] = symmetrize(s.get(label), s_reversed.get(label))
+                    for label in s:
+                        score[label] += s[label] * overall_weight
+                        n[label] += overall_weight
                 else:
-                    s = symmetrize(s, s_reversed)
-
-            if per_label:
-                for label in s:
-                    score[label] += s[label] * overall_weight
-                    n[label] += overall_weight
-            else:
-                score += s * overall_weight
-                n += overall_weight
+                    score += s * overall_weight
+                    n += overall_weight
 
         def clipped(s):
             if s > 1 or s < 0:
