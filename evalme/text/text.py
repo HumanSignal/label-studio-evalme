@@ -160,7 +160,7 @@ class HTMLTagsEvalItem(TextTagsEvalItem):
             return 0
 
         # in case when substrings are presented - when can compute IOU using them
-        if x.get('text') is not None and y.get('text') is not None:
+        if x.get('text') and y.get('text'):
             return self._spans_iou_by_text(x, y)
         # otherwise try using startOffset/endOffset for IOU
         else:
