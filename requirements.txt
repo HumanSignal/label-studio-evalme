@@ -7,4 +7,4 @@ scipy==1.4.1
 attr==0.3.1
 xmljson==0.2.0
 lxml>=4.2.5
-label-studio-converter==0.0.33rc5
+label-studio-converter==0.0.36
