@@ -23,7 +23,7 @@ class VideoObjectDetectionEvalItem(EvalItem):
                     self._construct_result_from_frames(frame1=element,
                                                        frame2={},
                                                        res_type="rectanglelabels",
-                                                       res_id=result['id'],
+                                                       res=result,
                                                        label=label,
                                                        frameCount=result["value"].get("frameCount", 0),
                                                        exclude_first=False)
@@ -36,7 +36,7 @@ class VideoObjectDetectionEvalItem(EvalItem):
                     final_results.extend(self._construct_result_from_frames(frame1=frame_a,
                                                                             frame2=frame_b,
                                                                             res_type="rectanglelabels",
-                                                                            res_id=result['id'],
+                                                                            res=result,
                                                                             label=label,
                                                                             frameCount=result["value"].get("frameCount", 0),
                                                                             exclude_first=exclude_first))
@@ -47,7 +47,7 @@ class VideoObjectDetectionEvalItem(EvalItem):
     def _construct_result_from_frames(frame1,
                                       frame2,
                                       res_type,
-                                      res_id,
+                                      res,
                                       label,
                                       frameCount=0,
                                       exclude_first=True):
@@ -56,7 +56,7 @@ class VideoObjectDetectionEvalItem(EvalItem):
         :param frame1: First frame in sequence
         :param frame2: Next frame in sequence
         :param res_type: Result type (e.g. rectanglelabels)
-        :param res_id: Result id
+        :param res: Result dict
         :param label: Result label
         :param frameCount: Total frame count in the video
         :param exclude_first: Exclude first result to deduplicate results
@@ -80,7 +80,7 @@ class VideoObjectDetectionEvalItem(EvalItem):
             rot_delta = 0 if (frame1["rotation"] == frame2.get("rotation") or frame2 == {}) else (frame2.get("rotation", 0) - frame1["rotation"]) * delta
             width_delta = 0 if (frame1["width"] == frame2.get("width") or frame2 == {}) else (frame2.get("width", 0) - frame1["width"]) * delta
             height_delta = 0 if (frame1["height"] == frame2.get("height") or frame2 == {}) else (frame2.get("height", 0) - frame1["height"]) * delta
-            result = deepcopy(res_id)
+            result = deepcopy(res)
             result["type"] = res_type
             result["value"] = {
                     res_type: label if isinstance(label, list) else [label],

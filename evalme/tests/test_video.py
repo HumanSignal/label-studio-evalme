@@ -34,7 +34,8 @@ def test_video_disabled_till_end():
                         "height": 34,
                         "rotation": 30
                     }
-                ]
+                ],
+                "from_name": "test"
             }
         }
     ]
@@ -46,6 +47,7 @@ def test_video_disabled_till_end():
     assert key_frames[0]['value']['width'] == 41
     assert key_frames[0]['value']['height'] == 22
     assert key_frames[0]['value']['rotation'] == 0
+    assert key_frames[0]['value']["from_name"] == "test"
     assert key_frames[4]['value']['x'] == 40
     assert key_frames[4]['value']['y'] == 49
     assert key_frames[4]['value']['width'] == 56
