@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 from evalme.eval_item import EvalItem
 
 class VideoObjectDetectionEvalItem(EvalItem):
@@ -78,10 +80,9 @@ class VideoObjectDetectionEvalItem(EvalItem):
             rot_delta = 0 if (frame1["rotation"] == frame2.get("rotation") or frame2 == {}) else (frame2.get("rotation", 0) - frame1["rotation"]) * delta
             width_delta = 0 if (frame1["width"] == frame2.get("width") or frame2 == {}) else (frame2.get("width", 0) - frame1["width"]) * delta
             height_delta = 0 if (frame1["height"] == frame2.get("height") or frame2 == {}) else (frame2.get("height", 0) - frame1["height"]) * delta
-            result = {
-                "id": res_id,
-                "type": res_type,
-                "value": {
+            result = deepcopy(res_id)
+            result["type"] = res_type
+            result["value"] = {
                     res_type: label if isinstance(label, list) else [label],
                     "x": frame1["x"] + x_delta,
                     "y": frame1["y"] + y_delta,
@@ -90,6 +91,5 @@ class VideoObjectDetectionEvalItem(EvalItem):
                     "rotation": frame1["rotation"] + rot_delta,
                     "frame": frame_number
                 }
-            }
             final_results.append(result)
         return final_results
