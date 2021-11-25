@@ -92,6 +92,7 @@ class Metrics(object):
         Returns:
             Matching score averaged over all different "from_name"s with corresponding weights taken from project.control_weights  # noqa
         """
+        annotations_or_result = None
         # decide which object to use annotation-based or result-based
         if isinstance(result_first, dict) and isinstance(result_second, dict):
             annotations_or_result = True
@@ -111,7 +112,7 @@ class Metrics(object):
             if 'from_name' not in r:
                 # we skip all non-control tag results like relations, etc.
                 continue
-            all_controls[r['from_name']] = cls.get_type(r)
+            all_controls[r['from_name']] = result_type
 
         def get_matching_func(control_type, name=None):
             if name:
