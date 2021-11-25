@@ -456,7 +456,7 @@ class OCREvalItem(ObjectDetectionEvalItem):
         pred_ids = pred._get_ids_from_results()
         # group result by group id and compare
         for id_gt in gt_ids:
-            # get groud truth results and types
+            # get ground truth results and types
             gt_results = self._get_results_by_id(id_gt)
             gt_types = self._get_types_from_results(gt_results)
             for id_pred in pred_ids:

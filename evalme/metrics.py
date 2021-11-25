@@ -92,7 +92,6 @@ class Metrics(object):
         Returns:
             Matching score averaged over all different "from_name"s with corresponding weights taken from project.control_weights  # noqa
         """
-        annotations_or_result = None
         # decide which object to use annotation-based or result-based
         if isinstance(result_first, dict) and isinstance(result_second, dict):
             annotations_or_result = True
@@ -112,7 +111,7 @@ class Metrics(object):
             if 'from_name' not in r:
                 # we skip all non-control tag results like relations, etc.
                 continue
-            all_controls[r['from_name']] = result_type
+            all_controls[r['from_name']] = cls.get_type(r)
 
         def get_matching_func(control_type, name=None):
             if name:
@@ -176,7 +175,7 @@ class Metrics(object):
                 func_args = inspect.getfullargspec(matching_func.func)
                 if 'label_config' in func_args[0]:
                     control_params['label_config'] = project.get("label_config")
-
+                # get result of certain control_name
                 results_first_by_from_name = cls.filter_results_by_from_name(result_first, control_name)
                 results_second_by_from_name = cls.filter_results_by_from_name(result_second, control_name)
                 s = matching_func.func(results_first_by_from_name, results_second_by_from_name, **control_params)
