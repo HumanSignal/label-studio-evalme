@@ -3,12 +3,20 @@ from evalme.text.text import HTMLTagsEvalItem, TaxonomyEvalItem, intersection_ta
 
 
 def test_not_matching():
+    """
+    HTMLTagsEvalItem test iou match
+    :return:
+    """
     test_data = [{
-        "text": "dann steht halt",
+        "start": 0,
+        "end": 10,
+        "text": "test_data",
         "htmllabels": ["Light negative"],
         },
         {
-            "text": "internet steht ein",
+            "start": 11,
+            "end": 20,
+            "text": "test_data",
             "htmllabels": ["Light negative"],
         }]
     obj = HTMLTagsEvalItem(raw_data=test_data)
@@ -18,12 +26,20 @@ def test_not_matching():
 
 def test_half_match():
     test_data = [{
-        "text": "first second ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+        "start": 120,
+        "end": 130,
+        "startOffset": 121,
+        "endOffset": 124,
         "htmllabels": ["Light"],
+        "text": "test_data",
         },
         {
-            "text": "ABCDEFGHIJKLMNOPQRSTUVWXYZ first second",
+            "start": 120,
+            "end": 130,
+            "startOffset": 122,
+            "endOffset": 125,
             "htmllabels": ["Light"],
+            "text": "different_text",
         }]
     obj = HTMLTagsEvalItem(raw_data=test_data)
     assert obj.spans_iou(test_data[0], test_data[1]) == 0.5
@@ -46,12 +62,20 @@ def test_different_labels():
 
 def test_full_part_another():
     test_data = [{
-        "text": "first second ABCDEFGHIJKLM",
+        "start": 120,
+        "end": 130,
+        "startOffset": 118,
+        "endOffset": 124,
         "htmllabels": ["Light"],
+        "text": "1",
     },
         {
-            "text": "ABCDEFGHIJKLM",
+            "start": 120,
+            "end": 130,
+            "startOffset": 121,
+            "endOffset": 124,
             "htmllabels": ["Light"],
+            "text": "22222",
         }]
     obj = HTMLTagsEvalItem(raw_data=test_data)
     assert obj.spans_iou(test_data[0], test_data[1]) == 0.5
@@ -60,11 +84,19 @@ def test_full_part_another():
 
 def test_hypertext_match():
     test_data = [{
+        "start": 120,
+        "end": 130,
+        "startOffset": 118,
+        "endOffset": 124,
         "text": "block1 <b><i>  block2 </i></b>",
         "htmllabels": ["Light"],
     },
         {
-            "text": "block2 </i></b>",
+            "start": 120,
+            "end": 130,
+            "startOffset": 121,
+            "endOffset": 124,
+            "text": "block1 <b><i>  block2 </i></b>",
             "htmllabels": ["Light"],
         }]
     obj = HTMLTagsEvalItem(raw_data=test_data)
