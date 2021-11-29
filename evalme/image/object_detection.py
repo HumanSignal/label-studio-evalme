@@ -441,16 +441,17 @@ class KeyPointsEvalItem(EvalItem):
 
 
 class OCREvalItem(ObjectDetectionEvalItem):
-    OCR_geo_tags = ['rectangle', 'rectangleLabels', 'brushLabels', 'polygonLabels']
+    OCR_SHAPES = ['rectangle', 'rectangleLabels', 'brushLabels', 'polygonLabels']
     SHAPE_KEY = 'rectangle'
 
     def compare(self, pred, threshold=0.5, algorithm='Levenshtein', per_label=False):
+        self.algorithm = algorithm
         # creating vars for results
         if per_label:
             results = defaultdict(float)
             num_results = defaultdict(int)
         else:
-            results = dict()
+            results = defaultdict(int)
         # getting group ids from results
         gt_ids = self._get_ids_from_results()
         pred_ids = pred._get_ids_from_results()
@@ -458,48 +459,38 @@ class OCREvalItem(ObjectDetectionEvalItem):
         for id_gt in gt_ids:
             # get ground truth results and types
             gt_results = self._get_results_by_id(id_gt)
-            gt_types = self._get_types_from_results(gt_results)
+            gt_types = gt_results.keys()
             for id_pred in pred_ids:
-                # get prediction results and types
+                # get prediction results and types from current id_pred
                 pred_results = pred._get_results_by_id(id_pred)
-                pred_types = self._get_types_from_results(pred_results)
-                # Tag for region selection [check OCR_geo_tags list]
-                rec_type = None
-                for item in OCREvalItem.OCR_geo_tags:
-                    if item in pred_types and item in gt_types:
-                        rec_type = item
-                # check if both groups have region selection tags
-                if rec_type in pred_types and rec_type in gt_types:
-                    gt_results_rectangle = [item for item in gt_results if item['type'] == rec_type]
-                    pred_results_rectangle = [item for item in pred_results if item['type'] == rec_type]
-                    # get max score for region selection
-                    score = self._get_max_iou_rectangles(gt_results_rectangle, pred_results_rectangle)
-                    if score < threshold:
-                        if not per_label:
-                            results[id_gt] = 0
-                    else:
-                        gt_results_labels = [item['value']['labels'] for item in gt_results if item['type'] == 'labels']
-                        pred_results_labels = [item['value']['labels'] for item in pred_results if item['type'] == 'labels']
-                        # compare labels
-                        if gt_results_labels == pred_results_labels:
-                            gt_results_text = TextAreaEvalItem([item for item in gt_results if item['type'] != 'labels' and item['type'] != rec_type])
-                            pred_results_text = TextAreaEvalItem([item for item in pred_results if item['type'] != 'labels' and item['type'] != rec_type])
-                            # compare text results
-                            res = gt_results_text.match(item=pred_results_text, algorithm=algorithm)
-                            if per_label:
-                                for item in pred_results_labels:
-                                    for subitem in item:
-                                        results[subitem] += res * score
-                                        num_results[subitem] += 1
-                            else:
-                                results[id_gt] = res * score
+                pred_types = pred_results.keys()
+                # Tag for region selection [check OCR_SHAPES list]
+                for rec_type in OCREvalItem.OCR_SHAPES:
+                    # check if both groups have region selection tags
+                    if rec_type in pred_types and rec_type in gt_types:
+                        # check labels and compare labels
+                        gt_results_labels = gt_results.get('labels', [])
+                        pred_results_labels = pred_results.get('labels', [])
+                        if len(gt_results_labels) > 1 \
+                                or len(pred_results_labels) > 1 \
+                                or gt_results_labels[0]['value']['labels'] != pred_results_labels[0]['value']['labels']:
+                            continue
+                        # get max score for region selection
+                        iou_score = self._get_max_iou_rectangles(gt_results[rec_type], pred_results[rec_type])
+                        if iou_score < threshold:
+                            continue
                         else:
-                            if not per_label:
-                                results[id_gt] = 0
-                else:
-                    if not per_label:
-                        results[id_gt] = 0
-
+                            # compare text results
+                            text_distance = self._compare_text_tags(pred_types=pred_types,
+                                                                    gt_results=gt_results,
+                                                                    pred_results=pred_results)
+                            if per_label:
+                                item = pred_results_labels[0]['value']['labels']
+                                for subitem in item:
+                                    results[subitem] += text_distance
+                                    num_results[subitem] += 1
+                            else:
+                                results[id_gt] = text_distance
         if per_label:
             return results, num_results
         else:
@@ -529,10 +520,10 @@ class OCREvalItem(ObjectDetectionEvalItem):
         """
         Get results by ID
         """
-        res = []
+        res = defaultdict(list)
         for result in self._raw_data['result']:
             if result.get('id') == id:
-                res.append(result)
+                res[result.get('type')].append(result)
         return res
 
     def _get_ids_from_results(self):
@@ -545,6 +536,24 @@ class OCREvalItem(ObjectDetectionEvalItem):
             if id:
                 res.add(id)
         return list(res)
+
+    def _compare_text_tags(self, pred_types, gt_results, pred_results):
+        text_tag_in_result = [item for item in pred_types if item != 'labels' and item not in OCREvalItem.OCR_SHAPES]
+        if len(text_tag_in_result) == 0:
+            return 0
+        elif len(text_tag_in_result) == 1:
+            gt_results_text = gt_results[text_tag_in_result[0]]
+            pred_results_text = pred_results[text_tag_in_result[0]]
+        else:
+            gt_results_text = []
+            pred_results_text = []
+            for text_tag in text_tag_in_result:
+                gt_results_text.extend(gt_results.get(text_tag, []))
+                pred_results_text.extend(gt_results.get(text_tag, []))
+        gt_results_text = TextAreaEvalItem(gt_results_text)
+        pred_results_text = TextAreaEvalItem(pred_results_text)
+        # compare text results
+        return gt_results_text.match(item=pred_results_text, algorithm=self.algorithm)
 
 
 class BrushEvalItem(ObjectDetectionEvalItem):
