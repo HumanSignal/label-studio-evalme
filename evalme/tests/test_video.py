@@ -58,6 +58,9 @@ def test_video_disabled_till_end():
     assert key_frames[2]['value']['width'] == 48.5
     assert key_frames[2]['value']['height'] == 28
     assert key_frames[2]['value']['rotation'] == 15
+    assert key_frames[2]['value']['auto']
+    assert not key_frames[0]['value'].get('auto')
+    assert not key_frames[4]['value'].get('auto')
 
 
 def test_video_enabled_till_end():
@@ -114,7 +117,9 @@ def test_video_enabled_till_end():
     assert key_frames[2]['value']['width'] == 41
     assert key_frames[2]['value']['height'] == 22
     assert key_frames[2]['value']['rotation'] == 0
-
+    assert key_frames[2]['value']['auto']
+    assert not key_frames[0]['value'].get('auto')
+    assert not key_frames[4]['value'].get('auto')
     assert key_frames[5]['value']['x'] == 40
     assert key_frames[5]['value']['y'] == 49
     assert key_frames[5]['value']['width'] == 41
@@ -130,6 +135,9 @@ def test_video_enabled_till_end():
     assert key_frames[9]['value']['width'] == 41
     assert key_frames[9]['value']['height'] == 22
     assert key_frames[9]['value']['rotation'] == 0
+    assert key_frames[8]['value']['auto']
+    assert key_frames[5]['value'].get('auto')
+    assert key_frames[9]['value'].get('auto')
 
 
 def test_video_enabled_till_end_one_frame():

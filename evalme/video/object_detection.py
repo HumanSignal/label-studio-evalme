@@ -91,5 +91,7 @@ class VideoObjectDetectionEvalItem(EvalItem):
                     "rotation": frame1["rotation"] + rot_delta,
                     "frame": frame_number
                 }
+            if frame_number not in [frame1.get('frame'), frame2.get('frame')]:
+                result["value"]["auto"] = True
             final_results.append(result)
         return final_results
