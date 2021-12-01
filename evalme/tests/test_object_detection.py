@@ -476,3 +476,14 @@ def test_OCR_matching_function_not_matching_text():
     obj2 = OCREvalItem(res2)
 
     assert obj1.compare(obj2) == 0
+
+
+def test_object_detection_fixing_polygon_DEV_1241():
+    points = [[99.92671109790739, 52.417244009876065], [22.546766669781675, 35.491168030165824],
+              [18.26294533794246, 35.51466141485176], [17.8606122208684, 35.50860330032362],
+              [16.759943037308105, 35.68492679061646], [15.31984355943602, 36.58928886165152],
+              [13.604996523539867, 37.98913432917478], [12.42893385709831, 39.34112972116927],
+              [11.840271661267224, 39.911875155516604], [11.897129124100752, 41.15941495416987]]
+    p = PolygonObjectDetectionEvalItem(raw_data=None)
+    polygon = p._try_build_poly(points)
+    assert polygon.is_valid
