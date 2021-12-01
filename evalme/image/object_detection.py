@@ -14,6 +14,7 @@ from shapely.ops import unary_union, polygonize
 from evalme.eval_item import EvalItem
 from evalme.utils import get_text_comparator, texts_similarity, Result
 from shapely.validation import explain_validity
+from shapely.validation import make_valid
 
 from evalme.text.text import TextAreaEvalItem
 
@@ -294,6 +295,10 @@ class PolygonObjectDetectionEvalItem(ObjectDetectionEvalItem):
     def _try_build_poly(self, points):
         poly = Polygon(points)
         # Everything is OK, points are valid polygon
+        if poly.is_valid:
+            return poly
+        # try making valid polygon
+        poly = make_valid(poly)
         if poly.is_valid:
             return poly
 
