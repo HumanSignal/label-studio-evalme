@@ -75,20 +75,18 @@ class VideoObjectDetectionEvalItem(EvalItem):
         for i in range(start_i, frame_count):
             frame_number = i + frame1['frame']
             delta = i / (frame_count - 1)
-            x_delta = 0 if (frame1["x"] == frame2.get("x") or frame2 == {}) else (frame2.get("x", 0) - frame1["x"]) * delta
-            y_delta = 0 if (frame1["y"] == frame2.get("y") or frame2 == {}) else (frame2.get("y", 0) - frame1["y"]) * delta
-            rot_delta = 0 if (frame1["rotation"] == frame2.get("rotation") or frame2 == {}) else (frame2.get("rotation", 0) - frame1["rotation"]) * delta
-            width_delta = 0 if (frame1["width"] == frame2.get("width") or frame2 == {}) else (frame2.get("width", 0) - frame1["width"]) * delta
-            height_delta = 0 if (frame1["height"] == frame2.get("height") or frame2 == {}) else (frame2.get("height", 0) - frame1["height"]) * delta
+            deltas = {}
+            for v in ["x", "y", "rotation", "width", "height"]:
+                deltas[v] = 0 if (frame1[v] == frame2.get(v) or not frame2) else (frame2.get(v, 0) - frame1[v]) * delta
             result = deepcopy(res)
             result["type"] = res_type
             result["value"] = {
                     res_type: label if isinstance(label, list) else [label],
-                    "x": frame1["x"] + x_delta,
-                    "y": frame1["y"] + y_delta,
-                    "width": frame1["width"] + width_delta,
-                    "height": frame1["height"] + height_delta,
-                    "rotation": frame1["rotation"] + rot_delta,
+                    "x": frame1["x"] + deltas["x"],
+                    "y": frame1["y"] + deltas["y"],
+                    "width": frame1["width"] + deltas["width"],
+                    "height": frame1["height"] + deltas["height"],
+                    "rotation": frame1["rotation"] + deltas["rotation"],
                     "frame": frame_number
                 }
             if frame_number not in [frame1.get('frame'), frame2.get('frame')]:
