@@ -493,3 +493,13 @@ def test_simple_OCR_matching():
     ann2 = {"result": [{'id': 'buquXLcKOL', 'type': 'rectangle', 'value': {'x': 63.6, 'y': 60.92362344582593, 'width': 20.666666666666668, 'height': 10.8348134991119, 'rotation': 0}, 'origin': 'manual', 'to_name': 'image', 'from_name': 'bbox', 'image_rotation': 0, 'original_width': 768, 'original_height': 576}, {'id': 'buquXLcKOL', 'type': 'labels', 'value': {'x': 63.6, 'y': 60.92362344582593, 'width': 20.666666666666668, 'height': 10.8348134991119, 'labels': ['Text'], 'rotation': 0}, 'origin': 'manual', 'to_name': 'image', 'from_name': 'label', 'image_rotation': 0, 'original_width': 768, 'original_height': 576}, {'id': 'buquXLcKOL', 'type': 'textarea', 'value': {'x': 63.6, 'y': 60.92362344582593, 'text': ['17-RX-RR'], 'width': 20.666666666666668, 'height': 10.8348134991119, 'rotation': 0}, 'origin': 'manual', 'to_name': 'image', 'from_name': 'transcription', 'image_rotation': 0, 'original_width': 768, 'original_height': 576}]}
     score = Metrics.apply({}, ann1, ann2, metric_name='OCR')
     assert score == 1.0
+
+def test_object_detection_fixing_polygon_DEV_1241():
+    points = [[99.92671109790739, 52.417244009876065], [22.546766669781675, 35.491168030165824],
+              [18.26294533794246, 35.51466141485176], [17.8606122208684, 35.50860330032362],
+              [16.759943037308105, 35.68492679061646], [15.31984355943602, 36.58928886165152],
+              [13.604996523539867, 37.98913432917478], [12.42893385709831, 39.34112972116927],
+              [11.840271661267224, 39.911875155516604], [11.897129124100752, 41.15941495416987]]
+    p = PolygonObjectDetectionEvalItem(raw_data=None)
+    polygon = p._try_build_poly(points)
+    assert polygon.is_valid
