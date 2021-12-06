@@ -441,10 +441,18 @@ class KeyPointsEvalItem(EvalItem):
 
 
 class OCREvalItem(ObjectDetectionEvalItem):
-    OCR_SHAPES = ['rectangle', 'rectangleLabels', 'brushLabels', 'polygonLabels']
+    OCR_SHAPES = ['rectangle', 'rectanglelabels', 'brushlabels', 'polygonlabels']
     SHAPE_KEY = 'rectangle'
 
-    def compare(self, pred, threshold=0.5, algorithm='Levenshtein', per_label=False):
+    def compare(self, pred, threshold: float = 0.5, algorithm: str = 'Levenshtein', per_label: bool = False):
+        """
+        Compare OCR annotations
+        :param pred: Predicted annotation results
+        :param threshold: IoU threshold for OCR shapes
+        :param algorithm: algorithm of comparing Text values
+        :param per_label: calculate per label or overall
+        :return: Score float[0..1] or Dict(label str: Score float[0..1])
+        """
         self.algorithm = algorithm
         # creating vars for results
         if per_label:
@@ -498,6 +506,12 @@ class OCREvalItem(ObjectDetectionEvalItem):
             return sum(values) / len(values) if len(values) > 0 else 0
 
     def _get_max_iou_rectangles(self, gt, pred):
+        """
+        Get max iou for OCR shapes
+        :param gt: Ground Truth result
+        :param pred: Predicted result
+        :return: Max score float[0..1]
+        """
         max_score = 0
         for item in gt:
             for pred_item in pred:
@@ -505,9 +519,11 @@ class OCREvalItem(ObjectDetectionEvalItem):
                 max_score = max(max_score, score)
         return max_score
 
-    def _get_types_from_results(self, results):
+    def _get_types_from_results(self, results: list):
         """
         Get types from results
+        :param results: Annotation results List
+        :return: set of Results types
         """
         res = set()
         for result in results:
@@ -518,17 +534,17 @@ class OCREvalItem(ObjectDetectionEvalItem):
 
     def _get_results_by_id(self, id):
         """
-        Get results by ID
+        Get list of results by ID
         """
         res = defaultdict(list)
         for result in self._raw_data['result']:
             if result.get('id') == id:
-                res[result.get('type')].append(result)
+                res[result['type'].lower()].append(result)
         return res
 
     def _get_ids_from_results(self):
         """
-        Get IDs from results to group
+        Get result IDs from results to group
         """
         res = set()
         for result in self._raw_data['result']:
@@ -538,9 +554,18 @@ class OCREvalItem(ObjectDetectionEvalItem):
         return list(res)
 
     def _compare_text_tags(self, pred_types, gt_results, pred_results):
+        """
+        Compare text in OCR results
+        :param pred_types: Types of results in annotation
+        :param gt_results: Results of ground truth annotation
+        :param pred_results: Results of predicted annotation
+        :return: Score float[0..1]
+        """
         text_tag_in_result = [item for item in pred_types if item != 'labels' and item not in OCREvalItem.OCR_SHAPES]
+        # return 0 if there are no text tag in result
         if len(text_tag_in_result) == 0:
             return 0
+        # construct list of text results
         elif len(text_tag_in_result) == 1:
             gt_results_text = gt_results[text_tag_in_result[0]]
             pred_results_text = pred_results[text_tag_in_result[0]]
