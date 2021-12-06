@@ -23,6 +23,8 @@ class MetricWrapper(object):
     func = attr.ib()
     tag = attr.ib()
     is_default = attr.ib(default=True)
+    tags = attr.ib(default=[])
+
 
 
 class Metrics(object):
@@ -34,8 +36,8 @@ class Metrics(object):
         return tag.lower()
 
     @classmethod
-    def register(cls, name, form, tag, func, desc, is_default=True):
-        cls._metrics[name] = MetricWrapper(name, form, desc, func, cls._norm_tag(tag), is_default)
+    def register(cls, name, form, tag, func, desc, is_default=True, tags=None):
+        cls._metrics[name] = MetricWrapper(name, form, desc, func, cls._norm_tag(tag), is_default, tags)
 
     @classmethod
     def get_schema(cls, tag):
