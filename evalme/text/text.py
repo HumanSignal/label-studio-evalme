@@ -158,13 +158,8 @@ class HTMLTagsEvalItem(TextTagsEvalItem):
         y_set = set(y.get(self._shape_key, [])) or set(y.get('htmllabels', []))
         if not (x_set == y_set):
             return 0
-
-        # in case when substrings are presented - when can compute IOU using them
-        if x.get('text') is not None and y.get('text') is not None:
-            return self._spans_iou_by_text(x, y)
-        # otherwise try using startOffset/endOffset for IOU
-        else:
-            return self._spans_iou_by_start_end_offsets(x, y)
+        # try using startOffset/endOffset for IOU
+        return self._spans_iou_by_start_end_offsets(x, y)
 
     def _match(self, x, y, f):
         x_res = x.get(self._shape_key) or x.get('htmllabels')
