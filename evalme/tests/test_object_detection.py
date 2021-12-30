@@ -494,6 +494,7 @@ def test_simple_OCR_matching():
     score = Metrics.apply({}, ann1, ann2, metric_name='OCR')
     assert score == 1.0
 
+
 def test_object_detection_fixing_polygon_DEV_1241():
     points = [[99.92671109790739, 52.417244009876065], [22.546766669781675, 35.491168030165824],
               [18.26294533794246, 35.51466141485176], [17.8606122208684, 35.50860330032362],
@@ -503,3 +504,52 @@ def test_object_detection_fixing_polygon_DEV_1241():
     p = PolygonObjectDetectionEvalItem(raw_data=None)
     polygon = p._try_build_poly(points)
     assert polygon.is_valid
+
+
+def test_OCR_matching_with_several_control_types():
+    """
+
+    :return:
+    """
+    from evalme.metrics import Metrics
+
+    Metrics.register(
+        name='OCR',
+        form='empty_form',
+        tag='all',
+        func=ocr_compare,
+        desc='OCR distance'
+    )
+
+    ann1 = {"result": [{"id": "PMAZ9d76PO", "type": "rectangle",
+                        "value": {"x": 15, "y": 18.333333333333332, "width": 44.375, "height": 16.666666666666664,
+                                  "rotation": 0}, "origin": "manual", "to_name": "image", "from_name": "bbox",
+                        "image_rotation": 0, "original_width": 320, "original_height": 240},
+                       {"id": "PMAZ9d76PO", "type": "labels",
+                        "value": {"x": 15, "y": 18.333333333333332, "width": 44.375, "height": 16.666666666666664,
+                                  "labels": ["Text"], "rotation": 0}, "origin": "manual", "to_name": "image",
+                        "from_name": "label", "image_rotation": 0, "original_width": 320, "original_height": 240},
+                       {"id": "PMAZ9d76PO", "type": "textarea",
+                        "value": {"x": 15, "y": 18.333333333333332, "text": ["Text"], "width": 44.375,
+                                  "height": 16.666666666666664, "rotation": 0}, "origin": "manual", "to_name": "image",
+                        "from_name": "transcription", "image_rotation": 0, "original_width": 320,
+                        "original_height": 240},
+                       {"id": "IgTTgpaMvm", "type": "textarea", "value": {"text": ["Text"]}, "origin": "manual",
+                        "to_name": "audio", "from_name": "transcription1"}]}
+    ann2 = {"result": [{"id": "eB4V3hkedQ", "type": "rectangle",
+                        "value": {"x": 14.0625, "y": 18.333333333333332, "width": 41.5625, "height": 17.083333333333332,
+                                  "rotation": 0}, "origin": "manual", "to_name": "image", "from_name": "bbox",
+                        "image_rotation": 0, "original_width": 320, "original_height": 240},
+                       {"id": "eB4V3hkedQ", "type": "labels",
+                        "value": {"x": 14.0625, "y": 18.333333333333332, "width": 41.5625, "height": 17.083333333333332,
+                                  "labels": ["Text"], "rotation": 0}, "origin": "manual", "to_name": "image",
+                        "from_name": "label", "image_rotation": 0, "original_width": 320, "original_height": 240},
+                       {"id": "eB4V3hkedQ", "type": "textarea",
+                        "value": {"x": 14.0625, "y": 18.333333333333332, "text": ["Text"], "width": 41.5625,
+                                  "height": 17.083333333333332, "rotation": 0}, "origin": "manual", "to_name": "image",
+                        "from_name": "transcription", "image_rotation": 0, "original_width": 320,
+                        "original_height": 240},
+                       {"id": "3Qx2-JNxjz", "type": "textarea", "value": {"text": ["Text"]}, "origin": "manual",
+                        "to_name": "audio", "from_name": "transcription1"}]}
+    score = Metrics.apply({}, ann1, ann2, metric_name='OCR')
+    assert score == 1.0
