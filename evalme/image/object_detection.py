@@ -444,16 +444,20 @@ class OCREvalItem(ObjectDetectionEvalItem):
     OCR_SHAPES = ['rectangle', 'rectanglelabels', 'brushlabels', 'polygonlabels']
     SHAPE_KEY = 'rectangle'
 
-    def compare(self, pred, threshold: float = 0.5, algorithm: str = 'Levenshtein', per_label: bool = False):
+    def compare(self, pred,
+                threshold: float = 0.5,
+                algorithm: str = 'Levenshtein',
+                per_label: bool = False,
+                qval: int = 1):
         """
         Compare OCR annotations
         :param pred: Predicted annotation results
         :param threshold: IoU threshold for OCR shapes
         :param algorithm: algorithm of comparing Text values
         :param per_label: calculate per label or overall
+        :param qval: q-value for split sequences into q-grams https://pypi.org/project/textdistance/
         :return: Score float[0..1] or Dict(label str: Score float[0..1])
         """
-        self.algorithm = algorithm
         # creating vars for results
         if per_label:
             results = defaultdict(float)
@@ -491,7 +495,9 @@ class OCREvalItem(ObjectDetectionEvalItem):
                             # compare text results
                             text_distance = self._compare_text_tags(pred_types=pred_types,
                                                                     gt_results=gt_results,
-                                                                    pred_results=pred_results)
+                                                                    pred_results=pred_results,
+                                                                    algorithm=algorithm,
+                                                                    qval=qval)
                             if per_label:
                                 item = pred_results_labels[0]['value']['labels']
                                 for subitem in item:
@@ -553,12 +559,19 @@ class OCREvalItem(ObjectDetectionEvalItem):
                 res.add(id)
         return list(res)
 
-    def _compare_text_tags(self, pred_types, gt_results, pred_results):
+    def _compare_text_tags(self,
+                           pred_types,
+                           gt_results,
+                           pred_results,
+                           algorithm: str = 'Levenshtein',
+                           qval: int = 1):
         """
         Compare text in OCR results
         :param pred_types: Types of results in annotation
         :param gt_results: Results of ground truth annotation
         :param pred_results: Results of predicted annotation
+        :param algorithm: algorithm of comparing Text values
+        :param qval: q-value for split sequences into q-grams
         :return: Score float[0..1]
         """
         text_tag_in_result = [item for item in pred_types if item != 'labels' and item not in OCREvalItem.OCR_SHAPES]
@@ -578,7 +591,9 @@ class OCREvalItem(ObjectDetectionEvalItem):
         gt_results_text = TextAreaEvalItem(gt_results_text)
         pred_results_text = TextAreaEvalItem(pred_results_text)
         # compare text results
-        return gt_results_text.match(item=pred_results_text, algorithm=self.algorithm)
+        return gt_results_text.match(item=pred_results_text,
+                                     algorithm=algorithm,
+                                     qval=qval)
 
 
 class BrushEvalItem(ObjectDetectionEvalItem):
@@ -739,10 +754,20 @@ def keypoints_distance(item_gt, item_pred, per_label=False, label_weights=None):
     return item_gt.distance(item_pred, label_weights=label_weights, per_label=per_label)
 
 
-def ocr_compare(item_gt, item_pred, per_label=False, iou_threshold=0.5, algorithm='Levenshtein', label_weights=None, control_weights=None):
+def ocr_compare(item_gt, item_pred,
+                per_label=False,
+                iou_threshold=0.5,
+                algorithm='Levenshtein',
+                qval=1,
+                label_weights=None,
+                control_weights=None):
     item_gt = _as_ocreval(item_gt)
     item_pred = _as_ocreval(item_pred)
-    return item_gt.compare(item_pred, per_label=per_label, threshold=iou_threshold, algorithm=algorithm)
+    return item_gt.compare(item_pred,
+                           per_label=per_label,
+                           threshold=iou_threshold,
+                           algorithm=algorithm,
+                           qval=qval)
 
 
 def iou_brush(item_gt, item_pred, per_label=False, label_weights=None):
