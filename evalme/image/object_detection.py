@@ -446,60 +446,83 @@ class KeyPointsEvalItem(EvalItem):
 
 
 class OCREvalItem(ObjectDetectionEvalItem):
+    OCR_SHAPES = ['rectangle', 'rectanglelabels', 'brushlabels', 'polygonlabels']
     SHAPE_KEY = 'rectangle'
 
-    def compare(self, pred, threshold=0.5, algorithm='Levenshtein', per_label=False):
+    def compare(self, pred,
+                threshold: float = 0.5,
+                algorithm: str = 'Levenshtein',
+                per_label: bool = False,
+                qval: int = 1):
+        """
+        Compare OCR annotations
+        :param pred: Predicted annotation results
+        :param threshold: IoU threshold for OCR shapes
+        :param algorithm: algorithm of comparing Text values
+        :param per_label: calculate per label or overall
+        :param qval: q-value for split sequences into q-grams https://pypi.org/project/textdistance/
+        :return: Score float[0..1] or Dict(label str: Score float[0..1])
+        """
+        # creating vars for results
         if per_label:
             results = defaultdict(float)
             num_results = defaultdict(int)
         else:
-            results = dict()
-
+            results = defaultdict(int)
+        # getting group ids from results
         gt_ids = self._get_ids_from_results()
         pred_ids = pred._get_ids_from_results()
-
+        # group result by group id and compare
         for id_gt in gt_ids:
+            # get ground truth results and types
             gt_results = self._get_results_by_id(id_gt)
-            gt_types = self._get_types_from_results(gt_results)
+            gt_types = gt_results.keys()
             for id_pred in pred_ids:
+                # get prediction results and types from current id_pred
                 pred_results = pred._get_results_by_id(id_pred)
-                pred_types = self._get_types_from_results(pred_results)
-                if 'rectangle' in pred_types and 'rectangle' in gt_types:
-                    gt_results_rectangle = [item for item in gt_results if item['type'] == 'rectangle']
-                    pred_results_rectangle = [item for item in pred_results if item['type'] == 'rectangle']
-                    score = self._get_max_iou_rectangles(gt_results_rectangle, pred_results_rectangle, threshold)
-                    if score < threshold:
-                        results[id_gt] = 0
-                    else:
-                        gt_results_labels = [item['value']['labels'] for item in gt_results if item['type'] == 'labels']
-                        pred_results_labels = [item['value']['labels'] for item in pred_results if item['type'] == 'labels']
-                        if gt_results_labels == pred_results_labels:
-                            gt_results_text = TextAreaEvalItem([item for item in gt_results if item['type'] != 'labels' and item['type'] != 'rectangle'])
-                            pred_results_text = TextAreaEvalItem([item for item in pred_results if item['type'] != 'labels' and item['type'] != 'rectangle'])
-                            res = gt_results_text.match(item=pred_results_text, algorithm=algorithm)
-                            if per_label:
-                                for item in pred_results_labels:
-                                    for subitem in item:
-                                        results[subitem] += res
-                                        num_results[subitem] += 1
-                            else:
-                                results[id_gt] = res
+                pred_types = pred_results.keys()
+                # Tag for region selection [check OCR_SHAPES list]
+                for rec_type in OCREvalItem.OCR_SHAPES:
+                    # check if both groups have region selection tags
+                    if rec_type in pred_types and rec_type in gt_types:
+                        # check labels and compare labels
+                        gt_results_labels = gt_results.get('labels', [])
+                        pred_results_labels = pred_results.get('labels', [])
+                        if len(gt_results_labels) > 1 \
+                                or len(pred_results_labels) > 1 \
+                                or gt_results_labels[0]['value']['labels'] != pred_results_labels[0]['value']['labels']:
+                            continue
+                        # get max score for region selection
+                        iou_score = self._get_max_iou_rectangles(gt_results[rec_type], pred_results[rec_type])
+                        if iou_score < threshold:
+                            continue
                         else:
-                            results[id_gt] = 0
-                else:
-                    continue
-
+                            # compare text results
+                            text_distance = self._compare_text_tags(pred_types=pred_types,
+                                                                    gt_results=gt_results,
+                                                                    pred_results=pred_results,
+                                                                    algorithm=algorithm,
+                                                                    qval=qval)
+                            if per_label:
+                                item = pred_results_labels[0]['value']['labels']
+                                for subitem in item:
+                                    results[subitem] += text_distance
+                                    num_results[subitem] += 1
+                            else:
+                                results[id_gt] = text_distance
         if per_label:
-            final_results = {}
-            for item in results:
-                final_results[item] = results[item] / max(num_results[item], 1)
-            return final_results
+            return results, num_results
         else:
             values = results.values()
             return sum(values) / len(values) if len(values) > 0 else 0
 
-
-    def _get_max_iou_rectangles(self, gt, pred, threshold):
+    def _get_max_iou_rectangles(self, gt, pred):
+        """
+        Get max iou for OCR shapes
+        :param gt: Ground Truth result
+        :param pred: Predicted result
+        :return: Max score float[0..1]
+        """
         max_score = 0
         for item in gt:
             for pred_item in pred:
@@ -507,9 +530,11 @@ class OCREvalItem(ObjectDetectionEvalItem):
                 max_score = max(max_score, score)
         return max_score
 
-    def _get_types_from_results(self, results):
+    def _get_types_from_results(self, results: list):
         """
         Get types from results
+        :param results: Annotation results List
+        :return: set of Results types
         """
         res = set()
         for result in results:
@@ -520,24 +545,60 @@ class OCREvalItem(ObjectDetectionEvalItem):
 
     def _get_results_by_id(self, id):
         """
-        Get results by ID
+        Get list of results by ID
         """
-        res = []
-        for result in self._raw_data:
+        res = defaultdict(list)
+        for result in self._raw_data['result']:
             if result.get('id') == id:
-                res.append(result)
+                res[result['type'].lower()].append(result)
         return res
 
     def _get_ids_from_results(self):
         """
-        Get IDs from results to group
+        Get result IDs from results to group
         """
         res = set()
-        for result in self._raw_data:
+        for result in self._raw_data['result']:
             id = result.get('id')
             if id:
                 res.add(id)
         return list(res)
+
+    def _compare_text_tags(self,
+                           pred_types,
+                           gt_results,
+                           pred_results,
+                           algorithm: str = 'Levenshtein',
+                           qval: int = 1):
+        """
+        Compare text in OCR results
+        :param pred_types: Types of results in annotation
+        :param gt_results: Results of ground truth annotation
+        :param pred_results: Results of predicted annotation
+        :param algorithm: algorithm of comparing Text values
+        :param qval: q-value for split sequences into q-grams
+        :return: Score float[0..1]
+        """
+        text_tag_in_result = [item for item in pred_types if item != 'labels' and item not in OCREvalItem.OCR_SHAPES]
+        # return 0 if there are no text tag in result
+        if len(text_tag_in_result) == 0:
+            return 0
+        # construct list of text results
+        elif len(text_tag_in_result) == 1:
+            gt_results_text = gt_results[text_tag_in_result[0]]
+            pred_results_text = pred_results[text_tag_in_result[0]]
+        else:
+            gt_results_text = []
+            pred_results_text = []
+            for text_tag in text_tag_in_result:
+                gt_results_text.extend(gt_results.get(text_tag, []))
+                pred_results_text.extend(gt_results.get(text_tag, []))
+        gt_results_text = TextAreaEvalItem(gt_results_text)
+        pred_results_text = TextAreaEvalItem(pred_results_text)
+        # compare text results
+        return gt_results_text.match(item=pred_results_text,
+                                     algorithm=algorithm,
+                                     qval=qval)
 
 
 class BrushEvalItem(ObjectDetectionEvalItem):
@@ -698,10 +759,20 @@ def keypoints_distance(item_gt, item_pred, per_label=False, label_weights=None):
     return item_gt.distance(item_pred, label_weights=label_weights, per_label=per_label)
 
 
-def ocr_compare(item_gt, item_pred, per_label=False, iou_threshold=0.5, algorithm='Levenshtein', label_weights=None):
+def ocr_compare(item_gt, item_pred,
+                per_label=False,
+                iou_threshold=0.5,
+                algorithm='Levenshtein',
+                qval=1,
+                label_weights=None,
+                control_weights=None):
     item_gt = _as_ocreval(item_gt)
     item_pred = _as_ocreval(item_pred)
-    return item_gt.compare(item_pred, per_label=per_label, threshold=iou_threshold, algorithm=algorithm)
+    return item_gt.compare(item_pred,
+                           per_label=per_label,
+                           threshold=iou_threshold,
+                           algorithm=algorithm,
+                           qval=qval)
 
 
 def iou_brush(item_gt, item_pred, per_label=False, label_weights=None):
