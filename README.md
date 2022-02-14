@@ -114,11 +114,10 @@ print(matrix)
 ## Contribute!
 The Label Studio team is hard at work adding even more metrics, but we're looking for incredible contributors like you to submit new metrics and improve existing ones!
 
-Join our [Slack community](https://join.slack.com/t/label-studio/shared_invite/zt-cr8b7ygm-6L45z7biEBw4HXa5A2b5pw)
-to get help becoming a contributor!
+Join our [Slack community](https://slack.labelstudio.heartex.com) to get help becoming a contributor!
 
 ## Community
-For help or questions, join our huge community on [Slack](https://join.slack.com/t/label-studio/shared_invite/zt-cr8b7ygm-6L45z7biEBw4HXa5A2b5pw)!
+For help or questions, join our huge community on [Slack](https://slack.labelstudio.heartex.com)!
 
 ## License
 Please observe the MIT License that is listed in this repository. 
