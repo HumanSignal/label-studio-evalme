@@ -485,24 +485,28 @@ class OCREvalItem(ObjectDetectionEvalItem):
                 for rec_type in OCREvalItem.OCR_SHAPES:
                     # check if both groups have region selection tags
                     if rec_type in pred_types and rec_type in gt_types:
-                        # check labels and compare labels
-                        gt_results_labels = gt_results.get('labels', [])
-                        pred_results_labels = pred_results.get('labels', [])
-                        if len(gt_results_labels) > 1 \
-                                or len(pred_results_labels) > 1 \
-                                or gt_results_labels[0]['value']['labels'] != pred_results_labels[0]['value']['labels']:
-                            continue
                         # get max score for region selection
                         iou_score = self._get_max_iou_rectangles(gt_results[rec_type], pred_results[rec_type])
                         if iou_score < threshold:
                             continue
                         else:
-                            # compare text results
-                            text_distance = self._compare_text_tags(pred_types=pred_types,
-                                                                    gt_results=gt_results,
-                                                                    pred_results=pred_results,
-                                                                    algorithm=algorithm,
-                                                                    qval=qval)
+                            # check labels and compare labels
+                            gt_results_labels = gt_results.get('labels', [])
+                            pred_results_labels = pred_results.get('labels', [])
+                            if len(gt_results_labels) == 1 and \
+                                    len(pred_results_labels) == 1 and \
+                                    gt_results_labels[0]['value']['labels'] == \
+                                    pred_results_labels[0]['value']['labels']:
+                                # compare text results
+                                text_distance = self._compare_text_tags(pred_types=pred_types,
+                                                                        gt_results=gt_results,
+                                                                        pred_results=pred_results,
+                                                                        algorithm=algorithm,
+                                                                        qval=qval)
+                            else:
+                                # in case of different labels or many labels
+                                text_distance = 0
+                            # prepare result
                             if per_label:
                                 item = pred_results_labels[0]['value']['labels']
                                 for subitem in item:
