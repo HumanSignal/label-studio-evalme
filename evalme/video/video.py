@@ -11,6 +11,13 @@ class VideoEvalItem(EvalItem):
     SHAPE_KEY = 'videorectangle'
 
     def iou_over_time(self, pred, per_label=False):
+        """
+        IOU over time for video frames
+
+        :param pred: Predicted VideoEvalItem
+        :param per_label: per label calcu;ation flag
+        :return: float or dict of floats
+        """
         # prepare results vars for per_label
         if per_label:
             results = defaultdict(float)
@@ -21,7 +28,7 @@ class VideoEvalItem(EvalItem):
         # extract ALL frames from raw data
         gt_frames_results = self.get_frames()
         pred_frames_results = pred.get_frames()
-        # check each predicted frame set score with groud truth
+        # check each predicted frame set score with ground truth frame set
         for pred_frame in pred_frames_results:
             if per_label:
                 max_value = {}
@@ -43,7 +50,7 @@ class VideoEvalItem(EvalItem):
             else:
                 results += max_value
                 results_count += 1
-
+        # construct final scores
         if per_label:
             for key in results:
                 results[key] = results[key] / results_count[key]
