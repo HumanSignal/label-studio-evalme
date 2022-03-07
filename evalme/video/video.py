@@ -3,8 +3,7 @@ from collections import defaultdict
 from label_studio_tools.postprocessing.video import extract_key_frames
 
 from evalme.eval_item import EvalItem
-
-from image.object_detection import ObjectDetectionEvalItem
+from evalme.image.object_detection import ObjectDetectionEvalItem
 
 
 class VideoEvalItem(EvalItem):
