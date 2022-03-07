@@ -119,3 +119,15 @@ class VideoEvalItem(EvalItem):
         for frame in frames:
             result[frame['frame']] = frame
         return result
+
+
+def _as_video(item):
+    if not isinstance(item, VideoEvalItem):
+        return VideoEvalItem(item)
+    return item
+
+
+def video_iou(item_gt, item_pred, label_weights=None, per_label=False):
+    item_gt = _as_video(item_gt)
+    item_pred = _as_video(item_pred)
+    return item_gt.iou_over_time(item_pred, per_label=per_label)
