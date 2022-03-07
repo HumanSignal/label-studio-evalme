@@ -1,4 +1,4 @@
-from video.video import VideoEvalItem
+from evalme.video.video import VideoEvalItem
 
 
 def test_video_same_example():
