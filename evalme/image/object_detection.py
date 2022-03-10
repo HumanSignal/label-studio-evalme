@@ -475,11 +475,11 @@ class OCREvalItem(ObjectDetectionEvalItem):
         # group result by group id and compare
         for id_gt in gt_ids:
             # get ground truth results and types
-            gt_results = self._get_results_by_id(id_gt)
+            gt_results = gt_ids[id_gt]
             gt_types = gt_results.keys()
             for id_pred in pred_ids:
                 # get prediction results and types from current id_pred
-                pred_results = pred._get_results_by_id(id_pred)
+                pred_results = pred_ids[id_pred]
                 pred_types = pred_results.keys()
                 # Tag for region selection [check OCR_SHAPES list]
                 for rec_type in OCREvalItem.OCR_SHAPES:
@@ -547,26 +547,15 @@ class OCREvalItem(ObjectDetectionEvalItem):
                 res.add(r)
         return res
 
-    def _get_results_by_id(self, id):
-        """
-        Get list of results by ID
-        """
-        res = defaultdict(list)
-        for result in self._raw_data['result']:
-            if result.get('id') == id:
-                res[result['type'].lower()].append(result)
-        return res
-
     def _get_ids_from_results(self):
         """
         Get result IDs from results to group
         """
-        res = set()
+        res = defaultdict(lambda: defaultdict(list))
         for result in self._raw_data['result']:
             id = result.get('id')
-            if id:
-                res.add(id)
-        return list(res)
+            res[id][result['type'].lower()].append(result)
+        return res
 
     def _compare_text_tags(self,
                            pred_types,
