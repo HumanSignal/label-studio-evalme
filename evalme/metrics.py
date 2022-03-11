@@ -26,7 +26,6 @@ class MetricWrapper(object):
     tags = attr.ib(default=[])
 
 
-
 class Metrics(object):
 
     _metrics = {}
@@ -55,9 +54,17 @@ class Metrics(object):
 
     @classmethod
     def get_default_metric_for_name_tag(cls, tag, name):
+        """
+        Get default metric by tag and name
+        :param tag: Tag name
+        :param name: Metric name
+        :return: Metric object
+        """
         metric = cls._metrics.get(name)
         if (metric is not None) and ((metric.tag == tag) or (metric.tag == 'all')):
             return metric
+        elif (metric is not None) and (metric.tag != tag):
+            return None
         else:
             return cls.get_default_metric_for_tag(tag)
 
@@ -172,7 +179,7 @@ class Metrics(object):
                 if not matching_func:
                     logger.error(f'No matching function found for control type {control_type} in {project}.'
                                  f'Using naive calculation.')
-                    matching_func = cls._metrics.get('naive')
+                    continue
                 # identify if label config need
                 func_args = inspect.getfullargspec(matching_func.func)
                 if 'label_config' in func_args[0]:
