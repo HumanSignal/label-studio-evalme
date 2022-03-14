@@ -278,10 +278,11 @@ class Metrics(object):
 
 Metrics.register(
     name='naive',
-    form=None,
+    form='empty_form',
     tag='all',
     func=naive,
-    desc='Naive comparison of result dict'
+    desc='Naive comparison of result dict',
+    tags=['all']
 )
 
 
