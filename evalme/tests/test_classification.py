@@ -2,7 +2,7 @@ import pytest
 
 from evalme.classification import ClassificationEvalItem, ChoicesEvalItem, naive
 
-from metrics import Metrics
+from evalme.metrics import Metrics
 
 
 @pytest.mark.ClassificationEvalItem
