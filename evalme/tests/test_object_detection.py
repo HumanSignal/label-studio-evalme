@@ -550,3 +550,235 @@ def test_OCR_matching_with_several_control_types():
                         "to_name": "audio", "from_name": "transcription1"}]}
     score = Metrics.apply({}, ann1, ann2, metric_name='OCR')
     assert score == 1.0
+
+
+def test_ocr_2_gropus_of_regions_with_labels():
+    """
+    DEV-1721
+    Test 2 regions with same labels and 2 regions with different
+    :return:
+    """
+    result1 = {"result": [{
+                "id": "Tp5yC-6hsd",
+                "type": "rectangle",
+                "value": {
+                    "x": 26.666666666666632,
+                    "y": 30.933333333333323,
+                    "width": 12.933333333333314,
+                    "height": 14.933333333333312,
+                    "rotation": 0
+                },
+                "origin": "manual",
+                "to_name": "image",
+                "from_name": "bbox",
+                "image_rotation": 0,
+                "original_width": 1080,
+                "original_height": 1080
+            }, {
+                "id": "Tp5yC-6hsd",
+                "type": "labels",
+                "value": {
+                    "x": 26.666666666666632,
+                    "y": 30.933333333333323,
+                    "width": 12.933333333333314,
+                    "height": 14.933333333333312,
+                    "labels": [
+                        "Text"
+                    ],
+                    "rotation": 0
+                },
+                "origin": "manual",
+                "to_name": "image",
+                "from_name": "label",
+                "image_rotation": 0,
+                "original_width": 1080,
+                "original_height": 1080
+            }, {
+                "id": "Tp5yC-6hsd",
+                "type": "textarea",
+                "value": {
+                    "x": 26.666666666666632,
+                    "y": 30.933333333333323,
+                    "text": [
+                        "aaa bbb"
+                    ],
+                    "width": 12.933333333333314,
+                    "height": 14.933333333333312,
+                    "rotation": 0
+                },
+                "origin": "manual",
+                "to_name": "image",
+                "from_name": "transcription",
+                "image_rotation": 0,
+                "original_width": 1080,
+                "original_height": 1080
+            }, {
+                "id": "Iuq3q9qQXR",
+                "type": "rectangle",
+                "value": {
+                    "x": 63.46666666666667,
+                    "y": 53.86666666666666,
+                    "width": 28.933333333333334,
+                    "height": 17.733333333333334,
+                    "rotation": 0
+                },
+                "origin": "manual",
+                "to_name": "image",
+                "from_name": "bbox",
+                "image_rotation": 0,
+                "original_width": 1080,
+                "original_height": 1080
+            }, {
+                "id": "Iuq3q9qQXR",
+                "type": "labels",
+                "value": {
+                    "x": 63.46666666666667,
+                    "y": 53.86666666666666,
+                    "width": 28.933333333333334,
+                    "height": 17.733333333333334,
+                    "labels": [
+                        "Handwriting"
+                    ],
+                    "rotation": 0
+                },
+                "origin": "manual",
+                "to_name": "image",
+                "from_name": "label",
+                "image_rotation": 0,
+                "original_width": 1080,
+                "original_height": 1080
+            }, {
+                "id": "Iuq3q9qQXR",
+                "type": "textarea",
+                "value": {
+                    "x": 63.46666666666667,
+                    "y": 53.86666666666666,
+                    "text": [
+                        "name"
+                    ],
+                    "width": 28.933333333333334,
+                    "height": 17.733333333333334,
+                    "rotation": 0
+                },
+                "origin": "manual",
+                "to_name": "image",
+                "from_name": "transcription",
+                "image_rotation": 0,
+                "original_width": 1080,
+                "original_height": 1080
+            }
+        ]}
+    result2 = {"result": [{
+                "id": "rWSy2ZUZm7",
+                "type": "rectangle",
+                "value": {
+                    "x": 26.000000000000036,
+                    "y": 31.6,
+                    "width": 13.066666666666638,
+                    "height": 14.133333333333297,
+                    "rotation": 0
+                },
+                "origin": "manual",
+                "to_name": "image",
+                "from_name": "bbox",
+                "image_rotation": 0,
+                "original_width": 1080,
+                "original_height": 1080
+            }, {
+                "id": "rWSy2ZUZm7",
+                "type": "textarea",
+                "value": {
+                    "x": 26.000000000000036,
+                    "y": 31.6,
+                    "text": [
+                        "aaa bbb"
+                    ],
+                    "width": 13.066666666666638,
+                    "height": 14.133333333333297,
+                    "rotation": 0
+                },
+                "origin": "manual",
+                "to_name": "image",
+                "from_name": "transcription",
+                "image_rotation": 0,
+                "original_width": 1080,
+                "original_height": 1080
+            }, {
+                "id": "rWSy2ZUZm7",
+                "type": "labels",
+                "value": {
+                    "x": 26.000000000000036,
+                    "y": 31.6,
+                    "width": 13.066666666666638,
+                    "height": 14.133333333333297,
+                    "labels": [
+                        "Text"
+                    ],
+                    "rotation": 0
+                },
+                "origin": "manual",
+                "to_name": "image",
+                "from_name": "label",
+                "image_rotation": 0,
+                "original_width": 1080,
+                "original_height": 1080
+            }, {
+                "id": "ePS5El8SPd",
+                "type": "rectangle",
+                "value": {
+                    "x": 62.93333333333333,
+                    "y": 55.2,
+                    "width": 28.799999999999997,
+                    "height": 15.6,
+                    "rotation": 0
+                },
+                "origin": "manual",
+                "to_name": "image",
+                "from_name": "bbox",
+                "image_rotation": 0,
+                "original_width": 1080,
+                "original_height": 1080
+            }, {
+                "id": "ePS5El8SPd",
+                "type": "labels",
+                "value": {
+                    "x": 62.93333333333333,
+                    "y": 55.2,
+                    "width": 28.799999999999997,
+                    "height": 15.6,
+                    "labels": [
+                        "Text"
+                    ],
+                    "rotation": 0
+                },
+                "origin": "manual",
+                "to_name": "image",
+                "from_name": "label",
+                "image_rotation": 0,
+                "original_width": 1080,
+                "original_height": 1080
+            }, {
+                "id": "ePS5El8SPd",
+                "type": "textarea",
+                "value": {
+                    "x": 62.93333333333333,
+                    "y": 55.2,
+                    "text": [
+                        "form"
+                    ],
+                    "width": 28.799999999999997,
+                    "height": 15.6,
+                    "rotation": 0
+                },
+                "origin": "manual",
+                "to_name": "image",
+                "from_name": "transcription",
+                "image_rotation": 0,
+                "original_width": 1080,
+                "original_height": 1080
+            }
+        ]}
+    o1 = OCREvalItem(result1)
+    o2 = OCREvalItem(result2)
+    score = o1.compare(o2)
+    assert score == 0.5
