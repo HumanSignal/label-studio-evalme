@@ -2,6 +2,8 @@ import pytest
 
 from evalme.classification import ClassificationEvalItem, ChoicesEvalItem, naive
 
+from evalme.metrics import Metrics
+
 
 @pytest.mark.ClassificationEvalItem
 def test_not_matching():
@@ -206,6 +208,7 @@ def test_naive_matching():
             }
         ]]
     assert naive(test_data[0], test_data[1]) == 1
+    assert Metrics.apply({}, test_data[0], test_data[1], metric_name='naive') == 1
 
 
 def test_naive_matching_per_label():
@@ -230,6 +233,7 @@ def test_naive_matching_per_label():
             }
         ]]
     assert naive(test_data[0], test_data[1], per_label=True) == {"Accessories\\1\\2": 1}
+    assert Metrics.apply({}, test_data[0], test_data[1], metric_name='naive', per_label=True) == {"Accessories\\1\\2": 1}
 
 
 def test_naive_not_matching():
@@ -254,6 +258,7 @@ def test_naive_not_matching():
             }
         ]]
     assert naive(test_data[0], test_data[1]) == 0
+    assert Metrics.apply({}, test_data[0], test_data[1], metric_name='naive') == 0
 
 
 def test_naive_not_matching_per_label():
@@ -278,3 +283,4 @@ def test_naive_not_matching_per_label():
             }
         ]]
     assert naive(test_data[0], test_data[1], per_label=True) == {"Accessories1": 0}
+    assert Metrics.apply({}, test_data[0], test_data[1], metric_name='naive', per_label=True) == {"Accessories1": 0, "Accessories2": 0}
