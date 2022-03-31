@@ -503,9 +503,16 @@ class OCREvalItem(ObjectDetectionEvalItem):
                                                                         pred_results=pred_results,
                                                                         algorithm=algorithm,
                                                                         qval=qval)
+                                if text_distance is None:
+                                    continue
                             else:
                                 # in case of different labels or many labels
+                                text_tag_in_result = [item for item in pred_types if
+                                                      item != 'labels' and item not in OCREvalItem.OCR_SHAPES]
+                                if not text_tag_in_result:
+                                    continue
                                 text_distance = 0
+
                             # prepare result
                             if per_label:
                                 item = pred_results_labels[0]['value']['labels']
@@ -518,7 +525,7 @@ class OCREvalItem(ObjectDetectionEvalItem):
             return results, num_results
         else:
             values = results.values()
-            return sum(values) / len(values) if len(values) > 0 else 0
+            return sum(values) / len(values) if len(values) > 0 else None
 
     def _get_max_iou_rectangles(self, gt, pred):
         """
@@ -575,7 +582,7 @@ class OCREvalItem(ObjectDetectionEvalItem):
         text_tag_in_result = [item for item in pred_types if item != 'labels' and item not in OCREvalItem.OCR_SHAPES]
         # return 0 if there are no text tag in result
         if len(text_tag_in_result) == 0:
-            return 0
+            return None
         # construct list of text results
         elif len(text_tag_in_result) == 1:
             gt_results_text = gt_results[text_tag_in_result[0]]
