@@ -7,7 +7,7 @@ def test_old_format_agreement_matrix():
 
     matrix = m.get_annotations_agreement()
     assert matrix is not None
-    assert matrix > 0
+    assert matrix == 0.0
 
 
 def test_old_format_load():
