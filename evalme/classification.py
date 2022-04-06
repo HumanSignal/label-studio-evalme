@@ -52,10 +52,17 @@ class ClassificationEvalItem(EvalItem):
                     for l in labels:
                         total_weight[l] = 1
                 else:
+                    weight = 0
                     # aggregation mode: average scores by label weights
-                    weight = sum(label_weights.get(l, 1) for l in labels)
-                    total_weight += weight
-                    n += len(labels)
+                    for label in labels:
+                        if isinstance(label, list):
+                            total_weight += 1
+                            n += 1
+                            break
+                        weight += label_weights.get(label, 1)
+                    else:
+                        total_weight += weight
+                        n += len(labels)
         if per_label:
             return total_weight
         if n == 0:
