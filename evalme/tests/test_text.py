@@ -585,3 +585,15 @@ def test_htmltags_migration_per_label():
     html_tags2 = HTMLTagsEvalItem(raw_data=item_new, shape_key="hypertextlabels")
     assert html_tags1.intersection(html_tags2, per_label=True) == {'Title': 0.9285714285714286}
     assert html_tags2.intersection(html_tags1, per_label=True) == {'Title': 0.9285714285714286}
+
+
+def test_taxonomy_control_weights():
+    """
+    Test taxonomy with label weights
+    :return:
+    """
+    label_weights = {"B": 0.5, "B_A": 0.2}
+    pred = intersection_taxonomy(tree_subview_1, tree_subview_2, label_config=label_config_subview, label_weights=label_weights)
+    assert pred == 0.2
+    pred_vice = intersection_taxonomy(tree_subview_2, tree_subview_1, label_config=label_config_subview, label_weights=label_weights)
+    assert pred_vice == 0.05
