@@ -251,7 +251,7 @@ class TaxonomyEvalItem(EvalItem):
                             taxonomy_gt_list.extend(TaxonomyEvalItem._transform_tree(master_tree, item_gt_tx))
                         for item in taxonomy_pred_list:
                             if item in taxonomy_gt_list:
-                                temp += 1
+                                temp += label_weights.get(item[-1], 1)
                         matches += (temp / max(len(taxonomy_gt_list), 1))
                         tasks += 1
             return matches / max(tasks, 1)
@@ -287,6 +287,8 @@ class TaxonomyEvalItem(EvalItem):
     def _tree(label_config):
         """
         Creating Tree from label_config
+        Example for default config:
+            {'Archaea': {}, 'Bacteria': {}, 'Eukarya': {'Human': {}, 'Oppossum': {}, 'Extraterrestial': {}}}
         """
 
         def recursive_lookup(d, k='Taxonomy'):
@@ -366,6 +368,12 @@ class TaxonomyEvalItem(EvalItem):
 
     @staticmethod
     def _compare_list(gt, pred):
+        """
+        Compare taxonomy path in depth
+        :param gt: ground truth value
+        :param pred: predicted value
+        :return: score [0..1]
+        """
         score = 0
         for p, g in zip(pred, gt):
             if p == g:
