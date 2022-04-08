@@ -184,6 +184,8 @@ class Metrics(object):
                 func_args = inspect.getfullargspec(matching_func.func)
                 if 'label_config' in func_args[0]:
                     control_params['label_config'] = project.get("label_config")
+                if 'control_name' in func_args[0]:
+                    control_params['control_name'] = control_name
                 # get result of certain control_name
                 results_first_by_from_name = cls.filter_results_by_from_name(result_first, control_name)
                 results_second_by_from_name = cls.filter_results_by_from_name(result_second, control_name)
