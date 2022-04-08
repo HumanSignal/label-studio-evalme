@@ -593,3 +593,132 @@ def test_htmltags_migration_per_label():
     html_tags2 = HTMLTagsEvalItem(raw_data=item_new, shape_key="hypertextlabels")
     assert html_tags1.intersection(html_tags2, per_label=True) == {'Title': 0.9285714285714286}
     assert html_tags2.intersection(html_tags1, per_label=True) == {'Title': 0.9285714285714286}
+
+
+label_config_with_several_tags = """
+<View>
+<Header value="This is test header" size="5" />
+<Text name="url" value="$url" />
+<View style="display: flex">
+<View style="margin-left: auto">
+<HyperText name="ht-1" value="$original_url_html"></HyperText>
+<Taxonomy name="taxonomy1" toName="extracted_content">
+<Choice value="A" />
+<Choice value="B" />
+</Taxonomy>
+<Taxonomy name="taxonomy4" toName="extracted_content">
+<Choice value="TEST3" />
+</Taxonomy>
+</View>
+</View>
+<View>
+<Taxonomy name="taxonomy" toName="extracted_content">
+<Choice value="A" />
+<Choice value="B" >
+<Choice value="B_A" />
+<Choice value="B_B" />
+<Choice value="B_C" />
+<Choice value="B_D" />
+</Choice>
+<Choice value="C" >
+<Choice value="C_A" />
+<Choice value="C_B" />
+<Choice value="C_C" />
+<Choice value="C_D" />
+<Choice value="C_E" />
+<Choice value="C_F" />
+<Choice value="C_G" />
+<Choice value="C_H" />
+<Choice value="C_I" />
+<Choice value="C_J" />
+<Choice value="C_K" />
+<Choice value="C_L" />
+<Choice value="C_M" />
+</Choice>
+<Choice value="D" >
+<Choice value="D_A" />
+<Choice value="D_B" />
+<Choice value="D_C" />
+<Choice value="D_D" />
+<Choice value="D_E" />
+</Choice>
+</Taxonomy>
+</View>
+</View>
+"""
+
+
+def test_taxonomy_several_tags():
+    """
+    Test taxonomy with several tags in config in different views
+    :return:
+    """
+    pred = intersection_taxonomy(tree_subview_1, tree_subview_2, label_config=label_config_with_several_tags,
+                                 control_name='taxonomy')
+    assert pred == 1
+    pred_vice = intersection_taxonomy(tree_subview_2, tree_subview_1, label_config=label_config_with_several_tags,
+                                      control_name='taxonomy')
+    assert pred_vice == 0.25
+
+label_config_with_several_tags2 = """
+<View>
+<Header value="This is test header" size="5" />
+<Text name="url" value="$url" />
+<View style="display: flex">
+<View style="margin-left: auto">
+<HyperText name="ht-1" value="$original_url_html"></HyperText>
+</View>
+</View>
+<View>
+<Taxonomy name="taxonomy" toName="extracted_content">
+<Choice value="A" />
+<Choice value="B" >
+<Choice value="B_A" />
+<Choice value="B_B" />
+<Choice value="B_C" />
+<Choice value="B_D" />
+</Choice>
+<Choice value="C" >
+<Choice value="C_A" />
+<Choice value="C_B" />
+<Choice value="C_C" />
+<Choice value="C_D" />
+<Choice value="C_E" />
+<Choice value="C_F" />
+<Choice value="C_G" />
+<Choice value="C_H" />
+<Choice value="C_I" />
+<Choice value="C_J" />
+<Choice value="C_K" />
+<Choice value="C_L" />
+<Choice value="C_M" />
+</Choice>
+<Choice value="D" >
+<Choice value="D_A" />
+<Choice value="D_B" />
+<Choice value="D_C" />
+<Choice value="D_D" />
+<Choice value="D_E" />
+</Choice>
+</Taxonomy>
+<Taxonomy name="taxonomy2" toName="extracted_content">
+<Choice value="TEST1" />
+</Taxonomy>
+<Taxonomy name="taxonomy3" toName="extracted_content">
+<Choice value="TEST2" />
+</Taxonomy>
+</View>
+</View>
+"""
+
+def test_taxonomy_several_tags():
+    """
+    Test taxonomy with several tags in config in one view
+    :return:
+    """
+    pred = intersection_taxonomy(tree_subview_1, tree_subview_2, label_config=label_config_with_several_tags,
+                                 control_name='taxonomy')
+    assert pred == 1
+    pred_vice = intersection_taxonomy(tree_subview_2, tree_subview_1, label_config=label_config_with_several_tags,
+                                      control_name='taxonomy')
+    assert pred_vice == 0.25
