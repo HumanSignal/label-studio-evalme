@@ -329,9 +329,9 @@ def test_taxonomy_tree_with_parents():
     """
     Test for full tree with sparse tree
     """
-    pred = intersection_taxonomy(tree1, tree2, label_config=label_config)
+    pred = intersection_taxonomy(tree1, tree2, label_config=label_config, control_name='taxonomy')
     assert pred == 0.7
-    pred_vice = intersection_taxonomy(tree2, tree1, label_config=label_config)
+    pred_vice = intersection_taxonomy(tree2, tree1, label_config=label_config, control_name='taxonomy')
     assert pred_vice == 1
 
 
@@ -349,9 +349,9 @@ def test_taxonomy_tree_with_parents_per_label():
     """
     Test for full tree with sparse tree per label
     """
-    pred_label = intersection_taxonomy(tree1, tree2, label_config=label_config, per_label=True)
+    pred_label = intersection_taxonomy(tree1, tree2, label_config=label_config, per_label=True, control_name='taxonomy')
     assert pred_label == {"AAB": 1, "AAC": 1, "AC": 1, "BA": 1, "BC": 1, "CA": 1, "CC": 1}
-    pred_label_vice = intersection_taxonomy(tree2, tree1, label_config=label_config, per_label=True)
+    pred_label_vice = intersection_taxonomy(tree2, tree1, label_config=label_config, per_label=True, control_name='taxonomy')
     assert pred_label_vice == {"AAB": 1, "AAC": 1, "AC": 1,
                                "BA": 1, "BC": 1,
                                "CA": 1, "CC": 1}
@@ -377,9 +377,9 @@ def test_taxonomy_empty_tree_with_parents():
     """
     Test for full tree with empty tree
     """
-    pred = intersection_taxonomy(tree1, empty_tree, label_config=label_config)
+    pred = intersection_taxonomy(tree1, empty_tree, label_config=label_config, control_name='taxonomy')
     assert pred == 0
-    pred_vice = intersection_taxonomy(empty_tree, tree1, label_config=label_config)
+    pred_vice = intersection_taxonomy(empty_tree, tree1, label_config=label_config, control_name='taxonomy')
     assert pred_vice == 0
 
 
@@ -387,9 +387,9 @@ def test_taxonomy_empty_tree_with_parents_per_label():
     """
     Test for full tree with empty tree per label
     """
-    pred_label = intersection_taxonomy(tree1, empty_tree, label_config=label_config, per_label=True)
+    pred_label = intersection_taxonomy(tree1, empty_tree, label_config=label_config, per_label=True, control_name='taxonomy')
     assert pred_label == {}
-    pred_label_vice = intersection_taxonomy(empty_tree, tree1, label_config=label_config, per_label=True)
+    pred_label_vice = intersection_taxonomy(empty_tree, tree1, label_config=label_config, per_label=True, control_name='taxonomy')
     assert pred_label_vice == {}
 
 
@@ -416,9 +416,11 @@ def test_taxonomy_one_leaf_tree():
     """
     Test for full tree with empty tree
     """
-    pred = intersection_taxonomy(first_leaf_tree, second_leaf_tree, label_config=label_config)
+    pred = intersection_taxonomy(first_leaf_tree, second_leaf_tree, label_config=label_config,
+                                 control_name='taxonomy')
     assert pred == 0
-    pred_vice = intersection_taxonomy(second_leaf_tree, first_leaf_tree, label_config=label_config)
+    pred_vice = intersection_taxonomy(second_leaf_tree, first_leaf_tree, label_config=label_config,
+                                      control_name='taxonomy')
     assert pred_vice == 0
 
 
@@ -436,9 +438,11 @@ def test_taxonomy_one_leaf_tree_per_label():
     """
     Test for full tree with empty tree
     """
-    pred = intersection_taxonomy(first_leaf_tree, second_leaf_tree, label_config=label_config, per_label=True)
+    pred = intersection_taxonomy(first_leaf_tree, second_leaf_tree, label_config=label_config, per_label=True,
+                                 control_name='taxonomy')
     assert pred == {}
-    pred_vice = intersection_taxonomy(second_leaf_tree, first_leaf_tree, label_config=label_config, per_label=True)
+    pred_vice = intersection_taxonomy(second_leaf_tree, first_leaf_tree, label_config=label_config, per_label=True,
+                                      control_name='taxonomy')
     assert pred_vice == {}
 
 
@@ -466,9 +470,11 @@ def test_taxonomy_one_leaf_tree_with_leaf():
     """
     Test for full tree with empty tree
     """
-    pred = intersection_taxonomy(first_leaf_tree, second_leaf_tree, label_config=label_config_with_leaf)
+    pred = intersection_taxonomy(first_leaf_tree, second_leaf_tree, label_config=label_config_with_leaf,
+                                 control_name='taxonomy')
     assert pred == 0
-    pred_vice = intersection_taxonomy(second_leaf_tree, first_leaf_tree, label_config=label_config_with_leaf)
+    pred_vice = intersection_taxonomy(second_leaf_tree, first_leaf_tree, label_config=label_config_with_leaf,
+                                      control_name='taxonomy')
     assert pred_vice == 0
 
 
@@ -476,9 +482,11 @@ def test_taxonomy_one_leaf_tree_with_leaf_per_label():
     """
     Test for full tree with empty tree
     """
-    pred = intersection_taxonomy(first_leaf_tree, second_leaf_tree, label_config=label_config_with_leaf, per_label=True)
+    pred = intersection_taxonomy(first_leaf_tree, second_leaf_tree, label_config=label_config_with_leaf,
+                                 per_label=True, control_name='taxonomy')
     assert pred == {}
-    pred_vice = intersection_taxonomy(second_leaf_tree, first_leaf_tree, label_config=label_config_with_leaf, per_label=True)
+    pred_vice = intersection_taxonomy(second_leaf_tree, first_leaf_tree, label_config=label_config_with_leaf,
+                                      per_label=True, control_name='taxonomy')
     assert pred_vice == {}
 
 
@@ -492,7 +500,7 @@ label_config_subview = """
 </View>
 </View>
 <View>
-<Taxonomy name="final_class" toName="extracted_content">
+<Taxonomy name="taxonomy" toName="extracted_content">
 <Choice value="A" />
 <Choice value="B" >
 <Choice value="B_A" />
@@ -547,9 +555,9 @@ def test_taxonomy_nested_label_config():
     """
     Test for full tree with empty tree
     """
-    pred = intersection_taxonomy(tree_subview_1, tree_subview_2, label_config=label_config_subview)
+    pred = intersection_taxonomy(tree_subview_1, tree_subview_2, label_config=label_config_subview, control_name='taxonomy')
     assert pred == 1
-    pred_vice = intersection_taxonomy(tree_subview_2, tree_subview_1, label_config=label_config_subview)
+    pred_vice = intersection_taxonomy(tree_subview_2, tree_subview_1, label_config=label_config_subview, control_name='taxonomy')
     assert pred_vice == 0.25
 
 
@@ -585,3 +593,132 @@ def test_htmltags_migration_per_label():
     html_tags2 = HTMLTagsEvalItem(raw_data=item_new, shape_key="hypertextlabels")
     assert html_tags1.intersection(html_tags2, per_label=True) == {'Title': 0.9285714285714286}
     assert html_tags2.intersection(html_tags1, per_label=True) == {'Title': 0.9285714285714286}
+
+
+label_config_with_several_tags = """
+<View>
+<Header value="This is test header" size="5" />
+<Text name="url" value="$url" />
+<View style="display: flex">
+<View style="margin-left: auto">
+<HyperText name="ht-1" value="$original_url_html"></HyperText>
+<Taxonomy name="taxonomy1" toName="extracted_content">
+<Choice value="A" />
+<Choice value="B" />
+</Taxonomy>
+<Taxonomy name="taxonomy4" toName="extracted_content">
+<Choice value="TEST3" />
+</Taxonomy>
+</View>
+</View>
+<View>
+<Taxonomy name="taxonomy" toName="extracted_content">
+<Choice value="A" />
+<Choice value="B" >
+<Choice value="B_A" />
+<Choice value="B_B" />
+<Choice value="B_C" />
+<Choice value="B_D" />
+</Choice>
+<Choice value="C" >
+<Choice value="C_A" />
+<Choice value="C_B" />
+<Choice value="C_C" />
+<Choice value="C_D" />
+<Choice value="C_E" />
+<Choice value="C_F" />
+<Choice value="C_G" />
+<Choice value="C_H" />
+<Choice value="C_I" />
+<Choice value="C_J" />
+<Choice value="C_K" />
+<Choice value="C_L" />
+<Choice value="C_M" />
+</Choice>
+<Choice value="D" >
+<Choice value="D_A" />
+<Choice value="D_B" />
+<Choice value="D_C" />
+<Choice value="D_D" />
+<Choice value="D_E" />
+</Choice>
+</Taxonomy>
+</View>
+</View>
+"""
+
+
+def test_taxonomy_several_tags():
+    """
+    Test taxonomy with several tags in config in different views
+    :return:
+    """
+    pred = intersection_taxonomy(tree_subview_1, tree_subview_2, label_config=label_config_with_several_tags,
+                                 control_name='taxonomy')
+    assert pred == 1
+    pred_vice = intersection_taxonomy(tree_subview_2, tree_subview_1, label_config=label_config_with_several_tags,
+                                      control_name='taxonomy')
+    assert pred_vice == 0.25
+
+label_config_with_several_tags2 = """
+<View>
+<Header value="This is test header" size="5" />
+<Text name="url" value="$url" />
+<View style="display: flex">
+<View style="margin-left: auto">
+<HyperText name="ht-1" value="$original_url_html"></HyperText>
+</View>
+</View>
+<View>
+<Taxonomy name="taxonomy" toName="extracted_content">
+<Choice value="A" />
+<Choice value="B" >
+<Choice value="B_A" />
+<Choice value="B_B" />
+<Choice value="B_C" />
+<Choice value="B_D" />
+</Choice>
+<Choice value="C" >
+<Choice value="C_A" />
+<Choice value="C_B" />
+<Choice value="C_C" />
+<Choice value="C_D" />
+<Choice value="C_E" />
+<Choice value="C_F" />
+<Choice value="C_G" />
+<Choice value="C_H" />
+<Choice value="C_I" />
+<Choice value="C_J" />
+<Choice value="C_K" />
+<Choice value="C_L" />
+<Choice value="C_M" />
+</Choice>
+<Choice value="D" >
+<Choice value="D_A" />
+<Choice value="D_B" />
+<Choice value="D_C" />
+<Choice value="D_D" />
+<Choice value="D_E" />
+</Choice>
+</Taxonomy>
+<Taxonomy name="taxonomy2" toName="extracted_content">
+<Choice value="TEST1" />
+</Taxonomy>
+<Taxonomy name="taxonomy3" toName="extracted_content">
+<Choice value="TEST2" />
+</Taxonomy>
+</View>
+</View>
+"""
+
+def test_taxonomy_several_tags():
+    """
+    Test taxonomy with several tags in config in one view
+    :return:
+    """
+    pred = intersection_taxonomy(tree_subview_1, tree_subview_2, label_config=label_config_with_several_tags,
+                                 control_name='taxonomy')
+    assert pred == 1
+    pred_vice = intersection_taxonomy(tree_subview_2, tree_subview_1, label_config=label_config_with_several_tags,
+                                      control_name='taxonomy')
+    assert pred_vice == 0.25
