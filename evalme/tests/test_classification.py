@@ -1,10 +1,8 @@
 import pytest
 
-from evalme.classification import ClassificationEvalItem, ChoicesEvalItem, naive
+from evalme.classification import ClassificationEvalItem, ChoicesEvalItem, naive, exact_matching_choices
 
 from evalme.metrics import Metrics
-
-from classification import exact_matching_choices
 
 
 @pytest.mark.ClassificationEvalItem
