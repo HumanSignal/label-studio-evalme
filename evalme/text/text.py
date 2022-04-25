@@ -202,7 +202,7 @@ class TaxonomyEvalItem(EvalItem):
                     not_found += 1
             return matches / max((matches + not_found), 1)
 
-    def spans_iou(self, prediction, per_label=False, label_config=None, label_weights=dict()):
+    def spans_iou(self, prediction, per_label=False, label_config=None, label_weights=dict(), control_name=None):
         """
         Matching of taxonomy labels depending on content
         """
@@ -210,7 +210,7 @@ class TaxonomyEvalItem(EvalItem):
             logger.warning("No label config - returning simple score.")
             return self.spans_match(prediction, per_label=per_label)
 
-        master_tree = TaxonomyEvalItem._tree(label_config)
+        master_tree = TaxonomyEvalItem._tree(label_config=label_config, control_name=control_name)
 
         gt = self.get_values_iter()
         pred = prediction.get_values_iter()
@@ -284,16 +284,27 @@ class TaxonomyEvalItem(EvalItem):
             return matches / max(tasks, 1)
 
     @staticmethod
-    def _tree(label_config):
+    def _tree(label_config, control_name=None):
         """
         Creating Tree from label_config
         """
 
         def recursive_lookup(d, k='Taxonomy'):
+            """
+            Find Taxonomy in label config
+            :param d: part of config
+            :param k: tag to find
+            :return: Taxonomy dict
+            """
             if not isinstance(d, dict):
                 return None
             if k in list(d.keys()):
-                return d[k]
+                if isinstance(d[k], list):
+                    tax_items = [item for item in d[k] if item['@name'] == control_name]
+                    if len(tax_items) > 0:
+                        return tax_items[0]
+                elif d[k]['@name'] == control_name:
+                    return d[k]
             for v in d.values():
                 if isinstance(v, dict):
                     a = recursive_lookup(v, k)
@@ -426,10 +437,14 @@ def match_textareas(item_gt, item_pred, algorithm='Levenshtein', qval=1, **kwarg
     return item_gt.match(item_pred, algorithm, qval)
 
 
-def intersection_taxonomy(item_gt, item_pred, label_weights=dict(), per_label=False, label_config=None):
+def intersection_taxonomy(item_gt, item_pred, label_weights=dict(), per_label=False, label_config=None, control_name=None):
     item_gt = _as_taxonomy_eval_item(item_gt)
     item_pred = _as_taxonomy_eval_item(item_pred)
-    return item_gt.spans_iou(item_pred, per_label=per_label, label_config=label_config, label_weights=label_weights)
+    return item_gt.spans_iou(item_pred,
+                             per_label=per_label,
+                             label_config=label_config,
+                             label_weights=label_weights,
+                             control_name=control_name)
 
 
 def path_match_taxonomy(item_gt, item_pred, label_weights=dict(), per_label=False):
