@@ -498,19 +498,20 @@ class OCREvalItem(ObjectDetectionEvalItem):
                                     gt_results_labels[0]['value']['labels'] == \
                                     pred_results_labels[0]['value']['labels']:
                                 # compare text results
-                                text_distance = self._compare_text_tags(pred_types=pred_types,
-                                                                        gt_results=gt_results,
-                                                                        pred_results=pred_results,
-                                                                        algorithm=algorithm,
-                                                                        qval=qval)
-                                if text_distance is None:
-                                    continue
-                            else:
-                                # in case of different labels or many labels
                                 text_tag_in_result = [item for item in pred_types if
                                                       item != 'labels' and item not in OCREvalItem.OCR_SHAPES]
                                 if not text_tag_in_result:
-                                    continue
+                                    text_distance = 1
+                                else:
+                                    text_distance = self._compare_text_tags(pred_types=pred_types,
+                                                                            gt_results=gt_results,
+                                                                            pred_results=pred_results,
+                                                                            algorithm=algorithm,
+                                                                            qval=qval)
+                                    if text_distance is None:
+                                        continue
+                            else:
+                                # in case of different labels or many labels
                                 text_distance = 0
 
                             # prepare result
@@ -525,7 +526,7 @@ class OCREvalItem(ObjectDetectionEvalItem):
             return results, num_results
         else:
             values = results.values()
-            return sum(values) / len(values) if len(values) > 0 else None
+            return sum(values) / len(values) if len(values) > 0 else 0
 
     def _get_max_iou_rectangles(self, gt, pred):
         """
