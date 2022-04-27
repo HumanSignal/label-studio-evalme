@@ -41,8 +41,12 @@ class ClassificationEvalItem(EvalItem):
             # choices are mismatched
             if labels != y_labels:
                 if per_label:
-                    for l in labels:
-                        total_weight[l] = 0
+                    for label in labels:
+                        if isinstance(label, list):
+                            for l in label:
+                                total_weight[l] = 1 if label in y_labels else 0
+                        else:
+                            total_weight[label] = 0
                 else:
                     return 0
             # choices are matched
