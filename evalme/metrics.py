@@ -168,7 +168,7 @@ class Metrics(object):
                 logger.debug(f"Starting calculation for {control_type} - {control_name}")
                 matching_func = get_matching_func(control_type, metric_name)
                 if not matching_func:
-                    logger.error(f'No matching function found for control type {control_type} in {project.get("id")}.')
+                    logger.error(f'No matching function found for control type >{control_type} in project.id >{project.get("id")}.')
                     continue
                 # construct params for function
                 control_weights = project.get("control_weights", {})
