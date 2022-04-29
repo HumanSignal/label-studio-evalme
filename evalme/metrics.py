@@ -165,6 +165,12 @@ class Metrics(object):
         else:
             # aggregate matching scores over all existed controls
             for control_name, control_type in all_controls.items():
+                logger.debug(f"Starting calculation for {control_type} - {control_name}")
+                matching_func = get_matching_func(control_type, metric_name)
+                if not matching_func:
+                    logger.error(f'No matching function found for control type {control_type} in {project.get("id")}.')
+                    continue
+                # construct params for function
                 control_weights = project.get("control_weights", {})
                 control_weights = control_weights.get(control_name, {})
                 overall_weight = control_weights.get('overall', 1)
@@ -174,12 +180,6 @@ class Metrics(object):
                 control_params['per_label'] = per_label
                 if iou_threshold:
                     control_params['iou_threshold'] = iou_threshold
-
-                matching_func = get_matching_func(control_type, metric_name)
-                if not matching_func:
-                    logger.error(f'No matching function found for control type {control_type} in {project}.'
-                                 f'Using naive calculation.')
-                    continue
                 # identify if label config need
                 func_args = inspect.getfullargspec(matching_func.func)
                 if 'label_config' in func_args[0]:
@@ -191,6 +191,7 @@ class Metrics(object):
                 results_second_by_from_name = cls.filter_results_by_from_name(result_second, control_name)
                 s = matching_func.func(results_first_by_from_name, results_second_by_from_name, **control_params)
                 if symmetric:
+                    # get symmetric score
                     s_reversed = matching_func.func(results_second_by_from_name, results_first_by_from_name,
                                                     **control_params)
                     if per_label:
