@@ -168,7 +168,7 @@ class Metrics(object):
                 logger.debug(f"Starting calculation for {control_type} - {control_name}")
                 matching_func = get_matching_func(control_type, metric_name)
                 if not matching_func:
-                    logger.error(f'No matching function found for control type >{control_type} in project.id >{project.get("id")}.')
+                    logger.error(f'No matching function found for control type >>{control_type} in project.id >>{project.get("id")}.')
                     continue
                 # construct params for function
                 control_weights = project.get("control_weights", {})
@@ -207,7 +207,8 @@ class Metrics(object):
                 else:
                     score += s * overall_weight
                     n += overall_weight
-
+                logger.debug(f"Ending calculation for {control_type} - {control_name}")
+                
         def clipped(s):
             if s > 1 or s < 0:
                 logger.warning('Error in project %s. Matching score %s is not within [0, 1] interval '
