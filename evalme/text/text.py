@@ -44,21 +44,18 @@ class TextTagsEvalItem(EvalItem):
             total_score, total_weight = defaultdict(int), defaultdict(int)
         else:
             total_score, total_weight = 0, 0
+        logger.debug("Iterating throught predicted values")
         for pred_value in item.get_values_iter():
-            logger.debug("Iterating throught predicted values")
             if len(gt_values) == 0:
                 # for empty gt values, matching score for current prediction is the lowest
                 best_matching_score = 0
             else:
                 # find the best matching span inside gt_values
-                logger.debug("Calculating best_matching_score")
                 best_matching_score = max(map(partial(self._match, y=pred_value, f=comparator), gt_values))
                 if iou_threshold is not None:
                     # make hard decision w.r.t. threshold whether current spans are matched
                     best_matching_score = float(best_matching_score > iou_threshold)
-                logger.debug("Done best_matching_score")
             if per_label:
-                logger.debug("Finalizing total_score per_label")
                 # for per-label mode, label weights are unimportant - only scores are averaged
                 prefix = pred_value.get('when_label_value', '')
                 if prefix:
@@ -70,9 +67,7 @@ class TextTagsEvalItem(EvalItem):
                 for l in pred_value[shape]:
                     total_score[prefix + l] += best_matching_score
                     total_weight[prefix + l] += 1
-                logger.debug("Done finalizing total_score per_label")
             else:
-                logger.debug("Finalizing total_score")
                 # when aggregating scores each individual label weight is taken into account
                 if self._shape_key in pred_value:
                     weight = sum(label_weights.get(l, 1) for l in pred_value[self._shape_key])
@@ -80,8 +75,7 @@ class TextTagsEvalItem(EvalItem):
                     weight = 1
                 total_score += weight * best_matching_score
                 total_weight += weight
-                logger.debug("Done finalizing total_score")
-
+        logger.debug(f"Finished iterating through predicted values. {len(item._raw_data)}")
         if per_label:
             # average per-label score
             for l in total_score:
