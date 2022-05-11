@@ -32,7 +32,6 @@ class TextTagsEvalItem(EvalItem):
         return labels_match * spans_match
 
     def intersection(self, item, label_weights=None, algorithm=None, qval=None, per_label=False, iou_threshold=None):
-        logger.debug("Starting text intersection")
         comparator = get_text_comparator(algorithm, qval)
         label_weights = label_weights or {}
         someone_is_empty = self.empty ^ item.empty
@@ -46,7 +45,6 @@ class TextTagsEvalItem(EvalItem):
             total_score, total_weight = defaultdict(int), defaultdict(int)
         else:
             total_score, total_weight = 0, 0
-        logger.debug("Iterating throught predicted values")
         for pred_value in item.get_values_iter():
             if len(gt_values) == 0:
                 # for empty gt values, matching score for current prediction is the lowest
@@ -79,7 +77,6 @@ class TextTagsEvalItem(EvalItem):
                     weight = 1
                 total_score += weight * best_matching_score
                 total_weight += weight
-        logger.debug(f"Finished iterating through predicted values. {len(item._raw_data)}")
         if per_label:
             # average per-label score
             for l in total_score:
@@ -88,9 +85,7 @@ class TextTagsEvalItem(EvalItem):
                 else:
                     total_score[l] /= total_weight[l]
             return total_score
-
         # otherwise return overall score
-        logger.debug("Ending text intersection")
         if total_weight == 0:
             return 0
         return total_score / total_weight
