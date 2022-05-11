@@ -25,8 +25,10 @@ class TextTagsEvalItem(EvalItem):
         return iou
 
     def _match(self, x, y, f):
-        labels_match = texts_similarity(x[self._shape_key], y[self._shape_key], f)
         spans_match = self.spans_iou(x, y)
+        if spans_match == 0:
+            return 0
+        labels_match = texts_similarity(x[self._shape_key], y[self._shape_key], f)
         return labels_match * spans_match
 
     def intersection(self, item, label_weights=None, algorithm=None, qval=None, per_label=False, iou_threshold=None):
@@ -51,7 +53,9 @@ class TextTagsEvalItem(EvalItem):
                 best_matching_score = 0
             else:
                 # find the best matching span inside gt_values
-                best_matching_score = max(map(partial(self._match, y=pred_value, f=comparator), gt_values))
+                best_matching_score = 0
+                for gt_value in gt_values:
+                    best_matching_score = max(best_matching_score, self._match(x=gt_value, y=pred_value, f=comparator))
                 if iou_threshold is not None:
                     # make hard decision w.r.t. threshold whether current spans are matched
                     best_matching_score = float(best_matching_score > iou_threshold)
