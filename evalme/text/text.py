@@ -233,7 +233,7 @@ class TaxonomyEvalItem(EvalItem):
                             if item in taxonomy_gt_list:
                                 results[str(item[-1])] = label_weights.get(str(item[-1]), 1)
                     # if we couldn't transform to a tree, than fall to simple
-                    except:
+                    except KeyError:
                         score = int(taxonomy_pred == taxonomy_gt)
                         results[str(taxonomy_pred[-1])] = score
             return results
@@ -260,7 +260,7 @@ class TaxonomyEvalItem(EvalItem):
                                     temp += 1
                             matches += (temp / max(len(taxonomy_gt_list), 1))
                         # if we couldn't transform to a tree, than fall to simple equals
-                        except:
+                        except KeyError:
                             matches = int(taxonomy_pred == taxonomy_gt)
                         tasks += 1
             return matches / max(tasks, 1)
