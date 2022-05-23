@@ -224,13 +224,18 @@ class TaxonomyEvalItem(EvalItem):
                     taxonomy_gt = item_gt['taxonomy']
                     taxonomy_pred_list = list()
                     taxonomy_gt_list = list()
-                    for item_pred_tx in taxonomy_pred:
-                        taxonomy_pred_list.extend(TaxonomyEvalItem._transform_tree(master_tree, item_pred_tx))
-                    for item_gt_tx in taxonomy_gt:
-                        taxonomy_gt_list.extend(TaxonomyEvalItem._transform_tree(master_tree, item_gt_tx))
-                    for item in taxonomy_pred_list:
-                        if item in taxonomy_gt_list:
-                            results[str(item[-1])] = label_weights.get(str(item[-1]), 1)
+                    try:
+                        for item_pred_tx in taxonomy_pred:
+                            taxonomy_pred_list.extend(TaxonomyEvalItem._transform_tree(master_tree, item_pred_tx))
+                        for item_gt_tx in taxonomy_gt:
+                            taxonomy_gt_list.extend(TaxonomyEvalItem._transform_tree(master_tree, item_gt_tx))
+                        for item in taxonomy_pred_list:
+                            if item in taxonomy_gt_list:
+                                results[str(item[-1])] = label_weights.get(str(item[-1]), 1)
+                    # if we couldn't transform to a tree, than fall to simple
+                    except:
+                        score = int(taxonomy_pred == taxonomy_gt)
+                        results[str(taxonomy_pred[-1])] = score
             return results
         else:
             for item_pred in pred:
@@ -245,14 +250,18 @@ class TaxonomyEvalItem(EvalItem):
                         break
                     else:
                         temp = 0
-                        for item_pred_tx in taxonomy_pred:
-                            taxonomy_pred_list.extend(TaxonomyEvalItem._transform_tree(master_tree, item_pred_tx))
-                        for item_gt_tx in taxonomy_gt:
-                            taxonomy_gt_list.extend(TaxonomyEvalItem._transform_tree(master_tree, item_gt_tx))
-                        for item in taxonomy_pred_list:
-                            if item in taxonomy_gt_list:
-                                temp += 1
-                        matches += (temp / max(len(taxonomy_gt_list), 1))
+                        try:
+                            for item_pred_tx in taxonomy_pred:
+                                taxonomy_pred_list.extend(TaxonomyEvalItem._transform_tree(master_tree, item_pred_tx))
+                            for item_gt_tx in taxonomy_gt:
+                                taxonomy_gt_list.extend(TaxonomyEvalItem._transform_tree(master_tree, item_gt_tx))
+                            for item in taxonomy_pred_list:
+                                if item in taxonomy_gt_list:
+                                    temp += 1
+                            matches += (temp / max(len(taxonomy_gt_list), 1))
+                        # if we couldn't transform to a tree, than fall to simple equals
+                        except:
+                            matches = int(taxonomy_pred == taxonomy_gt)
                         tasks += 1
             return matches / max(tasks, 1)
 
