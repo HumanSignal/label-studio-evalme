@@ -722,3 +722,203 @@ def test_taxonomy_several_tags():
     pred_vice = intersection_taxonomy(tree_subview_2, tree_subview_1, label_config=label_config_with_several_tags,
                                       control_name='taxonomy')
     assert pred_vice == 0.25
+
+extra_label_confg = """
+<View>
+  <Text name="text" value="$text"/>
+  <Taxonomy name="taxonomy" toName="text" placeholder="Default Taxonomy">
+    <Choice value="Archaea"/>
+    <Choice value="Bacteria"/>
+    <Choice value="Eukarya">
+      <Choice value="Human"/>
+      <Choice value="Oppossum"/>
+      <Choice value="Extraterrestial"/>
+    </Choice>
+  </Taxonomy>
+  <Header>
+leafsOnly, showFullPath, maxUsages=1, placeholder    </Header>
+  <Taxonomy name="tax" toName="text" leafsOnly="true" showFullPath="true" placeholder="Choose your fighter" maxUsages="1">
+    <Choice value="Alliance">
+      <Choice value="Human"/>
+      <Choice value="Dwarf"/>
+      <Choice value="Night Elf"/>
+      <Choice value="Gnome"/>
+      <Choice value="Draenei"/>
+      <Choice value="Worgen"/>
+      <Choice value="Pandaren"/>
+    </Choice>
+    <Choice value="Horde">
+      <Choice value="Orc"/>
+      <Choice value="Undead"/>
+      <Choice value="Tauren"/>
+      <Choice value="Troll"/>
+      <Choice value="Blood Elf"/>
+      <Choice value="Goblin"/>
+      <Choice value="Pandaren"/>
+    </Choice>
+  </Taxonomy>
+  <Taxonomy name="uniq" toName="text" showFullPath="true" maxUsages="1">
+      <Choice value="a">
+        <Choice value="aa"/>
+        <Choice value="ab">
+          <Choice value="aba">
+            <Choice value="abaa"/>
+          </Choice>
+          <Choice value="abb">
+            <Choice value="abba"/>
+            <Choice value="abbb">
+              <Choice value="abbbc"/>
+              <Choice value="abbbc"/>
+              <Choice value="abbbc"/>
+              <Choice value="abbbc"/>
+              <Choice value="abbbcabbbcabbbcabbbcabbbcabbbcabbbcabbbcabbbcabbbcabbbc"/>
+              <Choice value="abbbcabbbcabbbcabbbcabbbcabbbcabbbcabbbcabbbcabbbcabbbc"/>
+              <Choice value="abbbcabbbcabbbcabbbcabbbcabbbcabbbcabbbcabbbcabbbcabbbc"/>
+              <Choice value="abbbcabbbcabbbcabbbcabbbcabbbcabbbcabbbcabbbcabbbcabbbc"/>
+            </Choice>
+            <Choice value="abbc"/>
+          </Choice>
+        </Choice>
+      </Choice>
+      <Choice value="b">
+        <Choice value="ba"/>
+      </Choice>
+      <Choice value="a">
+        <Choice value="aa"/>
+        <Choice value="ab">
+          <Choice value="aba">
+            <Choice value="abaa"/>
+          </Choice>
+          <Choice value="abb">
+            <Choice value="abba"/>
+            <Choice value="abbb">
+              <Choice value="abbbc"/>
+              <Choice value="abbbc"/>
+              <Choice value="abbbc"/>
+              <Choice value="abbbc"/>
+              <Choice value="abbbcabbbcabbbcabbbcabbbcabbbcabbbcabbbcabbbcabbbcabbbc"/>
+              <Choice value="abbbcabbbcabbbcabbbcabbbcabbbcabbbcabbbcabbbcabbbcabbbc"/>
+              <Choice value="abbbcabbbcabbbcabbbcabbbcabbbcabbbcabbbcabbbcabbbcabbbc"/>
+              <Choice value="abbbcabbbcabbbcabbbcabbbcabbbcabbbcabbbcabbbcabbbcabbbc"/>
+            </Choice>
+            <Choice value="abbc"/>
+          </Choice>
+        </Choice>
+      </Choice>
+      <Choice value="b">
+        <Choice value="ba"/>
+      </Choice>
+    </Taxonomy>
+  <Header>
+Theese labels should have hotkeys 1, 2; perRegion required Taxonomy    </Header>
+  <Labels name="lbl" toName="text">
+    <Label value="Creature"/>
+    <Label value="Rock"/>
+    <Label value="Another" background="#FFA39E"/>
+  </Labels>
+  <Taxonomy name="creature" toName="text" required="true" perRegion="true">
+    <Choice value="Apodanthaceae">
+      <Choice value="Apodanthes"/>
+      <Choice value="Berlinianche"/>
+      <Choice value="Pilostyles"/>
+    </Choice>
+    <Choice value="Aponogetonaceae">
+      <Choice value="Aponogeton"/>
+    </Choice>
+    <Choice value="Equisetaceae">
+      <Choice value="Allostelites"/>
+      <Choice value="Equisetum"/>
+      <Choice value="Hippochaete"/>
+    </Choice>
+    <Choice value="Metaxyaceae">
+      <Choice value="Metaxya"/>
+    </Choice>
+    <Choice value="Meteoriaceae">
+      <Choice value="Aerobryidium"/>
+      <Choice value="Aerobryopsis"/>
+      <Choice value="Aerobryum"/>
+      <Choice value="Ancistrodes"/>
+      <Choice value="Barbella"/>
+      <Choice value="Barbellopsis"/>
+      <Choice value="Chrysocladium"/>
+      <Choice value="Cryptopapillaria"/>
+      <Choice value="Dicladiella"/>
+      <Choice value="Floribundaria"/>
+      <Choice value="Looseria"/>
+      <Choice value="Meteoridium"/>
+      <Choice value="Meteoriopsis"/>
+      <Choice value="Meteorium"/>
+      <Choice value="Neodicladiella"/>
+      <Choice value="Neonoguchia"/>
+      <Choice value="Orthostichella"/>
+      <Choice value="Papillaria"/>
+      <Choice value="Pilotrichella"/>
+      <Choice value="Pseudobarbella"/>
+      <Choice value="Sinskea"/>
+      <Choice value="Squamidium"/>
+      <Choice value="Toloxis"/>
+      <Choice value="Trachycladiella"/>
+      <Choice value="Weymouthia"/>
+      <Choice value="Zelometeorium"/>
+    </Choice>
+    <Choice value="Metteniusaceae">
+      <Choice value="Metteniusa"/>
+    </Choice>
+    <Choice value="Metzgeriaceae">
+      <Choice value="Apometzgeria"/>
+      <Choice value="Austrometzgeria"/>
+      <Choice value="Echinomitrion"/>
+      <Choice value="Metzgeria"/>
+      <Choice value="Steereella"/>
+    </Choice>
+    <Choice value="Porellaceae">
+      <Choice value="Bellincinia"/>
+      <Choice value="Macvicaria"/>
+      <Choice value="Madotheca"/>
+      <Choice value="Porella"/>
+    </Choice>
+    <Choice value="Rutenbergiaceae">
+      <Choice value="Neorutenbergia"/>
+      <Choice value="Rutenbergia"/>
+    </Choice>
+    <Choice value="Tofieldiaceae">
+      <Choice value="Harperocallis"/>
+      <Choice value="Pleea"/>
+      <Choice value="Tofieldia"/>
+      <Choice value="Triantha"/>
+    </Choice>
+    <Choice value="Torricelliaceae">
+      <Choice value="Aralidium"/>
+      <Choice value="Melanophylla"/>
+    </Choice>
+    <Choice value="Tovariaceae">
+      <Choice value="Tovaria"/>
+    </Choice>
+    <Choice value="Trachypodaceae">
+      <Choice value="Bryowijkia"/>
+      <Choice value="Diaphanodon"/>
+      <Choice value="Pseudospiridentopsis"/>
+      <Choice value="Pseudotrachypus"/>
+      <Choice value="Trachypodopsis"/>
+      <Choice value="Trachypus"/>
+    </Choice>
+    <Choice value="Treubiaceae">
+      <Choice value="Apotreubia"/>
+      <Choice value="Treubia"/>
+    </Choice>
+  </Taxonomy>
+</View>
+"""
+def test_taxonomy_extra_label_in_annotations():
+    """
+    Test taxonomy with several tags in config in one view
+    :return:
+    """
+    r1 = [{'id': 'XtM3YzHXLw', 'type': 'taxonomy', 'value': {'taxonomy': [['Tauren']]}, 'origin': 'manual', 'to_name': 'text', 'from_name': 'tax'}]
+    r2 = [{'id': 'Wl2JXU9zIi', 'type': 'taxonomy', 'value': {'taxonomy': [['Horde', 'Pandaren']]}, 'origin': 'manual', 'to_name': 'text', 'from_name': 'tax'}]
+    pred = intersection_taxonomy(r1, r2, label_config=extra_label_confg,
+                                 control_name='tax')
+    assert pred == 0
+    pred_vice = intersection_taxonomy(r1, r2, label_config=extra_label_confg,
+                                      control_name='uniq')
+    assert pred_vice == 0
