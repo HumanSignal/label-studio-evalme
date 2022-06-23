@@ -69,13 +69,6 @@ class ClassificationEvalItem(EvalItem):
                         else:
                             total_weight += label_weights.get(label, 1)
                             n += 1
-        # if there are no results than 2nd result doesn't contain any result (null annotation)
-        if not total_weight:
-            # mark labels in 1st annotation with 0 score
-            for x in self.get_values_iter():
-                labels = x[self._shape_key]
-                for label in labels:
-                    total_weight[label] = 0
         if per_label:
             return total_weight
         if n == 0:
