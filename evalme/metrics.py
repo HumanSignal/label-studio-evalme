@@ -74,7 +74,13 @@ class Metrics(object):
 
     @classmethod
     def get_type(cls, result):
-        t = result.get('type')
+        """
+        Get type of control, per region data
+        :param result: Json result
+        :return: type of control, initial type (without regions), flag if control has per_region tags
+        """
+        t = i = result.get('type')
+        per_region = False
         # check for per_region conditions
         if t in ('choices', 'textarea'):
             if 'start' in result['value'] and 'end' in result['value']:
@@ -83,7 +89,10 @@ class Metrics(object):
                 t += '[per_region=bbox]'
             elif 'points' in result['value']:
                 t += '[per_region=poly]'
-        return t
+        if ('start' in result['value'] and 'end' in result['value']) or ('x' in result['value'] and 'y' in result['value']) or ('points' in result['value']):
+            per_region = True
+        # type of control, initial type (without regions), flag if control has per_region tags
+        return (t, i, per_region)
 
     @classmethod
     def apply(cls, project, result_first, result_second, symmetric=True, per_label=False,
@@ -116,11 +125,20 @@ class Metrics(object):
 
         # collect mapping between control tag name and control type
         all_controls = {}
+        temp_flags = {}
+        more_per_regions = False
         for r in chain(result_first, result_second):
             if 'from_name' not in r:
                 # we skip all non-control tag results like relations, etc.
                 continue
-            all_controls[r['from_name']] = cls.get_type(r)
+            temp_flags[r['from_name']] = temp = cls.get_type(r)
+            # check if there are other than textarea\choices controls with per_region
+            more_per_regions = more_per_regions or (temp[2] and temp[1] not in ('choices', 'textarea'))
+        for key in temp_flags:
+            if more_per_regions and temp_flags[key][1] == 'textarea':
+                all_controls[key] = temp_flags[key][1]
+            else:
+                all_controls[key] = temp_flags[key][0]
 
         def get_matching_func(control_type, name=None):
             if name:
