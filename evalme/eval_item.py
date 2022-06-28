@@ -278,7 +278,7 @@ class EvalItem(object):
         return poly2
 
     @staticmethod
-    def get_best_matching_result(result, list_to_compare: List, compare_f, threshold=0):
+    def get_best_matching_result(result, list_to_compare, compare_f, threshold=0):
         """
         Get best matching result by compare function
         :param result:
