@@ -310,13 +310,13 @@ class EvalItem(object):
         spans_with_offset = ['start', 'end', 'startOffset', 'endOffset']
         spans = ['start', 'end']
         bbox = ['x', 'y', 'width', 'height']
-        if all(key in result1['value'] for key in polygon) and all(key in result2['value'] for key in polygon):
+        if all(key in result1 for key in polygon) and all(key in result2 for key in polygon):
             return EvalItem.poly_iou
-        elif all(key in result1['value'] for key in spans_with_offset) and all(key in result2['value'] for key in spans_with_offset):
+        elif all(key in result1 for key in spans_with_offset) and all(key in result2 for key in spans_with_offset):
             return EvalItem.spans_iou_by_start_end_offsets
-        elif all(key in result1['value'] for key in spans) and all(key in result2['value'] for key in spans):
+        elif all(key in result1 for key in spans) and all(key in result2 for key in spans):
             return EvalItem.spans_iou
-        elif all(key in result1['value'] for key in bbox) and all(key in result2['value'] for key in bbox):
+        elif all(key in result1 for key in bbox) and all(key in result2 for key in bbox):
             return EvalItem.bbox_iou
         else:
             return None

@@ -2,6 +2,7 @@ import itertools
 from copy import deepcopy
 from functools import partial
 from collections import defaultdict
+import numpy as np
 
 from evalme.eval_item import EvalItem
 from evalme.utils import texts_similarity, get_text_comparator, parse_config_to_json
@@ -177,11 +178,14 @@ class TextAreaEvalItem(EvalItem):
         pred = item.get_values()
         for gt in self.get_values_iter():
             score = 0
-            f = EvalItem.identify_region_comparing_function(gt, pred)
+            f = EvalItem.identify_region_comparing_function(gt, pred[0])
             if f:
                 best_pred = EvalItem.get_best_matching_result(gt, pred, compare_f=f, threshold=0.5)
                 if best_pred:
                     score = texts_similarity(gt[self._shape_key], best_pred[self._shape_key], comparator)
+            else:
+                scores = [texts_similarity(gt[self._shape_key], p[self._shape_key], comparator) for p in pred]
+                score = sum(scores) / max(len(scores), 1)
             all_scores.append(score)
         return sum(all_scores) / max(len(all_scores), 1)
 
