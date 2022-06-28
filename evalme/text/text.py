@@ -174,8 +174,15 @@ class TextAreaEvalItem(EvalItem):
     def match(self, item, algorithm='Levenshtein', qval=1):
         comparator = get_text_comparator(algorithm, qval)
         all_scores = []
-        for gt, pred in zip(self.get_values_iter(), item.get_values_iter()):
-            all_scores.append(texts_similarity(gt[self._shape_key], pred[self._shape_key], comparator))
+        pred = item.get_values()
+        for gt in self.get_values_iter():
+            score = 0
+            f = EvalItem.identify_region_comparing_function(gt, pred)
+            if f:
+                best_pred = EvalItem.get_best_matching_result(gt, pred, compare_f=f, threshold=0.5)
+                if best_pred:
+                    score = texts_similarity(gt[self._shape_key], best_pred[self._shape_key], comparator)
+            all_scores.append(score)
         return sum(all_scores) / max(len(all_scores), 1)
 
 
