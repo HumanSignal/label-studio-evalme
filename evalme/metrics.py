@@ -74,15 +74,12 @@ class Metrics(object):
 
     @classmethod
     def get_type(cls, result):
+        """
+        Get type of control, per region data
+        :param result: Json result
+        :return: type of control, initial type (without regions), flag if control has per_region tags
+        """
         t = result.get('type')
-        # check for per_region conditions
-        if t in ('choices', 'textarea'):
-            if 'start' in result['value'] and 'end' in result['value']:
-                t += '[per_region=span]'
-            elif 'x' in result['value'] and 'y' in result['value']:
-                t += '[per_region=bbox]'
-            elif 'points' in result['value']:
-                t += '[per_region=poly]'
         return t
 
     @classmethod

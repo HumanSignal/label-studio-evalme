@@ -21,9 +21,14 @@ class ClassificationEvalItem(EvalItem):
             total_weight = defaultdict(int)
         else:
             total_weight = 0
+        y_items = item.get_values()
+        x_items = self.get_values()
+        f = EvalItem.identify_region_comparing_function(x_items[0], y_items[0])
         for x, y in zip(self.get_values_iter(), item.get_values_iter()):
             try:
                 labels = x[self._shape_key]
+                if f:
+                    y = EvalItem.get_best_matching_result(x_items, y_items, compare_f=f, threshold=0.5)
                 y_labels = y[self._shape_key]
             except KeyError as exc:
                 logger.error(f'Shapes of compared items are different!'
