@@ -8,9 +8,10 @@ class EvalItem(object):
 
     SHAPE_KEY = None
 
-    def __init__(self, raw_data, shape_key=None):
+    def __init__(self, raw_data, shape_key=None, **kwargs):
         self._raw_data = raw_data
         self._shape_key = shape_key or self.SHAPE_KEY
+        self._kwargs = kwargs
         if not self._shape_key:
             raise ValueError('Shape key is undefined')
 

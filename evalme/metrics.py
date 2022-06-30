@@ -103,10 +103,7 @@ class Metrics(object):
             Matching score averaged over all different "from_name"s with corresponding weights taken from project.control_weights  # noqa
         """
         # decide which object to use annotation-based or result-based
-        # TODO: workaround for DEV-2762
-        if 'ff_back_dev_2762_textarea_weights_30062022_short' in kwargs.get('feature_flags', {}):
-            annotations_or_result = True
-        elif isinstance(result_first, dict) and isinstance(result_second, dict):
+        if isinstance(result_first, dict) and isinstance(result_second, dict):
             annotations_or_result = True
         elif isinstance(result_first, list) and isinstance(result_second, list):
             annotations_or_result = False
@@ -190,6 +187,11 @@ class Metrics(object):
                     control_params['label_config'] = project.get("label_config")
                 if 'control_name' in func_args[0]:
                     control_params['control_name'] = control_name
+
+                # TODO: workaround for DEV-2762
+                if 'ff_back_dev_2762_textarea_weights_30062022_short' in kwargs.get('feature_flags', {}):
+                    control_params['ff_back_dev_2762_textarea_weights_30062022_short'] = True
+
                 # get result of certain control_name
                 results_first_by_from_name = cls.filter_results_by_from_name(result_first, control_name)
                 results_second_by_from_name = cls.filter_results_by_from_name(result_second, control_name)
