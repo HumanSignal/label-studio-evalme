@@ -77,8 +77,7 @@ class Metrics(object):
     def get_type(cls, result):
         t = result.get('type')
         # check for per_region conditions
-        dev_2762 = 'ff_back_dev_2762_textarea_weights_30062022_short' in cls._feature_flags
-        if t in ('choices', 'textarea') and (not dev_2762 and t == 'textarea'):
+        if t in ('choices', 'textarea'):
             if 'start' in result['value'] and 'end' in result['value']:
                 t += '[per_region=span]'
             elif 'x' in result['value'] and 'y' in result['value']:
@@ -103,12 +102,11 @@ class Metrics(object):
         Returns:
             Matching score averaged over all different "from_name"s with corresponding weights taken from project.control_weights  # noqa
         """
-        if "feature_flags" in kwargs:
-            cls._feature_flags = kwargs['feature_flags']
-        else:
-            cls._feature_flags = {}
         # decide which object to use annotation-based or result-based
-        if isinstance(result_first, dict) and isinstance(result_second, dict):
+        # TODO: workaround for DEV-2762
+        if 'ff_back_dev_2762_textarea_weights_30062022_short' in kwargs.get('feature_flags', {}):
+            annotations_or_result = True
+        elif isinstance(result_first, dict) and isinstance(result_second, dict):
             annotations_or_result = True
         elif isinstance(result_first, list) and isinstance(result_second, list):
             annotations_or_result = False
