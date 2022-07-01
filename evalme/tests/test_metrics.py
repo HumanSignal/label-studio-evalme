@@ -90,11 +90,15 @@ def test_config_with_2_control_types():
     result_of_type2_1 = {"from_name": "image",
               "type": "labels",
               "value": {
+                  "start": 0,
+                  "end": 10,
                   "labels": ["Engine1"]
               }}
     result_of_type2_2 = {"from_name": "image",
               "type": "labels",
               "value": {
+                  "start": 11,
+                  "end": 20,
                   "labels": ["Engine2"]
               }}
     combined_1 = [result_of_type1_1, result_of_type2_1]
