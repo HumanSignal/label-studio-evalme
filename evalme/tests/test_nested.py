@@ -85,7 +85,7 @@ def test_basic_matching_function_nested_with_project_weights(labels_weight, expe
             "value": {
                 "start": 0,
                 "end": 10,
-                "text": ["sample text"]
+                "text": ["common string AAA"]
             }
         },
             {
@@ -107,7 +107,7 @@ def test_basic_matching_function_nested_with_project_weights(labels_weight, expe
                 "value": {
                     "start": 20,
                     "end": 30,
-                    "text": ["sample text"]
+                    "text": ["common string BBB"]
                 }
             }
         ],
@@ -130,7 +130,7 @@ def test_basic_matching_function_nested_with_project_weights(labels_weight, expe
                 "value": {
                     "start": 5,
                     "end": 15,
-                    "text": ["sample text"]
+                    "text": ["common string BBB"]
                 }
             }, {
             "id": "67890",
@@ -152,7 +152,7 @@ def test_basic_matching_function_nested_with_project_weights(labels_weight, expe
                     "start": 25,
                     "end": 35,
                     "text": [
-                        "sample text"
+                        "common string AAA"
                     ]
                 }
             }]

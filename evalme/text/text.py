@@ -32,7 +32,7 @@ class TextTagsEvalItem(EvalItem):
         # TODO: workaround for DEV-2762
         if self._kwargs.get('ff_back_dev_2762_textarea_weights_30062022_short'):
             return labels_match
-        
+
         return labels_match * spans_match
 
     def intersection(self, item, label_weights=None, algorithm=None, qval=None, per_label=False, iou_threshold=None):
