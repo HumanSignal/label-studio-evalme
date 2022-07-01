@@ -7,6 +7,8 @@ from evalme.metrics import Metrics
 from evalme.image.object_detection import iou_bboxes_textarea, iou_polygons_textarea
 from evalme.text.text import intersection_textarea_tagging, match_textareas, intersection_text_tagging
 
+Metrics._metrics = {}
+
 Metrics.register(
     name='1d_region_intersection_threshold',
     form='iou_threshold',

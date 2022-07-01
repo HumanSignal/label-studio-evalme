@@ -2,6 +2,8 @@ from evalme.metrics import Metrics
 
 from evalme.image.object_detection import iou_polygons
 
+Metrics._metrics = {}
+
 Metrics.register(
     name='Test',
     form='',
