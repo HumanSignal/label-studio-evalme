@@ -117,8 +117,8 @@ def test_config_with_2_control_types():
     r2 = Metrics.apply({}, [result_of_type2_1], [result_of_type2_2])
     combined_result = Metrics.apply({}, combined_1, combined_2)
     assert r1 == 1
-    assert r2 == 0.5
-    assert combined_result == 1
+    assert r2 == 0.0
+    assert combined_result == 0.5
 
 
 def test_config_with_2_control_types_no_metric_for_control():
