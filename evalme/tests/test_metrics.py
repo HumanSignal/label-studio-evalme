@@ -107,5 +107,45 @@ def test_config_with_2_control_types():
     r2 = Metrics.apply({}, [result_of_type2_1], [result_of_type2_2])
     combined_result = Metrics.apply({}, combined_1, combined_2)
     assert r1 == 1
+    assert r2 == 0.5
+    assert combined_result == 1
+
+
+def test_config_with_2_control_types_no_metric_for_control():
+    """
+    Test Metrics apply with different control types
+    """
+    result_of_type1_1 = {"from_name": "image1",
+              "type": "polygonlabels",
+              "value": {
+                  "points": [[1, 1], [1, 20], [20, 20], [20, 1]],
+                  "polygonlabels": ["Engine"]
+              }}
+    result_of_type1_2 = {"from_name": "image1",
+              "type": "polygonlabels",
+              "value": {
+                  "points": [[1, 1], [1, 20], [20, 20], [20, 1]],
+                  "polygonlabels": ["Engine"]
+              }}
+    result_of_type2_1 = {"from_name": "image",
+              "type": "no_control",
+              "value": {
+                  "start": 0,
+                  "end": 10,
+                  "labels": ["Engine1"]
+              }}
+    result_of_type2_2 = {"from_name": "image",
+              "type": "no_control",
+              "value": {
+                  "start": 11,
+                  "end": 20,
+                  "labels": ["Engine2"]
+              }}
+    combined_1 = [result_of_type1_1, result_of_type2_1]
+    combined_2 = [result_of_type1_2, result_of_type2_2]
+    r1 = Metrics.apply({}, [result_of_type1_1], [result_of_type1_2])
+    r2 = Metrics.apply({}, [result_of_type2_1], [result_of_type2_2])
+    combined_result = Metrics.apply({}, combined_1, combined_2)
+    assert r1 == 1
     assert r2 == 0.0
     assert combined_result == 1
