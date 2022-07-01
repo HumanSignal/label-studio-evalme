@@ -31,7 +31,7 @@ class TextTagsEvalItem(EvalItem):
 
         # TODO: workaround for DEV-2762
         if self._kwargs.get('ff_back_dev_2762_textarea_weights_30062022_short'):
-            return labels_match
+            return labels_match, spans_match
 
         return labels_match * spans_match
 
@@ -55,7 +55,11 @@ class TextTagsEvalItem(EvalItem):
                 best_matching_score = 0
             else:
                 # find the best matching span inside gt_values
-                best_matching_score = max(map(partial(self._match, y=pred_value, f=comparator), gt_values))
+                if self._kwargs.get('ff_back_dev_2762_textarea_weights_30062022_short'):
+                    best_matching_score = max(map(partial(self._match, y=pred_value, f=comparator), gt_values),
+                                              key = lambda r: r[1])[0]
+                else:
+                    best_matching_score = max(map(partial(self._match, y=pred_value, f=comparator), gt_values))
                 if iou_threshold is not None:
                     # make hard decision w.r.t. threshold whether current spans are matched
                     best_matching_score = float(best_matching_score > iou_threshold)

@@ -63,7 +63,7 @@ Metrics.register(
     desc='Text edit distance per polygon region'
 )
 
-@pytest.mark.parametrize('labels_weight,expected_score', [(0, 1), (1, 0.6666666666666666)])
+@pytest.mark.parametrize('labels_weight,expected_score', [(0, 0.7), (1, 0.5166666666666666)])
 def test_basic_matching_function_nested_with_project_weights(labels_weight, expected_score):
     test_data = [
         [{
@@ -85,7 +85,7 @@ def test_basic_matching_function_nested_with_project_weights(labels_weight, expe
             "value": {
                 "start": 0,
                 "end": 10,
-                "text": ["common string AAA"]
+                "text": ["common string AAAAAA"]
             }
         },
             {
@@ -107,7 +107,7 @@ def test_basic_matching_function_nested_with_project_weights(labels_weight, expe
                 "value": {
                     "start": 20,
                     "end": 30,
-                    "text": ["common string BBB"]
+                    "text": ["common string BBBBBB"]
                 }
             }
         ],
@@ -130,7 +130,7 @@ def test_basic_matching_function_nested_with_project_weights(labels_weight, expe
                 "value": {
                     "start": 5,
                     "end": 15,
-                    "text": ["common string BBB"]
+                    "text": ["common string BBBBBB"]
                 }
             }, {
             "id": "67890",
@@ -152,7 +152,7 @@ def test_basic_matching_function_nested_with_project_weights(labels_weight, expe
                     "start": 25,
                     "end": 35,
                     "text": [
-                        "common string AAA"
+                        "common string AAAAAA"
                     ]
                 }
             }]
