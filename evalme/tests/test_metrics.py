@@ -2,6 +2,16 @@ from evalme.metrics import Metrics
 
 from evalme.image.object_detection import iou_polygons
 
+from evalme.text.text import intersection_text_tagging
+
+Metrics.register(
+    name='1d_region_intersection_threshold',
+    form='iou_threshold',
+    tag='Labels',
+    func=intersection_text_tagging,
+    desc='Percentage of matched regions by IOU w.r.t threshold'
+)
+
 Metrics.register(
     name='Test',
     form='',
