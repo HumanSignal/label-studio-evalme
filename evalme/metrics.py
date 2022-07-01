@@ -29,6 +29,7 @@ class MetricWrapper(object):
 class Metrics(object):
 
     _metrics = {}
+    _feature_flags = {}
 
     @classmethod
     def _norm_tag(cls, tag):
@@ -87,7 +88,7 @@ class Metrics(object):
 
     @classmethod
     def apply(cls, project, result_first, result_second, symmetric=True, per_label=False,
-              metric_name=None, iou_threshold=None):
+              metric_name=None, iou_threshold=None, **kwargs):
         """
         Compute matching score between first and second completion results
         Args:
@@ -186,6 +187,12 @@ class Metrics(object):
                     control_params['label_config'] = project.get("label_config")
                 if 'control_name' in func_args[0]:
                     control_params['control_name'] = control_name
+
+                # TODO: workaround for DEV-2762
+                if 'ff_back_dev_2762_textarea_weights_30062022_short' in kwargs.get('feature_flags', {}) \
+                        and 'textarea' in control_type:
+                    control_params['ff_back_dev_2762_textarea_weights_30062022_short'] = True
+
                 # get result of certain control_name
                 results_first_by_from_name = cls.filter_results_by_from_name(result_first, control_name)
                 results_second_by_from_name = cls.filter_results_by_from_name(result_second, control_name)

@@ -8,6 +8,7 @@ from evalme.utils import texts_similarity, get_text_comparator, parse_config_to_
 import logging
 logger = logging.getLogger(__name__)
 
+
 class TextTagsEvalItem(EvalItem):
 
     SHAPE_KEY = 'labels'
@@ -27,6 +28,11 @@ class TextTagsEvalItem(EvalItem):
     def _match(self, x, y, f):
         labels_match = texts_similarity(x[self._shape_key], y[self._shape_key], f)
         spans_match = self.spans_iou(x, y)
+
+        # TODO: workaround for DEV-2762
+        if self._kwargs.get('ff_back_dev_2762_textarea_weights_30062022_short'):
+            return labels_match, spans_match
+
         return labels_match * spans_match
 
     def intersection(self, item, label_weights=None, algorithm=None, qval=None, per_label=False, iou_threshold=None):
@@ -49,7 +55,11 @@ class TextTagsEvalItem(EvalItem):
                 best_matching_score = 0
             else:
                 # find the best matching span inside gt_values
-                best_matching_score = max(map(partial(self._match, y=pred_value, f=comparator), gt_values))
+                if self._kwargs.get('ff_back_dev_2762_textarea_weights_30062022_short'):
+                    best_matching_score = max(map(partial(self._match, y=pred_value, f=comparator), gt_values),
+                                              key = lambda r: r[1])[0]
+                else:
+                    best_matching_score = max(map(partial(self._match, y=pred_value, f=comparator), gt_values))
                 if iou_threshold is not None:
                     # make hard decision w.r.t. threshold whether current spans are matched
                     best_matching_score = float(best_matching_score > iou_threshold)
@@ -395,9 +405,9 @@ class TaxonomyEvalItem(EvalItem):
         return score / max(len(gt), 1)
 
 
-def _as_text_tags_eval_item(item, shape_key):
+def _as_text_tags_eval_item(item, shape_key, **kwargs):
     if not isinstance(item, TextTagsEvalItem):
-        return TextTagsEvalItem(item, shape_key=shape_key)
+        return TextTagsEvalItem(item, shape_key=shape_key, **kwargs)
     return item
 
 
@@ -408,7 +418,7 @@ def _as_html_tags_eval_item(item, shape_key):
 
 
 def _as_textarea_eval_item(item):
-    if not isinstance(item, HTMLTagsEvalItem):
+    if not isinstance(item, TextAreaEvalItem):
         return TextAreaEvalItem(item)
     return item
 
@@ -418,15 +428,16 @@ def _as_taxonomy_eval_item(item):
         return TaxonomyEvalItem(item)
     return item
 
-def intersection_text_tagging(item_gt, item_pred, label_weights=None, shape_key=None, per_label=False, iou_threshold=None):
-    item_gt = _as_text_tags_eval_item(item_gt, shape_key=shape_key)
-    item_pred = _as_text_tags_eval_item(item_pred, shape_key=shape_key)
+
+def intersection_text_tagging(item_gt, item_pred, label_weights=None, shape_key=None, per_label=False, iou_threshold=None, **kwargs):
+    item_gt = _as_text_tags_eval_item(item_gt, shape_key=shape_key, **kwargs)
+    item_pred = _as_text_tags_eval_item(item_pred, shape_key=shape_key, **kwargs)
     return item_gt.intersection(item_pred, label_weights, per_label=per_label, iou_threshold=iou_threshold)
 
 
-def intersection_textarea_tagging(item_gt, item_pred, label_weights=None, shape_key='text', algorithm='Levenshtein', qval=1, per_label=False, iou_threshold=None):
-    item_gt = _as_text_tags_eval_item(item_gt, shape_key=shape_key)
-    item_pred = _as_text_tags_eval_item(item_pred, shape_key=shape_key)
+def intersection_textarea_tagging(item_gt, item_pred, label_weights=None, shape_key='text', algorithm='Levenshtein', qval=1, per_label=False, iou_threshold=None, **kwargs):
+    item_gt = _as_text_tags_eval_item(item_gt, shape_key=shape_key, **kwargs)
+    item_pred = _as_text_tags_eval_item(item_pred, shape_key=shape_key, **kwargs)
     return item_gt.intersection(item_pred, label_weights=label_weights, algorithm=algorithm, qval=qval, per_label=per_label, iou_threshold=iou_threshold)
 
 
