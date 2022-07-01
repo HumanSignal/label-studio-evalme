@@ -189,7 +189,8 @@ class Metrics(object):
                     control_params['control_name'] = control_name
 
                 # TODO: workaround for DEV-2762
-                if 'ff_back_dev_2762_textarea_weights_30062022_short' in kwargs.get('feature_flags', {}):
+                if 'ff_back_dev_2762_textarea_weights_30062022_short' in kwargs.get('feature_flags', {}) \
+                        and 'textarea' in control_type:
                     control_params['ff_back_dev_2762_textarea_weights_30062022_short'] = True
 
                 # get result of certain control_name
