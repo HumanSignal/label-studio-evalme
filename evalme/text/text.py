@@ -26,8 +26,10 @@ class TextTagsEvalItem(EvalItem):
         return iou
 
     def _match(self, x, y, f):
-        labels_match = texts_similarity(x[self._shape_key], y[self._shape_key], f)
         spans_match = self.spans_iou(x, y)
+        if spans_match == 0 and not self._kwargs.get('ff_back_dev_2762_textarea_weights_30062022_short'):
+            return 0
+        labels_match = texts_similarity(x[self._shape_key], y[self._shape_key], f)
 
         # TODO: workaround for DEV-2762
         if self._kwargs.get('ff_back_dev_2762_textarea_weights_30062022_short'):
@@ -57,7 +59,7 @@ class TextTagsEvalItem(EvalItem):
                 # find the best matching span inside gt_values
                 if self._kwargs.get('ff_back_dev_2762_textarea_weights_30062022_short'):
                     best_matching_score = max(map(partial(self._match, y=pred_value, f=comparator), gt_values),
-                                              key = lambda r: r[1])[0]
+                                              key=lambda r: r[1])[0]
                 else:
                     best_matching_score = max(map(partial(self._match, y=pred_value, f=comparator), gt_values))
                 if iou_threshold is not None:
