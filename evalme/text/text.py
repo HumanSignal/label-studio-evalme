@@ -8,6 +8,7 @@ from evalme.utils import texts_similarity, get_text_comparator, parse_config_to_
 import logging
 logger = logging.getLogger(__name__)
 
+
 class TextTagsEvalItem(EvalItem):
 
     SHAPE_KEY = 'labels'
@@ -26,9 +27,14 @@ class TextTagsEvalItem(EvalItem):
 
     def _match(self, x, y, f):
         spans_match = self.spans_iou(x, y)
-        if spans_match == 0:
+        if spans_match == 0 and not self._kwargs.get('ff_back_dev_2762_textarea_weights_30062022_short'):
             return 0
         labels_match = texts_similarity(x[self._shape_key], y[self._shape_key], f)
+
+        # TODO: workaround for DEV-2762
+        if self._kwargs.get('ff_back_dev_2762_textarea_weights_30062022_short'):
+            return labels_match, spans_match
+
         return labels_match * spans_match
 
     def intersection(self, item, label_weights=None, algorithm=None, qval=None, per_label=False, iou_threshold=None):
@@ -51,9 +57,7 @@ class TextTagsEvalItem(EvalItem):
                 best_matching_score = 0
             else:
                 # find the best matching span inside gt_values
-                best_matching_score = 0
-                for gt_value in gt_values:
-                    best_matching_score = max(best_matching_score, self._match(x=gt_value, y=pred_value, f=comparator))
+                best_matching_score = max(map(partial(self._match, y=pred_value, f=comparator), gt_values))
                 if iou_threshold is not None:
                     # make hard decision w.r.t. threshold whether current spans are matched
                     best_matching_score = float(best_matching_score > iou_threshold)
@@ -77,6 +81,7 @@ class TextTagsEvalItem(EvalItem):
                     weight = 1
                 total_score += weight * best_matching_score
                 total_weight += weight
+
         if per_label:
             # average per-label score
             for l in total_score:
@@ -85,6 +90,7 @@ class TextTagsEvalItem(EvalItem):
                 else:
                     total_score[l] /= total_weight[l]
             return total_score
+
         # otherwise return overall score
         if total_weight == 0:
             return 0
@@ -226,13 +232,18 @@ class TaxonomyEvalItem(EvalItem):
                     taxonomy_gt = item_gt['taxonomy']
                     taxonomy_pred_list = list()
                     taxonomy_gt_list = list()
-                    for item_pred_tx in taxonomy_pred:
-                        taxonomy_pred_list.extend(TaxonomyEvalItem._transform_tree(master_tree, item_pred_tx))
-                    for item_gt_tx in taxonomy_gt:
-                        taxonomy_gt_list.extend(TaxonomyEvalItem._transform_tree(master_tree, item_gt_tx))
-                    for item in taxonomy_pred_list:
-                        if item in taxonomy_gt_list:
-                            results[str(item[-1])] = label_weights.get(str(item[-1]), 1)
+                    try:
+                        for item_pred_tx in taxonomy_pred:
+                            taxonomy_pred_list.extend(TaxonomyEvalItem._transform_tree(master_tree, item_pred_tx))
+                        for item_gt_tx in taxonomy_gt:
+                            taxonomy_gt_list.extend(TaxonomyEvalItem._transform_tree(master_tree, item_gt_tx))
+                        for item in taxonomy_pred_list:
+                            if item in taxonomy_gt_list:
+                                results[str(item[-1])] = label_weights.get(str(item[-1]), 1)
+                    # if we couldn't transform to a tree, than fall to simple
+                    except KeyError:
+                        score = int(taxonomy_pred == taxonomy_gt)
+                        results[str(taxonomy_pred[-1])] = score
             return results
         else:
             for item_pred in pred:
@@ -247,14 +258,18 @@ class TaxonomyEvalItem(EvalItem):
                         break
                     else:
                         temp = 0
-                        for item_pred_tx in taxonomy_pred:
-                            taxonomy_pred_list.extend(TaxonomyEvalItem._transform_tree(master_tree, item_pred_tx))
-                        for item_gt_tx in taxonomy_gt:
-                            taxonomy_gt_list.extend(TaxonomyEvalItem._transform_tree(master_tree, item_gt_tx))
-                        for item in taxonomy_pred_list:
-                            if item in taxonomy_gt_list:
-                                temp += 1
-                        matches += (temp / max(len(taxonomy_gt_list), 1))
+                        try:
+                            for item_pred_tx in taxonomy_pred:
+                                taxonomy_pred_list.extend(TaxonomyEvalItem._transform_tree(master_tree, item_pred_tx))
+                            for item_gt_tx in taxonomy_gt:
+                                taxonomy_gt_list.extend(TaxonomyEvalItem._transform_tree(master_tree, item_gt_tx))
+                            for item in taxonomy_pred_list:
+                                if item in taxonomy_gt_list:
+                                    temp += 1
+                            matches += (temp / max(len(taxonomy_gt_list), 1))
+                        # if we couldn't transform to a tree, than fall to simple equals
+                        except KeyError:
+                            matches = int(taxonomy_pred == taxonomy_gt)
                         tasks += 1
             return matches / max(tasks, 1)
 
@@ -388,9 +403,9 @@ class TaxonomyEvalItem(EvalItem):
         return score / max(len(gt), 1)
 
 
-def _as_text_tags_eval_item(item, shape_key):
+def _as_text_tags_eval_item(item, shape_key, **kwargs):
     if not isinstance(item, TextTagsEvalItem):
-        return TextTagsEvalItem(item, shape_key=shape_key)
+        return TextTagsEvalItem(item, shape_key=shape_key, **kwargs)
     return item
 
 
@@ -401,7 +416,7 @@ def _as_html_tags_eval_item(item, shape_key):
 
 
 def _as_textarea_eval_item(item):
-    if not isinstance(item, HTMLTagsEvalItem):
+    if not isinstance(item, TextAreaEvalItem):
         return TextAreaEvalItem(item)
     return item
 
@@ -411,15 +426,16 @@ def _as_taxonomy_eval_item(item):
         return TaxonomyEvalItem(item)
     return item
 
-def intersection_text_tagging(item_gt, item_pred, label_weights=None, shape_key=None, per_label=False, iou_threshold=None):
-    item_gt = _as_text_tags_eval_item(item_gt, shape_key=shape_key)
-    item_pred = _as_text_tags_eval_item(item_pred, shape_key=shape_key)
+
+def intersection_text_tagging(item_gt, item_pred, label_weights=None, shape_key=None, per_label=False, iou_threshold=None, **kwargs):
+    item_gt = _as_text_tags_eval_item(item_gt, shape_key=shape_key, **kwargs)
+    item_pred = _as_text_tags_eval_item(item_pred, shape_key=shape_key, **kwargs)
     return item_gt.intersection(item_pred, label_weights, per_label=per_label, iou_threshold=iou_threshold)
 
 
-def intersection_textarea_tagging(item_gt, item_pred, label_weights=None, shape_key='text', algorithm='Levenshtein', qval=1, per_label=False, iou_threshold=None):
-    item_gt = _as_text_tags_eval_item(item_gt, shape_key=shape_key)
-    item_pred = _as_text_tags_eval_item(item_pred, shape_key=shape_key)
+def intersection_textarea_tagging(item_gt, item_pred, label_weights=None, shape_key='text', algorithm='Levenshtein', qval=1, per_label=False, iou_threshold=None, **kwargs):
+    item_gt = _as_text_tags_eval_item(item_gt, shape_key=shape_key, **kwargs)
+    item_pred = _as_text_tags_eval_item(item_pred, shape_key=shape_key, **kwargs)
     return item_gt.intersection(item_pred, label_weights=label_weights, algorithm=algorithm, qval=qval, per_label=per_label, iou_threshold=iou_threshold)
 
 

@@ -298,3 +298,28 @@ def test_dynamic_choices():
                                              per_label=True)
     assert score == 1
     assert score_per_label == {'Products': 1, 'Loan Payment Center': 1}
+
+
+def test_choices_diff_choices_groups():
+    test_data1 = [{"id": "QAZRsnSniS", "type": "choices", "value": {"choices": ["Negative"]}, "origin": "manual",
+                   "to_name": "text", "from_name": "sentiment1"}]
+    test_data2 = [{"id": "p8If1f0cDV", "type": "choices", "value": {"choices": ["Negative2"]}, "origin": "manual",
+                   "to_name": "text", "from_name": "sentiment2"}]
+    score = exact_matching_choices(test_data1,
+                                   test_data2,
+                                   {})
+    score_per_label = exact_matching_choices(test_data1,
+                                             test_data2,
+                                             {},
+                                             per_label=True)
+    assert score == 0
+    assert score_per_label == {'Negative': 0}
+    score = exact_matching_choices(test_data2,
+                                   test_data1,
+                                   {})
+    score_per_label = exact_matching_choices(test_data2,
+                                             test_data1,
+                                             {},
+                                             per_label=True)
+    assert score == 0
+    assert score_per_label == {'Negative2': 0}

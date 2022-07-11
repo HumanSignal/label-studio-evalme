@@ -76,7 +76,7 @@ class ObjectDetectionEvalItem(EvalItem):
                     ious[l].append(max_iou)
             else:
                 weight = sum(label_weights.get(l, 1) for l in gt[self._shape_key])
-                ious.append(max_iou * weight)
+                ious.append(max_iou)
                 weights.append(weight)
         if per_label:
             return {l: float(np.mean(v)) for l, v in ious.items()}
@@ -629,7 +629,7 @@ class BrushEvalItem(ObjectDetectionEvalItem):
                     ious[l].append(max_iou)
             else:
                 weight = sum(label_weights.get(l, 1) for l in gt[self._shape_key]) / max(len(gt[self._shape_key]), 1)
-                ious.append(max_iou * weight)
+                ious.append(max_iou)
                 weights.append(weight)
         if per_label:
             return {l: float(np.mean(v)) for l, v in ious.items()}
