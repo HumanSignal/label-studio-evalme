@@ -2,6 +2,16 @@ from evalme.metrics import Metrics
 
 from evalme.image.object_detection import iou_polygons
 
+from evalme.text.text import intersection_text_tagging
+
+Metrics.register(
+    name='1d_region_intersection_threshold',
+    form='iou_threshold',
+    tag='Labels',
+    func=intersection_text_tagging,
+    desc='Percentage of matched regions by IOU w.r.t threshold'
+)
+
 Metrics.register(
     name='Test',
     form='',
@@ -75,13 +85,13 @@ def test_config_with_2_control_types():
     """
     Test Metrics apply with different control types
     """
-    result_of_type1_1 = {"from_name": "image",
+    result_of_type1_1 = {"from_name": "image1",
               "type": "polygonlabels",
               "value": {
                   "points": [[1, 1], [1, 20], [20, 20], [20, 1]],
                   "polygonlabels": ["Engine"]
               }}
-    result_of_type1_2 = {"from_name": "image",
+    result_of_type1_2 = {"from_name": "image1",
               "type": "polygonlabels",
               "value": {
                   "points": [[1, 1], [1, 20], [20, 20], [20, 1]],
@@ -90,11 +100,15 @@ def test_config_with_2_control_types():
     result_of_type2_1 = {"from_name": "image",
               "type": "labels",
               "value": {
+                  "start": 0,
+                  "end": 10,
                   "labels": ["Engine1"]
               }}
     result_of_type2_2 = {"from_name": "image",
               "type": "labels",
               "value": {
+                  "start": 11,
+                  "end": 20,
                   "labels": ["Engine2"]
               }}
     combined_1 = [result_of_type1_1, result_of_type2_1]
@@ -105,3 +119,43 @@ def test_config_with_2_control_types():
     assert r1 == 1
     assert r2 == 0.0
     assert combined_result == 0.5
+
+
+def test_config_with_2_control_types_no_metric_for_control():
+    """
+    Test Metrics apply with different control types
+    """
+    result_of_type1_1 = {"from_name": "image1",
+              "type": "polygonlabels",
+              "value": {
+                  "points": [[1, 1], [1, 20], [20, 20], [20, 1]],
+                  "polygonlabels": ["Engine"]
+              }}
+    result_of_type1_2 = {"from_name": "image1",
+              "type": "polygonlabels",
+              "value": {
+                  "points": [[1, 1], [1, 20], [20, 20], [20, 1]],
+                  "polygonlabels": ["Engine"]
+              }}
+    result_of_type2_1 = {"from_name": "image",
+              "type": "no_control",
+              "value": {
+                  "start": 0,
+                  "end": 10,
+                  "labels": ["Engine1"]
+              }}
+    result_of_type2_2 = {"from_name": "image",
+              "type": "no_control",
+              "value": {
+                  "start": 11,
+                  "end": 20,
+                  "labels": ["Engine2"]
+              }}
+    combined_1 = [result_of_type1_1, result_of_type2_1]
+    combined_2 = [result_of_type1_2, result_of_type2_2]
+    r1 = Metrics.apply({}, [result_of_type1_1], [result_of_type1_2])
+    r2 = Metrics.apply({}, [result_of_type2_1], [result_of_type2_2])
+    combined_result = Metrics.apply({}, combined_1, combined_2)
+    assert r1 == 1
+    assert r2 == 0.0
+    assert combined_result == 1

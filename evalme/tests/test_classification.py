@@ -1,6 +1,8 @@
 import pytest
 
-from evalme.classification import ClassificationEvalItem, ChoicesEvalItem, naive
+from evalme.classification import ClassificationEvalItem, ChoicesEvalItem, naive, exact_matching_choices
+
+from evalme.metrics import Metrics
 
 
 @pytest.mark.ClassificationEvalItem
@@ -206,6 +208,7 @@ def test_naive_matching():
             }
         ]]
     assert naive(test_data[0], test_data[1]) == 1
+    assert Metrics.apply({}, test_data[0], test_data[1], metric_name='naive') == 1
 
 
 def test_naive_matching_per_label():
@@ -230,6 +233,7 @@ def test_naive_matching_per_label():
             }
         ]]
     assert naive(test_data[0], test_data[1], per_label=True) == {"Accessories\\1\\2": 1}
+    assert Metrics.apply({}, test_data[0], test_data[1], metric_name='naive', per_label=True) == {"Accessories\\1\\2": 1}
 
 
 def test_naive_not_matching():
@@ -254,6 +258,7 @@ def test_naive_not_matching():
             }
         ]]
     assert naive(test_data[0], test_data[1]) == 0
+    assert Metrics.apply({}, test_data[0], test_data[1], metric_name='naive') == 0
 
 
 def test_naive_not_matching_per_label():
@@ -278,3 +283,43 @@ def test_naive_not_matching_per_label():
             }
         ]]
     assert naive(test_data[0], test_data[1], per_label=True) == {"Accessories1": 0}
+    assert Metrics.apply({}, test_data[0], test_data[1], metric_name='naive', per_label=True) == {"Accessories1": 0, "Accessories2": 0}
+
+
+def test_dynamic_choices():
+    test_data1 = [{'value': {'choices': [['Products', 'Loan Payment Center']]}, 'id': 'edeDdGdNnb',
+                   'from_name': 'dynamic_choices', 'to_name': 'text', 'type': 'choices', 'origin': 'manual'}]
+    score = exact_matching_choices(test_data1,
+                                   test_data1,
+                                   {})
+    score_per_label = exact_matching_choices(test_data1,
+                                             test_data1,
+                                             {},
+                                             per_label=True)
+    assert score == 1
+    assert score_per_label == {'Products': 1, 'Loan Payment Center': 1}
+
+
+def test_choices_diff_choices_groups():
+    test_data1 = [{"id": "QAZRsnSniS", "type": "choices", "value": {"choices": ["Negative"]}, "origin": "manual",
+                   "to_name": "text", "from_name": "sentiment1"}]
+    test_data2 = [{"id": "p8If1f0cDV", "type": "choices", "value": {"choices": ["Negative2"]}, "origin": "manual",
+                   "to_name": "text", "from_name": "sentiment2"}]
+    score = exact_matching_choices(test_data1,
+                                   test_data2,
+                                   {})
+    score_per_label = exact_matching_choices(test_data1,
+                                             test_data2,
+                                             {},
+                                             per_label=True)
+    assert score == 0
+    assert score_per_label == {'Negative': 0}
+    score = exact_matching_choices(test_data2,
+                                   test_data1,
+                                   {})
+    score_per_label = exact_matching_choices(test_data2,
+                                             test_data1,
+                                             {},
+                                             per_label=True)
+    assert score == 0
+    assert score_per_label == {'Negative2': 0}

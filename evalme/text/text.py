@@ -8,6 +8,7 @@ from evalme.utils import texts_similarity, get_text_comparator, parse_config_to_
 import logging
 logger = logging.getLogger(__name__)
 
+
 class TextTagsEvalItem(EvalItem):
 
     SHAPE_KEY = 'labels'
@@ -25,8 +26,15 @@ class TextTagsEvalItem(EvalItem):
         return iou
 
     def _match(self, x, y, f):
-        labels_match = texts_similarity(x[self._shape_key], y[self._shape_key], f)
         spans_match = self.spans_iou(x, y)
+        if spans_match == 0 and not self._kwargs.get('ff_back_dev_2762_textarea_weights_30062022_short'):
+            return 0
+        labels_match = texts_similarity(x[self._shape_key], y[self._shape_key], f)
+
+        # TODO: workaround for DEV-2762
+        if self._kwargs.get('ff_back_dev_2762_textarea_weights_30062022_short'):
+            return labels_match, spans_match
+
         return labels_match * spans_match
 
     def intersection(self, item, label_weights=None, algorithm=None, qval=None, per_label=False, iou_threshold=None):
@@ -49,7 +57,11 @@ class TextTagsEvalItem(EvalItem):
                 best_matching_score = 0
             else:
                 # find the best matching span inside gt_values
-                best_matching_score = max(map(partial(self._match, y=pred_value, f=comparator), gt_values))
+                if self._kwargs.get('ff_back_dev_2762_textarea_weights_30062022_short'):
+                    best_matching_score = max(map(partial(self._match, y=pred_value, f=comparator), gt_values),
+                                              key=lambda r: r[1])[0]
+                else:
+                    best_matching_score = max(map(partial(self._match, y=pred_value, f=comparator), gt_values))
                 if iou_threshold is not None:
                     # make hard decision w.r.t. threshold whether current spans are matched
                     best_matching_score = float(best_matching_score > iou_threshold)
@@ -202,7 +214,7 @@ class TaxonomyEvalItem(EvalItem):
                     not_found += 1
             return matches / max((matches + not_found), 1)
 
-    def spans_iou(self, prediction, per_label=False, label_config=None, label_weights=dict()):
+    def spans_iou(self, prediction, per_label=False, label_config=None, label_weights=dict(), control_name=None):
         """
         Matching of taxonomy labels depending on content
         """
@@ -210,7 +222,7 @@ class TaxonomyEvalItem(EvalItem):
             logger.warning("No label config - returning simple score.")
             return self.spans_match(prediction, per_label=per_label)
 
-        master_tree = TaxonomyEvalItem._tree(label_config)
+        master_tree = TaxonomyEvalItem._tree(label_config=label_config, control_name=control_name)
 
         gt = self.get_values_iter()
         pred = prediction.get_values_iter()
@@ -224,13 +236,18 @@ class TaxonomyEvalItem(EvalItem):
                     taxonomy_gt = item_gt['taxonomy']
                     taxonomy_pred_list = list()
                     taxonomy_gt_list = list()
-                    for item_pred_tx in taxonomy_pred:
-                        taxonomy_pred_list.extend(TaxonomyEvalItem._transform_tree(master_tree, item_pred_tx))
-                    for item_gt_tx in taxonomy_gt:
-                        taxonomy_gt_list.extend(TaxonomyEvalItem._transform_tree(master_tree, item_gt_tx))
-                    for item in taxonomy_pred_list:
-                        if item in taxonomy_gt_list:
-                            results[str(item[-1])] = label_weights.get(str(item[-1]), 1)
+                    try:
+                        for item_pred_tx in taxonomy_pred:
+                            taxonomy_pred_list.extend(TaxonomyEvalItem._transform_tree(master_tree, item_pred_tx))
+                        for item_gt_tx in taxonomy_gt:
+                            taxonomy_gt_list.extend(TaxonomyEvalItem._transform_tree(master_tree, item_gt_tx))
+                        for item in taxonomy_pred_list:
+                            if item in taxonomy_gt_list:
+                                results[str(item[-1])] = label_weights.get(str(item[-1]), 1)
+                    # if we couldn't transform to a tree, than fall to simple
+                    except KeyError:
+                        score = int(taxonomy_pred == taxonomy_gt)
+                        results[str(taxonomy_pred[-1])] = score
             return results
         else:
             for item_pred in pred:
@@ -245,14 +262,18 @@ class TaxonomyEvalItem(EvalItem):
                         break
                     else:
                         temp = 0
-                        for item_pred_tx in taxonomy_pred:
-                            taxonomy_pred_list.extend(TaxonomyEvalItem._transform_tree(master_tree, item_pred_tx))
-                        for item_gt_tx in taxonomy_gt:
-                            taxonomy_gt_list.extend(TaxonomyEvalItem._transform_tree(master_tree, item_gt_tx))
-                        for item in taxonomy_pred_list:
-                            if item in taxonomy_gt_list:
-                                temp += 1
-                        matches += (temp / max(len(taxonomy_gt_list), 1))
+                        try:
+                            for item_pred_tx in taxonomy_pred:
+                                taxonomy_pred_list.extend(TaxonomyEvalItem._transform_tree(master_tree, item_pred_tx))
+                            for item_gt_tx in taxonomy_gt:
+                                taxonomy_gt_list.extend(TaxonomyEvalItem._transform_tree(master_tree, item_gt_tx))
+                            for item in taxonomy_pred_list:
+                                if item in taxonomy_gt_list:
+                                    temp += 1
+                            matches += (temp / max(len(taxonomy_gt_list), 1))
+                        # if we couldn't transform to a tree, than fall to simple equals
+                        except KeyError:
+                            matches = int(taxonomy_pred == taxonomy_gt)
                         tasks += 1
             return matches / max(tasks, 1)
 
@@ -284,16 +305,27 @@ class TaxonomyEvalItem(EvalItem):
             return matches / max(tasks, 1)
 
     @staticmethod
-    def _tree(label_config):
+    def _tree(label_config, control_name=None):
         """
         Creating Tree from label_config
         """
 
         def recursive_lookup(d, k='Taxonomy'):
+            """
+            Find Taxonomy in label config
+            :param d: part of config
+            :param k: tag to find
+            :return: Taxonomy dict
+            """
             if not isinstance(d, dict):
                 return None
             if k in list(d.keys()):
-                return d[k]
+                if isinstance(d[k], list):
+                    tax_items = [item for item in d[k] if item['@name'] == control_name]
+                    if len(tax_items) > 0:
+                        return tax_items[0]
+                elif d[k]['@name'] == control_name:
+                    return d[k]
             for v in d.values():
                 if isinstance(v, dict):
                     a = recursive_lookup(v, k)
@@ -375,9 +407,9 @@ class TaxonomyEvalItem(EvalItem):
         return score / max(len(gt), 1)
 
 
-def _as_text_tags_eval_item(item, shape_key):
+def _as_text_tags_eval_item(item, shape_key, **kwargs):
     if not isinstance(item, TextTagsEvalItem):
-        return TextTagsEvalItem(item, shape_key=shape_key)
+        return TextTagsEvalItem(item, shape_key=shape_key, **kwargs)
     return item
 
 
@@ -388,7 +420,7 @@ def _as_html_tags_eval_item(item, shape_key):
 
 
 def _as_textarea_eval_item(item):
-    if not isinstance(item, HTMLTagsEvalItem):
+    if not isinstance(item, TextAreaEvalItem):
         return TextAreaEvalItem(item)
     return item
 
@@ -398,15 +430,16 @@ def _as_taxonomy_eval_item(item):
         return TaxonomyEvalItem(item)
     return item
 
-def intersection_text_tagging(item_gt, item_pred, label_weights=None, shape_key=None, per_label=False, iou_threshold=None):
-    item_gt = _as_text_tags_eval_item(item_gt, shape_key=shape_key)
-    item_pred = _as_text_tags_eval_item(item_pred, shape_key=shape_key)
+
+def intersection_text_tagging(item_gt, item_pred, label_weights=None, shape_key=None, per_label=False, iou_threshold=None, **kwargs):
+    item_gt = _as_text_tags_eval_item(item_gt, shape_key=shape_key, **kwargs)
+    item_pred = _as_text_tags_eval_item(item_pred, shape_key=shape_key, **kwargs)
     return item_gt.intersection(item_pred, label_weights, per_label=per_label, iou_threshold=iou_threshold)
 
 
-def intersection_textarea_tagging(item_gt, item_pred, label_weights=None, shape_key='text', algorithm='Levenshtein', qval=1, per_label=False, iou_threshold=None):
-    item_gt = _as_text_tags_eval_item(item_gt, shape_key=shape_key)
-    item_pred = _as_text_tags_eval_item(item_pred, shape_key=shape_key)
+def intersection_textarea_tagging(item_gt, item_pred, label_weights=None, shape_key='text', algorithm='Levenshtein', qval=1, per_label=False, iou_threshold=None, **kwargs):
+    item_gt = _as_text_tags_eval_item(item_gt, shape_key=shape_key, **kwargs)
+    item_pred = _as_text_tags_eval_item(item_pred, shape_key=shape_key, **kwargs)
     return item_gt.intersection(item_pred, label_weights=label_weights, algorithm=algorithm, qval=qval, per_label=per_label, iou_threshold=iou_threshold)
 
 
@@ -426,10 +459,14 @@ def match_textareas(item_gt, item_pred, algorithm='Levenshtein', qval=1, **kwarg
     return item_gt.match(item_pred, algorithm, qval)
 
 
-def intersection_taxonomy(item_gt, item_pred, label_weights=dict(), per_label=False, label_config=None):
+def intersection_taxonomy(item_gt, item_pred, label_weights=dict(), per_label=False, label_config=None, control_name=None):
     item_gt = _as_taxonomy_eval_item(item_gt)
     item_pred = _as_taxonomy_eval_item(item_pred)
-    return item_gt.spans_iou(item_pred, per_label=per_label, label_config=label_config, label_weights=label_weights)
+    return item_gt.spans_iou(item_pred,
+                             per_label=per_label,
+                             label_config=label_config,
+                             label_weights=label_weights,
+                             control_name=control_name)
 
 
 def path_match_taxonomy(item_gt, item_pred, label_weights=dict(), per_label=False):

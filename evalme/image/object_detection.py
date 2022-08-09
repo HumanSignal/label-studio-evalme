@@ -76,7 +76,7 @@ class ObjectDetectionEvalItem(EvalItem):
                     ious[l].append(max_iou)
             else:
                 weight = sum(label_weights.get(l, 1) for l in gt[self._shape_key])
-                ious.append(max_iou * weight)
+                ious.append(max_iou)
                 weights.append(weight)
         if per_label:
             return {l: float(np.mean(v)) for l, v in ious.items()}
@@ -475,34 +475,45 @@ class OCREvalItem(ObjectDetectionEvalItem):
         # group result by group id and compare
         for id_gt in gt_ids:
             # get ground truth results and types
-            gt_results = self._get_results_by_id(id_gt)
+            gt_results = gt_ids[id_gt]
             gt_types = gt_results.keys()
             for id_pred in pred_ids:
                 # get prediction results and types from current id_pred
-                pred_results = pred._get_results_by_id(id_pred)
+                pred_results = pred_ids[id_pred]
                 pred_types = pred_results.keys()
                 # Tag for region selection [check OCR_SHAPES list]
                 for rec_type in OCREvalItem.OCR_SHAPES:
                     # check if both groups have region selection tags
                     if rec_type in pred_types and rec_type in gt_types:
-                        # check labels and compare labels
-                        gt_results_labels = gt_results.get('labels', [])
-                        pred_results_labels = pred_results.get('labels', [])
-                        if len(gt_results_labels) > 1 \
-                                or len(pred_results_labels) > 1 \
-                                or gt_results_labels[0]['value']['labels'] != pred_results_labels[0]['value']['labels']:
-                            continue
                         # get max score for region selection
                         iou_score = self._get_max_iou_rectangles(gt_results[rec_type], pred_results[rec_type])
                         if iou_score < threshold:
                             continue
                         else:
-                            # compare text results
-                            text_distance = self._compare_text_tags(pred_types=pred_types,
-                                                                    gt_results=gt_results,
-                                                                    pred_results=pred_results,
-                                                                    algorithm=algorithm,
-                                                                    qval=qval)
+                            # check labels and compare labels
+                            gt_results_labels = gt_results.get('labels', [])
+                            pred_results_labels = pred_results.get('labels', [])
+                            if len(gt_results_labels) == 1 and \
+                                    len(pred_results_labels) == 1 and \
+                                    gt_results_labels[0]['value']['labels'] == \
+                                    pred_results_labels[0]['value']['labels']:
+                                # compare text results
+                                text_distance = self._compare_text_tags(pred_types=pred_types,
+                                                                        gt_results=gt_results,
+                                                                        pred_results=pred_results,
+                                                                        algorithm=algorithm,
+                                                                        qval=qval)
+                                if text_distance is None:
+                                    continue
+                            else:
+                                # in case of different labels or many labels
+                                text_tag_in_result = [item for item in pred_types if
+                                                      item != 'labels' and item not in OCREvalItem.OCR_SHAPES]
+                                if not text_tag_in_result:
+                                    continue
+                                text_distance = 0
+
+                            # prepare result
                             if per_label:
                                 item = pred_results_labels[0]['value']['labels']
                                 for subitem in item:
@@ -514,7 +525,7 @@ class OCREvalItem(ObjectDetectionEvalItem):
             return results, num_results
         else:
             values = results.values()
-            return sum(values) / len(values) if len(values) > 0 else 0
+            return sum(values) / len(values) if len(values) > 0 else None
 
     def _get_max_iou_rectangles(self, gt, pred):
         """
@@ -543,26 +554,15 @@ class OCREvalItem(ObjectDetectionEvalItem):
                 res.add(r)
         return res
 
-    def _get_results_by_id(self, id):
-        """
-        Get list of results by ID
-        """
-        res = defaultdict(list)
-        for result in self._raw_data['result']:
-            if result.get('id') == id:
-                res[result['type'].lower()].append(result)
-        return res
-
     def _get_ids_from_results(self):
         """
         Get result IDs from results to group
         """
-        res = set()
+        res = defaultdict(lambda: defaultdict(list))
         for result in self._raw_data['result']:
             id = result.get('id')
-            if id:
-                res.add(id)
-        return list(res)
+            res[id][result['type'].lower()].append(result)
+        return res
 
     def _compare_text_tags(self,
                            pred_types,
@@ -582,7 +582,7 @@ class OCREvalItem(ObjectDetectionEvalItem):
         text_tag_in_result = [item for item in pred_types if item != 'labels' and item not in OCREvalItem.OCR_SHAPES]
         # return 0 if there are no text tag in result
         if len(text_tag_in_result) == 0:
-            return 0
+            return None
         # construct list of text results
         elif len(text_tag_in_result) == 1:
             gt_results_text = gt_results[text_tag_in_result[0]]
@@ -629,7 +629,7 @@ class BrushEvalItem(ObjectDetectionEvalItem):
                     ious[l].append(max_iou)
             else:
                 weight = sum(label_weights.get(l, 1) for l in gt[self._shape_key]) / max(len(gt[self._shape_key]), 1)
-                ious.append(max_iou * weight)
+                ious.append(max_iou)
                 weights.append(weight)
         if per_label:
             return {l: float(np.mean(v)) for l, v in ious.items()}
