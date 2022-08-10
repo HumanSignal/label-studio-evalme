@@ -14,7 +14,7 @@ class VideoEvalItem(EvalItem):
         IOU over time for video frames
 
         :param pred: Predicted VideoEvalItem
-        :param per_label: per label calcu;ation flag
+        :param per_label: per label calculation flag
         :return: float or dict of floats
         """
         # prepare results vars for per_label
