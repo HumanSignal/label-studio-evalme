@@ -157,7 +157,7 @@ class Matcher:
                             score += matching
                             tasks += 1
                     except Exception as exc:
-                        logger.error(
+                        logger.debug(
                             f"Can\'t compute matching score in similarity matrix for task=,"
                             f"annotation={annotation}, prediction={prediction}, "
                             f"Reason: {exc}",
@@ -222,7 +222,7 @@ class Matcher:
                     score += matching
                     tasks += 1
                 except Exception as exc:
-                    logger.error(
+                    logger.debug(
                         f"Can\'t compute matching score in similarity matrix for task=,"
                         f"annotation={annotation}, prediction={prediction}, "
                         f"Reason: {exc}",
@@ -254,7 +254,7 @@ class Matcher:
                         score[label] += matching[label]
                         tasks[label] += 1
                 except Exception as exc:
-                    logger.error(
+                    logger.debug(
                         f"Can\'t compute matching score in similarity matrix for task=,"
                         f"annotation={annotation}, prediction={prediction}, "
                         f"Reason: {exc}",
@@ -312,7 +312,7 @@ class Matcher:
                                           label_weights=label_weights)
                     results[annotation['id']][prediction['id']] = t
                 except Exception as exc:
-                    logger.error(
+                    logger.debug(
                         f"Can\'t compute matching score in similarity matrix for task=,"
                         f"annotation={annotation}, prediction={prediction}, "
                         f"Reason: {exc}",
