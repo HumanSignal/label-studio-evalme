@@ -134,7 +134,7 @@ def naive(x, y, per_label=False, **kwargs):
                     t = x[i]['type']
                     # trying to extract label from annotation
                     try:
-                        label = x[i]['value'][t]
+                        label = x[i]['value'][t] if t not in ['htmllabels', 'hypertextlabels'] else x[i]['value']['hypertextlabels'] or x[i]['value']['htmllabels']
                         if isinstance(label, list):
                             if len(label) == 1:
                                 label = str(label[0])
@@ -143,7 +143,7 @@ def naive(x, y, per_label=False, **kwargs):
                     # No-label if exception occurs
                     except Exception as e:
                         logger.error("Can't assign result for label.", exc_info=True)
-                        label = 'No-label'
+                        continue
                     if x[i]['value'] == y[i]['value']:
                         results[label] += 1
                     counts[label] += 1
