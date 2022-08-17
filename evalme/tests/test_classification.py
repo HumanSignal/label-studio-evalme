@@ -323,3 +323,11 @@ def test_choices_diff_choices_groups():
                                              per_label=True)
     assert score == 0
     assert score_per_label == {'Negative2': 0}
+
+
+def test_naive_for_htmllabels():
+    result = [{"from_name":'header',"to_name":'text',"type":'hypertextlabels',
+               "value":{"end":'/section/',"endOffset":1,"htmllabels":["data"],"start":'/section/',"startOffset":0,
+                        "text":'1/1/2023'}}]
+    assert naive(result, result) == 1
+    assert naive(result, result, per_label=True) == {"data": 1}

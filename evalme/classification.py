@@ -134,7 +134,8 @@ def naive(x, y, per_label=False, **kwargs):
                     t = x[i]['type']
                     # trying to extract label from annotation
                     try:
-                        label = x[i]['value'][t] if t not in ['htmllabels', 'hypertextlabels'] else x[i]['value']['hypertextlabels'] or x[i]['value']['htmllabels']
+                        label = x[i]['value'][t] if t not in ['htmllabels', 'hypertextlabels'] \
+                            else x[i]['value'].get('hypertextlabels') or x[i]['value'].get('htmllabels')
                         if isinstance(label, list):
                             if len(label) == 1:
                                 label = str(label[0])
