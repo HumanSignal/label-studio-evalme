@@ -442,6 +442,12 @@ def _as_taxonomy_eval_item(item):
     return item
 
 
+def _as_number_eval_item(item):
+    if not isinstance(item, SimpleComparisionEvalItem):
+        return SimpleComparisionEvalItem(item, shape_key='number')
+    return item
+
+
 def intersection_text_tagging(item_gt, item_pred, label_weights=None, shape_key=None, per_label=False, iou_threshold=None, **kwargs):
     item_gt = _as_text_tags_eval_item(item_gt, shape_key=shape_key, **kwargs)
     item_pred = _as_text_tags_eval_item(item_pred, shape_key=shape_key, **kwargs)
@@ -484,3 +490,12 @@ def path_match_taxonomy(item_gt, item_pred, label_weights=dict(), per_label=Fals
     item_gt = _as_taxonomy_eval_item(item_gt)
     item_pred = _as_taxonomy_eval_item(item_pred)
     return item_gt.path_matches(item_pred, per_label=per_label, label_weights=label_weights)
+
+
+def numbers_match(item_gt, item_pred, **kwargs):
+    if kwargs.get('per_label'):
+        # per-label mode is not supported for the numbers text area
+        return {}
+    item_gt = _as_number_eval_item(item_gt)
+    item_pred = _as_number_eval_item(item_pred)
+    return item_gt.match(item_pred)
