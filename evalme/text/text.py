@@ -180,6 +180,7 @@ class HTMLTagsEvalItem(TextTagsEvalItem):
         spans_match = self.spans_iou(x, y)
         return labels_match * spans_match
 
+
 class TextAreaEvalItem(EvalItem):
     SHAPE_KEY = 'text'
 
@@ -405,6 +406,16 @@ class TaxonomyEvalItem(EvalItem):
             else:
                 break
         return score / max(len(gt), 1)
+
+
+class SimpleComparisionEvalItem(EvalItem):
+    SHAPE_KEY = 'number'
+
+    def _match(self, gt, pred):
+        return gt[self._shape_key] == pred[self._shape_key]
+
+    def match(self, pred, per_label=False, label_weights=None):
+        return self.max_score(pred, matcher=self._match)
 
 
 def _as_text_tags_eval_item(item, shape_key, **kwargs):
