@@ -27,6 +27,7 @@ class MetricWrapper(object):
 
 
 class Metrics(object):
+    IGNORE_BACKUP_PARAMS = ['__aws_arn']
 
     _metrics = {}
     _feature_flags = {}
@@ -140,14 +141,15 @@ class Metrics(object):
             return min(a, b)
         # get metric params
         params = project.get("metric_params", {})
-        # remove backup parameters
-        list(map(params.pop, [item for item in params if item.startswith("__")]))
         if per_label:
             score, n = defaultdict(int), defaultdict(int)
         else:
             score, n = 0, 0
 
         if annotations_or_result:
+            # remove backup parameters
+            list(map(params.pop,
+                     [item for item in params if item.startswith("__") and item not in cls.IGNORE_BACKUP_PARAMS]))
             # get matching score over annotations as a hole
             if project == {}:
                 control_params = {}
@@ -164,6 +166,9 @@ class Metrics(object):
                 score = matching_func.func(result_first, result_second, **control_params)
                 n = 1
         else:
+            # remove backup parameters
+            list(map(params.pop,
+                     [item for item in params if item.startswith("__")]))
             # aggregate matching scores over all existed controls
             for control_name, control_type in all_controls.items():
                 logger.debug(f"Starting calculation for {control_type} - {control_name}")
