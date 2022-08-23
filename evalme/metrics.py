@@ -27,6 +27,7 @@ class MetricWrapper(object):
 
 
 class Metrics(object):
+    IGNORE_BACKUP_PARAMS = ['__aws_arn']
 
     _metrics = {}
     _feature_flags = {}
@@ -141,7 +142,7 @@ class Metrics(object):
         # get metric params
         params = project.get("metric_params", {})
         # remove backup parameters
-        list(map(params.pop, [item for item in params if item.startswith("__")]))
+        list(map(params.pop, [item for item in params if item.startswith("__") and item not in cls.IGNORE_BACKUP_PARAMS]))
         if per_label:
             score, n = defaultdict(int), defaultdict(int)
         else:
