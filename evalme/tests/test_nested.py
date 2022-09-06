@@ -63,7 +63,7 @@ Metrics.register(
     desc='Text edit distance per polygon region'
 )
 
-@pytest.mark.parametrize('labels_weight,expected_score', [(0, 0.7), (1, 0.5166666666666666)])
+@pytest.mark.parametrize('labels_weight,expected_score', [(0, 0.7), (1, 0.85)])
 def test_basic_matching_function_nested_with_project_weights(labels_weight, expected_score):
     test_data = [
         [{
@@ -161,6 +161,6 @@ def test_basic_matching_function_nested_with_project_weights(labels_weight, expe
         {'control_weights': {'labels': {'overall': labels_weight, 'type': 'Labels'}}},
         test_data[0], test_data[1],
         metric_name='default',
-        feature_flags={'ff_back_dev_2762_textarea_weights_30062022_short': ''}
+        feature_flags={'ff_back_dev_2762_textarea_weights_30062022_short': True}
     )
     assert score == expected_score
