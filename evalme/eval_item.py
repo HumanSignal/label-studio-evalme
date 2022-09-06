@@ -1,5 +1,5 @@
 from operator import itemgetter
-
+from functools import partial
 
 class EvalItem(object):
     """
@@ -33,6 +33,13 @@ class EvalItem(object):
         return len(self._raw_data)
 
     @staticmethod
+    def has_spans(results_list):
+        for r in results_list:
+            if not 'start' in r or not 'end' in r:
+                return False
+        return True
+
+    @staticmethod
     def spans_iou(x, y):
         """
         Intersection over union for spans with start/end
@@ -40,10 +47,7 @@ class EvalItem(object):
         :param y:
         :return:
         """
-        assert x['start']
-        assert y['start']
-        assert x['end']
-        assert y['end']
+        assert EvalItem.has_spans([x, y])
         s1, e1 = float(x['start']), float(x['end'])
         s2, e2 = float(y['start']), float(y['end'])
         if s2 > e1 or s1 > e2:
@@ -124,14 +128,22 @@ class EvalItem(object):
         iou = intersection / union
         return iou
 
-    def max_score(self, prediction, matcher=None):
+    def max_score(self, prediction, matcher=None, check_condition=False):
         assert matcher
         gt = self.get_values_iter()
         pred = prediction.get_values_iter()
         max_score = 0
-        for g in gt:
-            for p in pred:
-                max_score = max(max_score, matcher(g, p))
+        for gt_value in gt:
+            if check_condition:
+                best_matching_score = max(map(partial(matcher, gt_value, check_condition=check_condition), pred),
+                                          key=lambda r: r[1])
+                if best_matching_score[1] == 0:
+                    best_matching_score = 0
+                else:
+                    best_matching_score = best_matching_score[0]
+            else:
+                best_matching_score = max(map(partial(matcher, gt_value), pred))
+            max_score = max(max_score, best_matching_score)
         return max_score
 
     def min_score(self, prediction, matcher=None):

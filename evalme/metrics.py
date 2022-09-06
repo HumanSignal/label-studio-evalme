@@ -175,6 +175,9 @@ class Metrics(object):
                 control_weights = project.get("control_weights", {})
                 control_weights = control_weights.get(control_name, {})
                 overall_weight = control_weights.get('overall', 1)
+                if overall_weight == 0:
+                    logger.debug(f'Overall weight for control type >>{control_type} is 0.')
+                    continue
                 label_weights = control_weights.get('labels')
                 control_params = deepcopy(params)
                 control_params['label_weights'] = label_weights

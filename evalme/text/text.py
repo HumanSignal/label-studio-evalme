@@ -59,7 +59,11 @@ class TextTagsEvalItem(EvalItem):
                 # find the best matching span inside gt_values
                 if self._kwargs.get('ff_back_dev_2762_textarea_weights_30062022_short'):
                     best_matching_score = max(map(partial(self._match, y=pred_value, f=comparator), gt_values),
-                                              key=lambda r: r[1])[0]
+                                              key=lambda r: r[1])
+                    if best_matching_score[1] == 0:
+                        best_matching_score = 0
+                    else:
+                        best_matching_score = best_matching_score[0]
                 else:
                     best_matching_score = max(map(partial(self._match, y=pred_value, f=comparator), gt_values))
                 if iou_threshold is not None:
@@ -411,10 +415,14 @@ class TaxonomyEvalItem(EvalItem):
 class SimpleComparisionEvalItem(EvalItem):
     SHAPE_KEY = 'number'
 
-    def _match(self, gt, pred):
+    def _match(self, gt, pred, check_condition=False):
+        if EvalItem.has_spans([gt, pred]) and check_condition:
+            return int(gt[self._shape_key] == pred[self._shape_key]), EvalItem.spans_iou(gt, pred)
         return int(gt[self._shape_key] == pred[self._shape_key])
 
-    def match(self, pred, per_label=False, label_weights=None):
+    def match(self, pred, per_label=False, **kwargs):
+        if per_label:
+            return {}
         return self.max_score(pred, matcher=self._match)
 
 

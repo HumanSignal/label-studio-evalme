@@ -30,16 +30,19 @@ class ClassificationEvalItem(EvalItem):
                              f'Reason: {exc}', exc_info=True)
                 # different types of results:
                 if per_label:
-                    return {'Error': 0}
+                    return {}
                 else:
                     return 0
             if not isinstance(labels, list):
                 labels = [labels]
-
             if not isinstance(y_labels, list):
                 y_labels = [y_labels]
+            # Check if spans are mismatched
+            mismatched_spans = False
+            if EvalItem.has_spans([x, y]):
+                mismatched_spans = bool(EvalItem.spans_iou(x, y))
             # choices are mismatched
-            if labels != y_labels:
+            if labels != y_labels or mismatched_spans:
                 if per_label:
                     for label in labels:
                         if isinstance(label, list):
