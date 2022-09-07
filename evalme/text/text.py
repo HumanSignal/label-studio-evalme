@@ -423,7 +423,7 @@ class SimpleComparisionEvalItem(EvalItem):
     def match(self, pred, per_label=False, **kwargs):
         if per_label:
             return {}
-        return self.max_score(pred, matcher=self._match)
+        return self.max_score(pred, matcher=self._match, check_condition=True)
 
 
 def _as_text_tags_eval_item(item, shape_key, **kwargs):
