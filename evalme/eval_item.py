@@ -40,6 +40,22 @@ class EvalItem(object):
         return True
 
     @staticmethod
+    def has_bbox(results_list):
+        for r in results_list:
+            if not all(k in r for k in ['x', 'y', 'width', 'height']):
+                return False
+        return True
+
+
+    @staticmethod
+    def has_spans_with_offsets(results_list):
+        for r in results_list:
+            if not all(k in r for k in ['start', 'end', 'startOffset', 'endOffset']):
+                return False
+        return True
+
+
+    @staticmethod
     def spans_iou(x, y):
         """
         Intersection over union for spans with start/end
@@ -68,14 +84,7 @@ class EvalItem(object):
         :return:
         """
         # check data
-        assert boxA['x']
-        assert boxB['x']
-        assert boxA['y']
-        assert boxB['y']
-        assert boxA['width']
-        assert boxB['width']
-        assert boxA['height']
-        assert boxB['height']
+        assert EvalItem.has_bbox([boxA, boxB])
 
         # identify max coordinates
         xA = max(boxA['x'], boxB['x'])
@@ -102,14 +111,8 @@ class EvalItem(object):
 
     @staticmethod
     def spans_iou_by_start_end_offsets(x, y):
-        assert x['start']
-        assert x['end']
-        assert y['start']
-        assert y['end']
-        assert x['startOffset']
-        assert x['endOffset']
-        assert y['startOffset']
-        assert y['endOffset']
+        # check data
+        assert EvalItem.has_spans_with_offsets([x, y])
 
         s1, e1 = x['start'], x['end']
         s2, e2 = y['start'], y['end']
