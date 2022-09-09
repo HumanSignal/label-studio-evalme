@@ -85,7 +85,7 @@ class EvalItem(object):
                 continue
             else:
                 return None
-        all_same = all(t == t[0] for t in types)
+        all_same = all(t == types[0] for t in types)
         return types[0] if all_same else None
 
     @staticmethod
