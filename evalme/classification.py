@@ -39,8 +39,9 @@ class ClassificationEvalItem(EvalItem):
                 y_labels = [y_labels]
             # Check if spans are mismatched
             mismatched_spans = False
-            if EvalItem.has_spans([x, y]):
-                mismatched_spans = bool(EvalItem.spans_iou(x, y))
+            region = EvalItem.has_regions([x, y])
+            if region:
+                mismatched_spans = not bool(EvalItem.general_iou_by_type(region, x, y))
             # choices are mismatched
             if labels != y_labels or mismatched_spans:
                 if per_label:

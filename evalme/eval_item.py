@@ -1,6 +1,8 @@
 from operator import itemgetter
 from functools import partial
 
+import evalme.utils
+
 class EvalItem(object):
     """
     Generic class that contains all info about evaluation item
@@ -46,7 +48,6 @@ class EvalItem(object):
                 return False
         return True
 
-
     @staticmethod
     def has_spans_with_offsets(results_list):
         for r in results_list:
@@ -54,6 +55,56 @@ class EvalItem(object):
                 return False
         return True
 
+    @staticmethod
+    def has_polygon(results_list):
+        for r in results_list:
+            if not all(k in r for k in ['points']):
+                return False
+        return True
+
+    @staticmethod
+    def has_regions(results_list):
+        """
+        Identify if there are regions in results list
+        :param results_list: List of results
+        :return: None or region type
+        """
+        types = []
+        for r in results_list:
+            if all(k in r for k in ['points']):
+                types.append('polygon')
+                continue
+            elif all(k in r for k in ['start', 'end', 'startOffset', 'endOffset']):
+                types.append('spans_with_offsets')
+                continue
+            elif all(k in r for k in ['x', 'y', 'width', 'height']):
+                types.append('bbox')
+                continue
+            elif all(k in r for k in ['start', 'end']):
+                types.append('spans')
+                continue
+            else:
+                return None
+        all_same = all(t == t[0] for t in types)
+        return types[0] if all_same else None
+
+    @staticmethod
+    def general_iou_by_type(t, gt, pred):
+        """
+        Get iou score by type of shape
+        :param t: Type of shape
+        :param gt: Ground truth result
+        :param pred: Predicted result
+        :return: IoU score float[0..1]
+        """
+        SHAPES_IOU = {
+            'bbox': EvalItem.bbox_iou,
+            'spans': EvalItem.spans_iou,
+            'spans_with_offsets': EvalItem.spans_iou_by_start_end_offsets,
+            'polygon': EvalItem.polygon_iou
+        }
+        assert SHAPES_IOU.get(t)
+        return SHAPES_IOU[t](gt, pred)
 
     @staticmethod
     def spans_iou(x, y):
@@ -129,6 +180,17 @@ class EvalItem(object):
         if union == 0:
             return 0
         iou = intersection / union
+        return iou
+
+    @staticmethod
+    def polygon_iou(polyA, polyB):
+        if polyA.get('points') and polyB.get('points'):
+            pA = utils._try_build_poly(polyA['points'])
+            pB = utils._try_build_poly(polyB['points'])
+            inter_area = pA.intersection(pB).area
+            iou = inter_area / (pA.area + pB.area - inter_area)
+        else:
+            iou = 0
         return iou
 
     def max_score(self, prediction, matcher=None, check_condition=False):

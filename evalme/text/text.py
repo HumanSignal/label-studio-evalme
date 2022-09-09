@@ -416,8 +416,10 @@ class SimpleComparisionEvalItem(EvalItem):
     SHAPE_KEY = 'number'
 
     def _match(self, gt, pred, check_condition=False):
-        if EvalItem.has_spans([gt, pred]) and check_condition:
-            return int(gt[self._shape_key] == pred[self._shape_key]), EvalItem.spans_iou(gt, pred)
+        region = EvalItem.has_regions([gt, pred])
+        if region and check_condition:
+            return int(gt[self._shape_key] == pred[self._shape_key]), \
+                   EvalItem.general_iou_by_type(region, gt, pred)
         return int(gt[self._shape_key] == pred[self._shape_key])
 
     def match(self, pred, per_label=False, **kwargs):
