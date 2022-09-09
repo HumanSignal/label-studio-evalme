@@ -4,7 +4,7 @@ from evalme.classification import ClassificationEvalItem, ChoicesEvalItem, naive
 
 from evalme.metrics import Metrics
 
-from text.text import datetime_match, numbers_match
+from evalme.text.text import datetime_match, numbers_match
 
 Metrics.register(
     name="datetime naive",
@@ -25,7 +25,8 @@ Metrics.register(
     is_default=True
 )
 
-def test_config_with_2_control_types():
+
+def test_config_with_several_control_types():
     """
     Test Metrics apply with different control types
     """
