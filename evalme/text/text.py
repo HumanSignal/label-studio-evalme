@@ -416,10 +416,14 @@ class SimpleComparisionEvalItem(EvalItem):
     SHAPE_KEY = 'number'
 
     def _match(self, gt, pred, check_condition=False):
+        logger.debug(f"_match for {self.SHAPE_KEY}")
         region = EvalItem.has_regions([gt, pred])
+        logger.debug(f"Region detected: {str(region)}")
         if region and check_condition:
+            logger.debug(f"Returning per region calculation")
             return int(gt[self._shape_key] == pred[self._shape_key]), \
                    EvalItem.general_iou_by_type(region, gt, pred)
+        logger.debug(f"Returning simple calculation")
         return int(gt[self._shape_key] == pred[self._shape_key])
 
     def match(self, pred, per_label=False, **kwargs):
