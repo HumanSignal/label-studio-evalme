@@ -26,7 +26,11 @@ class TextTagsEvalItem(EvalItem):
         return iou
 
     def _match(self, x, y, f):
-        spans_match = self.spans_iou(x, y)
+        region = EvalItem.has_regions([x, y])
+        if region:
+            spans_match = EvalItem.general_iou_by_type(region, x, y)
+        else:
+            spans_match = 0
         if spans_match == 0 and not self._kwargs.get('ff_back_dev_2762_textarea_weights_30062022_short'):
             return 0
         labels_match = texts_similarity(x[self._shape_key], y[self._shape_key], f)
