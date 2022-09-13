@@ -196,5 +196,5 @@ def test_config_with_several_control_types():
       ]
     r1 = Metrics.apply({}, result_1, result_2)
     r2 = Metrics.apply({}, result_2, result_1)
-    assert r1 == 0.0
-    assert r2 == 0.0
+    assert r1 == 0.16
+    assert r2 == 0.16
