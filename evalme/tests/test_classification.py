@@ -128,8 +128,8 @@ def test_not_matching_per_label():
         ]]
     obj = ChoicesEvalItem(raw_data=test_data[0])
     obj1 = ChoicesEvalItem(raw_data=test_data[1])
-    assert obj1.exact_match(obj, per_label=True) == {'Error': 0}
-    assert obj.exact_match(obj1, per_label=True) == {'Error': 0}
+    assert obj1.exact_match(obj, per_label=True) == {}
+    assert obj.exact_match(obj1, per_label=True) == {}
 
 
 def test_matching_type():

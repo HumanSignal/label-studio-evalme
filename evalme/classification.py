@@ -30,16 +30,20 @@ class ClassificationEvalItem(EvalItem):
                              f'Reason: {exc}', exc_info=True)
                 # different types of results:
                 if per_label:
-                    return {'Error': 0}
+                    return {}
                 else:
                     return 0
             if not isinstance(labels, list):
                 labels = [labels]
-
             if not isinstance(y_labels, list):
                 y_labels = [y_labels]
+            # Check if spans are mismatched
+            mismatched_spans = False
+            region = EvalItem.has_regions([x, y])
+            if region:
+                mismatched_spans = not bool(EvalItem.general_iou_by_type(region, x, y))
             # choices are mismatched
-            if labels != y_labels:
+            if labels != y_labels or mismatched_spans:
                 if per_label:
                     for label in labels:
                         if isinstance(label, list):
@@ -91,24 +95,28 @@ class PairwiseEvalItem(ClassificationEvalItem):
     SHAPE_KEY = 'pairwise'
 
 
-def _as_choices(item, shape_key):
+def _as_choices(item, shape_key, **kwargs):
     if not isinstance(item, ChoicesEvalItem):
-        return ChoicesEvalItem(item, shape_key=shape_key)
+        return ChoicesEvalItem(item, shape_key=shape_key, **kwargs)
     return item
 
 
-def _as_pairwise(item, shape_key):
+def _as_pairwise(item, shape_key, **kwargs):
     if not isinstance(item, PairwiseEvalItem):
-        return PairwiseEvalItem(item, shape_key=shape_key)
+        return PairwiseEvalItem(item, shape_key=shape_key, **kwargs)
     return item
 
 
-def exact_matching_choices(item_gt, item_pred, label_weights=None, per_label=False, shape_key=None):
-    return _as_choices(item_gt, shape_key).exact_match(_as_choices(item_pred, shape_key), label_weights, per_label=per_label)
+def exact_matching_choices(item_gt, item_pred, label_weights=None, per_label=False, shape_key=None, **kwargs):
+    return _as_choices(item_gt, shape_key, **kwargs).exact_match(_as_choices(item_pred, shape_key, **kwargs),
+                                                                 label_weights,
+                                                                 per_label=per_label)
 
 
-def exact_matching_pairwise(item_gt, item_pred, label_weights=None, per_label=False, shape_key=None):
-    return _as_pairwise(item_gt, shape_key).exact_match(_as_pairwise(item_pred, shape_key), label_weights, per_label=per_label)
+def exact_matching_pairwise(item_gt, item_pred, label_weights=None, per_label=False, shape_key=None, **kwargs):
+    return _as_pairwise(item_gt, shape_key, **kwargs).exact_match(_as_pairwise(item_pred, shape_key, **kwargs),
+                                                                  label_weights,
+                                                                  per_label=per_label)
 
 
 def naive(x, y, per_label=False, **kwargs):

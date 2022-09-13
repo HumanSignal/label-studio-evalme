@@ -180,6 +180,9 @@ class Metrics(object):
                 control_weights = project.get("control_weights", {})
                 control_weights = control_weights.get(control_name, {})
                 overall_weight = control_weights.get('overall', 1)
+                if overall_weight == 0:
+                    logger.debug(f'Overall weight for control type >>{control_type} is 0.')
+                    continue
                 label_weights = control_weights.get('labels')
                 control_params = deepcopy(params)
                 control_params['label_weights'] = label_weights
@@ -193,10 +196,9 @@ class Metrics(object):
                 if 'control_name' in func_args[0]:
                     control_params['control_name'] = control_name
 
-                # TODO: workaround for DEV-2762
-                if 'ff_back_dev_2762_textarea_weights_30062022_short' in kwargs.get('feature_flags', {}) \
-                        and 'textarea' in control_type:
-                    control_params['ff_back_dev_2762_textarea_weights_30062022_short'] = True
+                feature_flags = kwargs.get('feature_flags')
+                if feature_flags:
+                    control_params.update(feature_flags)
 
                 # get result of certain control_name
                 results_first_by_from_name = cls.filter_results_by_from_name(result_first, control_name)
