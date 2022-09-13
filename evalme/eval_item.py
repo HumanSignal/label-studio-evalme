@@ -196,9 +196,9 @@ class EvalItem(object):
     def max_score(self, prediction, matcher=None, check_condition=False):
         assert matcher
         gt = self.get_values_iter()
-        pred = prediction.get_values_iter()
         max_score = 0
         for gt_value in gt:
+            pred = prediction.get_values_iter()
             if check_condition:
                 best_matching_score = max(map(partial(matcher, gt_value, check_condition=check_condition), pred),
                                           key=lambda r: r[1])
