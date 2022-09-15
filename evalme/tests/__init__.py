@@ -1,10 +1,10 @@
 from evalme.text.text import datetime_match, numbers_match, intersection_text_tagging, intersection_textarea_tagging, match_textareas, intersection_text_tagging
 from evalme.classification import ClassificationEvalItem, ChoicesEvalItem, naive, exact_matching_choices
 from evalme.metrics import Metrics
-from evalme.image.object_detection import iou_polygons, iou_bboxes_textarea, iou_polygons_textarea
-
+from evalme.image.object_detection import iou_polygons, iou_bboxes_textarea, iou_polygons_textarea, iou_bboxes
 
 from functools import partial
+
 
 Metrics.register(
     name="datetime naive",
@@ -127,4 +127,20 @@ Metrics.register(
     tag='TextArea[per_region=poly]',
     func=partial(iou_polygons_textarea, shape_key='text'),
     desc='Text edit distance per polygon region'
+)
+
+Metrics.register(
+    name='choices_per_span',
+    form='empty_form',
+    tag='Choices[per_region=span]',
+    func=partial(intersection_text_tagging, shape_key='choices'),
+    desc='Choices per span region'
+)
+
+Metrics.register(
+    name='iou_bboxes',
+    form='empty_form',
+    tag='RectangleLabels',
+    func=iou_bboxes,
+    desc='IOU for bounding boxes'
 )
