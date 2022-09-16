@@ -466,6 +466,209 @@ def test_labels_number(start, end, start1, end1, label_weight, text_weight, agre
     assert r1 == agreement
     assert r2 == agreement
 
+
+@pytest.mark.parametrize(
+    "label_weight, text_weight, agreement",
+    [
+        [None, None, 0.5],
+        [0, 1, 0],
+        [1, 0, 0.5],
+        [0, 0, 0],
+        [1, 1, 0.5],
+        [1/3, 1/3, 0.25]
+    ],
+)
+def test_labels_number_not_matching(label_weight, text_weight, agreement):
+    result_1 = [{
+          "id": "FNK1is56e1",
+          "type": "polygonlabels",
+          "value": {
+            "points": [
+              [
+                40.32258064516129,
+                16.94510739856802
+              ],
+              [
+                21.774193548387096,
+                25.05966587112172
+              ],
+              [
+                19.758064516129032,
+                45.58472553699284
+              ],
+              [
+                23.9247311827957,
+                58.711217183770884
+              ],
+              [
+                42.60752688172043,
+                66.82577565632458
+              ],
+              [
+                54.56989247311828,
+                60.859188544152744
+              ],
+              [
+                56.586021505376344,
+                46.77804295942721
+              ]
+            ],
+            "polygonlabels": [
+              "Airplane"
+            ]
+          },
+          "origin": "manual",
+          "to_name": "image",
+          "from_name": "label",
+          "image_rotation": 0,
+          "original_width": 768,
+          "original_height": 432
+        },
+        {
+          "id": "0v6nouTfvi",
+          "type": "number",
+          "value": {
+            "points": [
+              [
+                40.32258064516129,
+                16.94510739856802
+              ],
+              [
+                21.774193548387096,
+                25.05966587112172
+              ],
+              [
+                19.758064516129032,
+                45.58472553699284
+              ],
+              [
+                23.9247311827957,
+                58.711217183770884
+              ],
+              [
+                42.60752688172043,
+                66.82577565632458
+              ],
+              [
+                54.56989247311828,
+                60.859188544152744
+              ],
+              [
+                56.586021505376344,
+                46.77804295942721
+              ]
+            ],
+            "number": 3
+          },
+          "origin": "manual",
+          "to_name": "text",
+          "from_name": "number"
+        }]
+    result_2 = [{
+          "id": "FNK1is56e1",
+          "type": "polygonlabels",
+          "value": {
+            "points": [
+              [
+                40.32258064516129,
+                16.94510739856802
+              ],
+              [
+                21.774193548387096,
+                25.05966587112172
+              ],
+              [
+                19.758064516129032,
+                45.58472553699284
+              ],
+              [
+                23.9247311827957,
+                58.711217183770884
+              ],
+              [
+                42.60752688172043,
+                66.82577565632458
+              ],
+              [
+                54.56989247311828,
+                60.859188544152744
+              ],
+              [
+                56.586021505376344,
+                46.77804295942721
+              ]
+            ],
+            "polygonlabels": [
+              "Airplane"
+            ]
+          },
+          "origin": "manual",
+          "to_name": "image",
+          "from_name": "label",
+          "image_rotation": 0,
+          "original_width": 768,
+          "original_height": 432
+        },
+        {
+          "id": "MkmDpl5BDv",
+          "type": "number",
+          "value": {
+            "points": [
+              [
+                40.32258064516129,
+                16.94510739856802
+              ],
+              [
+                21.774193548387096,
+                25.05966587112172
+              ],
+              [
+                19.758064516129032,
+                45.58472553699284
+              ],
+              [
+                23.9247311827957,
+                58.711217183770884
+              ],
+              [
+                42.60752688172043,
+                66.82577565632458
+              ],
+              [
+                54.56989247311828,
+                60.859188544152744
+              ],
+              [
+                56.586021505376344,
+                46.77804295942721
+              ]
+            ],
+            "number": 5
+          },
+          "origin": "manual",
+          "to_name": "text",
+          "from_name": "number"
+        }]
+
+    feature_flags = {}
+    feature_flags['ff_back_dev_2762_textarea_weights_30062022_short'] = True
+
+    if label_weight is not None and text_weight is not None:
+        project_params = {'control_weights': {"label": {"type": "polygonlabels", "polygonlabels": {"Airplane": 0.5, "Stool Frequency": 0.5}, "overall": label_weight},
+                                              "choice": {"type": "Choices", "labels": {"Weapons": 1.0, "Violence": 1.0, "Adult content": 1.0}, "overall": 1.0},
+                                              "number": {"type": "Number", "labels": {}, "overall": 1.0}, "date_bm": {"type": "TextArea", "labels": {}, "overall": 1.0},
+                                              "datetime": {"type": "DateTime", "labels": {}, "overall": text_weight},
+                                              "num_stools": {"type": "TextArea", "labels": {}, "overall": 1.0}}}
+    else:
+        project_params = {}
+
+    r1 = Metrics.apply(project_params, result_1, result_2, feature_flags=feature_flags)
+    r2 = Metrics.apply(project_params, result_2, result_1, feature_flags=feature_flags)
+
+    assert r1 == agreement
+    assert r2 == agreement
+
+
 @pytest.mark.parametrize(
     "x, y, w, h, label_weight, text_weight, agreement",
     [

@@ -185,8 +185,8 @@ class EvalItem(object):
     @staticmethod
     def polygon_iou(polyA, polyB):
         if polyA.get('points') and polyB.get('points'):
-            pA = utils._try_build_poly(polyA['points'])
-            pB = utils._try_build_poly(polyB['points'])
+            pA = evalme.utils._try_build_poly(polyA['points'])
+            pB = evalme.utils._try_build_poly(polyB['points'])
             inter_area = pA.intersection(pB).area
             iou = inter_area / (pA.area + pB.area - inter_area)
         else:
