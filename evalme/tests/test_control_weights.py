@@ -89,6 +89,8 @@ def test_labels_choices_default_weights():
         [20, 25, 1, 0, 0],
         [20, 25, 0, 0, 0],
         [20, 25, 1, 1, 0.5],
+        [20, 25, 0.25, 0.25, 0.5],
+        [20, 25, 0.5, 0.5, 0.5]
     ],
 )
 def test_labels_choices_with_weights(start, end, label_weight, choice_weight, agreement):
@@ -384,9 +386,374 @@ def test_labels_textarea(x, y, w, h, label_weight, text_weight, agreement):
 def test_labels_number():
     pass
 
+@pytest.mark.parametrize(
+    "x, y, w, h, label_weight, text_weight, agreement",
+    [
+        [20, 25, 20, 25, None, None, 1],
+        [20, 25, 20, 25, 0, 1, 1],
+        [20, 25, 20, 25, 1, 0, 1],
+        [20, 25, 20, 25, 0, 0, 0],
+        [20, 25, 20, 25, 1, 1, 1],
+        [20, 25, 20, 25, 0.15, 1, 1]
+    ],
+)
+def test_labels_datetime(x, y, w, h, label_weight, text_weight, agreement):
+    result_1 = [
+        {
+          "id": "W8KrCWVGs_",
+          "type": "rectanglelabels",
+          "value": {
+            "x": x,
+            "y": y,
+            "width": w,
+            "height": h,
+            "rotation": 0,
+            "rectanglelabels": [
+              "Airplane"
+            ]
+          },
+          "origin": "manual",
+          "to_name": "image",
+          "from_name": "label",
+          "image_rotation": 0,
+          "original_width": 768,
+          "original_height": 432
+        },
+        {
+          "id": "W8KrCWVGs_",
+          "type": "datetime",
+          "value": {
+            "x": x,
+            "y": y,
+            "width": w,
+            "height": h,
+            "datetime": "2022-09-01",
+            "rotation": 0
+          },
+          "origin": "manual",
+          "to_name": "image",
+          "from_name": "datetime",
+          "image_rotation": 0,
+          "original_width": 768,
+          "original_height": 432
+        },
+        {
+          "id": "hLgXwPh3zh",
+          "type": "rectanglelabels",
+          "value": {
+            "x": x+x,
+            "y": y+y,
+            "width": w,
+            "height": h,
+            "rotation": 0,
+            "rectanglelabels": [
+              "Car"
+            ]
+          },
+          "origin": "manual",
+          "to_name": "image",
+          "from_name": "label",
+          "image_rotation": 0,
+          "original_width": 768,
+          "original_height": 432
+        },
+        {
+          "id": "hLgXwPh3zh",
+          "type": "datetime",
+          "value": {
+            "x": x+x,
+            "y": y+y,
+            "width": w,
+            "height": h,
+            "datetime": "2022-09-01",
+            "rotation": 0
+          },
+          "origin": "manual",
+          "to_name": "image",
+          "from_name": "datetime",
+          "image_rotation": 0,
+          "original_width": 768,
+          "original_height": 432
+        }
+      ]
+    result_2 = [
+        {
+          "id": "W8KrCWVGs_",
+          "type": "rectanglelabels",
+          "value": {
+            "x": x,
+            "y": y,
+            "width": w,
+            "height": h,
+            "rotation": 0,
+            "rectanglelabels": [
+              "Airplane"
+            ]
+          },
+          "origin": "manual",
+          "to_name": "image",
+          "from_name": "label",
+          "image_rotation": 0,
+          "original_width": 768,
+          "original_height": 432
+        },
+        {
+          "id": "W8KrCWVGs_",
+          "type": "datetime",
+          "value": {
+            "x": x,
+            "y": y,
+            "width": w,
+            "height": h,
+            "datetime": "2022-09-01",
+            "rotation": 0
+          },
+          "origin": "manual",
+          "to_name": "image",
+          "from_name": "datetime",
+          "image_rotation": 0,
+          "original_width": 768,
+          "original_height": 432
+        },
+        {
+          "id": "hLgXwPh3zh",
+          "type": "rectanglelabels",
+          "value": {
+            "x": x+x,
+            "y": y+y,
+            "width": w,
+            "height": h,
+            "rotation": 0,
+            "rectanglelabels": [
+              "Car"
+            ]
+          },
+          "origin": "manual",
+          "to_name": "image",
+          "from_name": "label",
+          "image_rotation": 0,
+          "original_width": 768,
+          "original_height": 432
+        },
+        {
+          "id": "hLgXwPh3zh",
+          "type": "datetime",
+          "value": {
+            "x": x+x,
+            "y": y+y,
+            "width": w,
+            "height": h,
+            "datetime": "2022-09-01",
+            "rotation": 0
+          },
+          "origin": "manual",
+          "to_name": "image",
+          "from_name": "datetime",
+          "image_rotation": 0,
+          "original_width": 768,
+          "original_height": 432
+        }
+      ]
 
-def test_labels_datetime():
-    pass
+    feature_flags = {}
+    feature_flags['ff_back_dev_2762_textarea_weights_30062022_short'] = True
+
+    if label_weight is not None and text_weight is not None:
+        project_params = {'control_weights': {"label": {"type": "RectangleLabels", "labels": {"Car": 1.0, "Ship": 1.0, "Truck": 1.0, "Airplane": 1.0}, "overall": label_weight},
+                                              "datetime": {"type": "DateTime", "labels": {}, "overall": text_weight}}}
+    else:
+        project_params = {}
+
+    r1 = Metrics.apply(project_params, result_1, result_2, feature_flags=feature_flags)
+    r2 = Metrics.apply(project_params, result_2, result_1, feature_flags=feature_flags)
+
+    assert r1 == agreement
+    assert r2 == agreement
+
+
+@pytest.mark.parametrize(
+    "x, y, w, h, label_weight, text_weight, agreement",
+    [
+        [20, 25, 20, 25, None, None, 0.5],
+        [20, 25, 20, 25, 0, 1, 1],
+        [20, 25, 20, 25, 1, 0, 0],
+        [20, 25, 20, 25, 0, 0, 0],
+        [20, 25, 20, 25, 1, 1, 0.5],
+        [20, 25, 20, 25, 0.15, 1, 0.8695652173913044]
+    ],
+)
+def test_labels_datetime_not_matching_regions(x, y, w, h, label_weight, text_weight, agreement):
+    result_1 = [
+        {
+          "id": "W8KrCWVGs_",
+          "type": "rectanglelabels",
+          "value": {
+            "x": x+x,
+            "y": y+y,
+            "width": w,
+            "height": h,
+            "rotation": 0,
+            "rectanglelabels": [
+              "Airplane"
+            ]
+          },
+          "origin": "manual",
+          "to_name": "image",
+          "from_name": "label",
+          "image_rotation": 0,
+          "original_width": 768,
+          "original_height": 432
+        },
+        {
+          "id": "W8KrCWVGs_",
+          "type": "datetime",
+          "value": {
+            "x": x+x,
+            "y": y+y,
+            "width": w,
+            "height": h,
+            "datetime": "2022-09-01",
+            "rotation": 0
+          },
+          "origin": "manual",
+          "to_name": "image",
+          "from_name": "datetime",
+          "image_rotation": 0,
+          "original_width": 768,
+          "original_height": 432
+        },
+        {
+          "id": "hLgXwPh3zh",
+          "type": "rectanglelabels",
+          "value": {
+            "x": x,
+            "y": y,
+            "width": w,
+            "height": h,
+            "rotation": 0,
+            "rectanglelabels": [
+              "Car"
+            ]
+          },
+          "origin": "manual",
+          "to_name": "image",
+          "from_name": "label",
+          "image_rotation": 0,
+          "original_width": 768,
+          "original_height": 432
+        },
+        {
+          "id": "hLgXwPh3zh",
+          "type": "datetime",
+          "value": {
+            "x": x,
+            "y": y,
+            "width": w,
+            "height": h,
+            "datetime": "2022-09-01",
+            "rotation": 0
+          },
+          "origin": "manual",
+          "to_name": "image",
+          "from_name": "datetime",
+          "image_rotation": 0,
+          "original_width": 768,
+          "original_height": 432
+        }
+      ]
+    result_2 = [
+        {
+          "id": "W8KrCWVGs_",
+          "type": "rectanglelabels",
+          "value": {
+            "x": x,
+            "y": y,
+            "width": w,
+            "height": h,
+            "rotation": 0,
+            "rectanglelabels": [
+              "Airplane"
+            ]
+          },
+          "origin": "manual",
+          "to_name": "image",
+          "from_name": "label",
+          "image_rotation": 0,
+          "original_width": 768,
+          "original_height": 432
+        },
+        {
+          "id": "W8KrCWVGs_",
+          "type": "datetime",
+          "value": {
+            "x": x,
+            "y": y,
+            "width": w,
+            "height": h,
+            "datetime": "2022-09-01",
+            "rotation": 0
+          },
+          "origin": "manual",
+          "to_name": "image",
+          "from_name": "datetime",
+          "image_rotation": 0,
+          "original_width": 768,
+          "original_height": 432
+        },
+        {
+          "id": "hLgXwPh3zh",
+          "type": "rectanglelabels",
+          "value": {
+            "x": x+x,
+            "y": y+y,
+            "width": w,
+            "height": h,
+            "rotation": 0,
+            "rectanglelabels": [
+              "Car"
+            ]
+          },
+          "origin": "manual",
+          "to_name": "image",
+          "from_name": "label",
+          "image_rotation": 0,
+          "original_width": 768,
+          "original_height": 432
+        },
+        {
+          "id": "hLgXwPh3zh",
+          "type": "datetime",
+          "value": {
+            "x": x+x,
+            "y": y+y,
+            "width": w,
+            "height": h,
+            "datetime": "2022-09-01",
+            "rotation": 0
+          },
+          "origin": "manual",
+          "to_name": "image",
+          "from_name": "datetime",
+          "image_rotation": 0,
+          "original_width": 768,
+          "original_height": 432
+        }
+      ]
+
+    feature_flags = {}
+    feature_flags['ff_back_dev_2762_textarea_weights_30062022_short'] = True
+
+    if label_weight is not None and text_weight is not None:
+        project_params = {'control_weights': {"label": {"type": "RectangleLabels", "labels": {"Car": 1.0, "Ship": 1.0, "Truck": 1.0, "Airplane": 1.0}, "overall": label_weight},
+                                              "datetime": {"type": "DateTime", "labels": {}, "overall": text_weight}}}
+    else:
+        project_params = {}
+
+    r1 = Metrics.apply(project_params, result_1, result_2, feature_flags=feature_flags)
+    r2 = Metrics.apply(project_params, result_2, result_1, feature_flags=feature_flags)
+
+    assert r1 == agreement
+    assert r2 == agreement
 
 
 def test_labels_choices_textarea_number_datetime():
