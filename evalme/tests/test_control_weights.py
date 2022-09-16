@@ -383,8 +383,88 @@ def test_labels_textarea(x, y, w, h, label_weight, text_weight, agreement):
     assert r2 == agreement
 
 
-def test_labels_number():
-    pass
+@pytest.mark.parametrize(
+    "start, end, start1, end1, label_weight, text_weight, agreement",
+    [
+        [20, 25, 20, 25, None, None, 0.5],
+        [20, 25, 20, 25, 0, 1, 0],
+        [20, 25, 20, 25, 1, 0, 0.5],
+        [20, 25, 20, 25, 0, 0, 0],
+        [20, 25, 20, 25, 1, 1, 0.5],
+        [20, 25, 20, 25, 1/3, 1/3, 0.25]
+    ],
+)
+def test_labels_number(start, end, start1, end1, label_weight, text_weight, agreement):
+    result_1 = [{
+          "id": "0v6nouTfvi",
+          "type": "labels",
+          "value": {
+            "end": end,
+            "start": start,
+            "labels": [
+              "Stool Frequency"
+            ]
+          },
+          "origin": "manual",
+          "to_name": "text",
+          "from_name": "label"
+        },
+        {
+          "id": "0v6nouTfvi",
+          "type": "number",
+          "value": {
+            "end": end,
+            "start": start,
+            "number": 3
+          },
+          "origin": "manual",
+          "to_name": "text",
+          "from_name": "number"
+        }]
+    result_2 = [{
+          "id": "MkmDpl5BDv",
+          "type": "labels",
+          "value": {
+            "end": end1,
+            "start": start1,
+            "labels": [
+              "Stool Frequency"
+            ]
+          },
+          "origin": "manual",
+          "to_name": "text",
+          "from_name": "label"
+        },
+        {
+          "id": "MkmDpl5BDv",
+          "type": "number",
+          "value": {
+            "end": end1,
+            "start": start1,
+            "number": 5
+          },
+          "origin": "manual",
+          "to_name": "text",
+          "from_name": "number"
+        }]
+
+    feature_flags = {}
+    feature_flags['ff_back_dev_2762_textarea_weights_30062022_short'] = True
+
+    if label_weight is not None and text_weight is not None:
+        project_params = {'control_weights': {"label": {"type": "Labels", "labels": {"yrdd": 0.5, "Stool Frequency": 0.5}, "overall": label_weight},
+                                              "choice": {"type": "Choices", "labels": {"Weapons": 1.0, "Violence": 1.0, "Adult content": 1.0}, "overall": 1.0},
+                                              "number": {"type": "Number", "labels": {}, "overall": 1.0}, "date_bm": {"type": "TextArea", "labels": {}, "overall": 1.0},
+                                              "datetime": {"type": "DateTime", "labels": {}, "overall": text_weight},
+                                              "num_stools": {"type": "TextArea", "labels": {}, "overall": 1.0}}}
+    else:
+        project_params = {}
+
+    r1 = Metrics.apply(project_params, result_1, result_2, feature_flags=feature_flags)
+    r2 = Metrics.apply(project_params, result_2, result_1, feature_flags=feature_flags)
+
+    assert r1 == agreement
+    assert r2 == agreement
 
 @pytest.mark.parametrize(
     "x, y, w, h, label_weight, text_weight, agreement",
@@ -754,7 +834,3 @@ def test_labels_datetime_not_matching_regions(x, y, w, h, label_weight, text_wei
 
     assert r1 == agreement
     assert r2 == agreement
-
-
-def test_labels_choices_textarea_number_datetime():
-    pass
