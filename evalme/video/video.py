@@ -9,7 +9,7 @@ from evalme.image.object_detection import ObjectDetectionEvalItem
 class VideoEvalItem(EvalItem):
     SHAPE_KEY = 'videorectangle'
 
-    def iou_over_time(self, pred, per_label=False):
+    def iou_over_time(self, pred, per_label=False, **kwargs):
         """
         IOU over time for video frames
 
@@ -121,13 +121,13 @@ class VideoEvalItem(EvalItem):
         return result
 
 
-def _as_video(item):
+def _as_video(item, **kwargs):
     if not isinstance(item, VideoEvalItem):
-        return VideoEvalItem(item)
+        return VideoEvalItem(item, **kwargs)
     return item
 
 
-def video_iou(item_gt, item_pred, label_weights=None, per_label=False):
-    item_gt = _as_video(item_gt)
-    item_pred = _as_video(item_pred)
-    return item_gt.iou_over_time(item_pred, per_label=per_label)
+def video_iou(item_gt, item_pred, per_label=False, **kwargs):
+    item_gt = _as_video(item_gt, **kwargs)
+    item_pred = _as_video(item_pred, **kwargs)
+    return item_gt.iou_over_time(item_pred, per_label=per_label, **kwargs)
