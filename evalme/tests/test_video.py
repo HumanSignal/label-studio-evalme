@@ -1,6 +1,6 @@
 from evalme.video.video import VideoEvalItem
 
-from text.text import simple_match_by_shape_key
+from evalme.text.text import simple_match_by_shape_key
 
 
 def test_video_same_example():
