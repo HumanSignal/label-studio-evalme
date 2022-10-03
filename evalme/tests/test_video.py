@@ -1,5 +1,7 @@
 from evalme.video.video import VideoEvalItem
 
+from text.text import simple_match_by_shape_key
+
 
 def test_video_same_example():
     """
@@ -463,3 +465,74 @@ def test_video_different_labels():
     res_label = gt.iou_over_time(pred, per_label=True)
     assert res == 0
     assert res_label == {'Test': 0}
+
+
+def test_simple_video_metric():
+    """
+    Simple video metric test
+    """
+    example1 = [
+        {
+            "id": "tJhYZLMC9G",
+            "type": "videorectangle",
+            "value": {
+                "framesCount": 10000000,
+                "labels": ['Test'],
+                "sequence": [
+                    {
+                        "frame": 1,
+                        "enabled": True,
+                        "x": 38,
+                        "y": 38,
+                        "width": 41,
+                        "height": 22,
+                        "rotation": 0,
+                        "time": 1.01
+                    },
+                    {
+                        "frame": 5,
+                        "enabled": False,
+                        "x": 40,
+                        "y": 49,
+                        "width": 41,
+                        "height": 22,
+                        "rotation": 0,
+                        "time": 1.55
+                    }
+                ]
+            }
+        }
+    ]
+    example2 = [
+        {
+            "id": "tBnMKLMC7G",
+            "type": "videorectangle",
+            "value": {
+                "framesCount": 200,
+                "labels": ['Test1'],
+                "sequence": [
+                    {
+                        "frame": 1,
+                        "enabled": True,
+                        "x": 38,
+                        "y": 38,
+                        "width": 41,
+                        "height": 22,
+                        "rotation": 0,
+                        "time": 1.01
+                    },
+                    {
+                        "frame": 5,
+                        "enabled": False,
+                        "x": 40,
+                        "y": 49,
+                        "width": 41,
+                        "height": 22,
+                        "rotation": 0,
+                        "time": 1.55
+                    }
+                ]
+            }
+        }
+    ]
+    assert simple_match_by_shape_key(example1, example2, shape_key='sequence', check_condition=False) == 1.0
