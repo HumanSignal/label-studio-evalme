@@ -433,7 +433,7 @@ class SimpleComparisionEvalItem(EvalItem):
     def match(self, pred, per_label=False, **kwargs):
         if per_label:
             return {}
-        return self.max_score(pred, matcher=self._match, check_condition=True)
+        return self.max_score(pred, matcher=self._match, check_condition=kwargs.get('check_condition', True))
 
 
 def _as_text_tags_eval_item(item, shape_key, **kwargs):
@@ -560,3 +560,18 @@ def datetime_match(item_gt, item_pred, **kwargs):
     item_gt = _as_datetime_eval_item(item_gt, **kwargs)
     item_pred = _as_datetime_eval_item(item_pred, **kwargs)
     return item_gt.match(item_pred)
+
+
+def _as_simple_match(item, shape_key, **kwargs):
+    if not isinstance(item, SimpleComparisionEvalItem):
+        return SimpleComparisionEvalItem(item, shape_key=shape_key, **kwargs)
+    return item
+
+
+def simple_match_by_shape_key(item_gt, item_pred, shape_key, **kwargs):
+    if kwargs.get('per_label'):
+        # per-label mode is not supported for the simple comparision
+        return {}
+    item_gt = _as_simple_match(item_gt, shape_key, **kwargs)
+    item_pred = _as_simple_match(item_pred, shape_key, **kwargs)
+    return item_gt.match(item_pred, check_condition=kwargs.get('check_condition', True))

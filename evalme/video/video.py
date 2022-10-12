@@ -75,8 +75,8 @@ class VideoEvalItem(EvalItem):
         :return: score[float] or dict()
         """
         # check if labels
-        labels_gt = gt_frames['value'].get('labels')
-        labels_pred = pred_frames['value'].get('labels')
+        labels_gt = gt_frames['value'].get('labels', [])
+        labels_pred = pred_frames['value'].get('labels', [])
         if labels_gt != labels_pred:
             if per_label:
                 return {label: 0 for label in labels_gt}
