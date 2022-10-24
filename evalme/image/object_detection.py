@@ -498,10 +498,19 @@ class OCREvalItem(ObjectDetectionEvalItem):
                                     gt_results_labels[0]['value']['labels'] == \
                                     pred_results_labels[0]['value']['labels']:
                                 # compare text results
+                                # check if there are text tags in prediction
                                 text_tag_in_result = [item for item in pred_types if
                                                       item != 'labels' and item not in OCREvalItem.OCR_SHAPES]
                                 if not text_tag_in_result:
-                                    text_distance = 1
+                                    # check if there are text tags in ground truth
+                                    text_tag_in_gt = [item for item in gt_types if
+                                                          item != 'labels' and item not in OCREvalItem.OCR_SHAPES]
+                                    if text_tag_in_gt:
+                                        # if there are text tags in ground truth but not in prediction
+                                        text_distance = 0
+                                    else:
+                                        # if both results do not have text tags
+                                        text_distance = 1
                                 else:
                                     text_distance = self._compare_text_tags(pred_types=pred_types,
                                                                             gt_results=gt_results,
