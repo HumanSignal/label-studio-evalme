@@ -27,8 +27,10 @@ class MetricWrapper(object):
 
 
 class Metrics(object):
+    IGNORE_BACKUP_PARAMS = ['__aws_arn']
 
     _metrics = {}
+    _feature_flags = {}
 
     @classmethod
     def _norm_tag(cls, tag):
@@ -87,7 +89,7 @@ class Metrics(object):
 
     @classmethod
     def apply(cls, project, result_first, result_second, symmetric=True, per_label=False,
-              metric_name=None, iou_threshold=None):
+              metric_name=None, iou_threshold=None, **kwargs):
         """
         Compute matching score between first and second completion results
         Args:
@@ -139,14 +141,15 @@ class Metrics(object):
             return min(a, b)
         # get metric params
         params = project.get("metric_params", {})
-        # remove backup parameters
-        list(map(params.pop, [item for item in params if item.startswith("__")]))
         if per_label:
             score, n = defaultdict(int), defaultdict(int)
         else:
             score, n = 0, 0
 
         if annotations_or_result:
+            # remove backup parameters
+            list(map(params.pop,
+                     [item for item in params if item.startswith("__") and item not in cls.IGNORE_BACKUP_PARAMS]))
             # get matching score over annotations as a hole
             if project == {}:
                 control_params = {}
@@ -163,34 +166,46 @@ class Metrics(object):
                 score = matching_func.func(result_first, result_second, **control_params)
                 n = 1
         else:
+            # remove backup parameters
+            list(map(params.pop,
+                     [item for item in params if item.startswith("__")]))
             # aggregate matching scores over all existed controls
             for control_name, control_type in all_controls.items():
+                logger.debug(f"Starting calculation for {control_type} - {control_name}")
+                matching_func = get_matching_func(control_type, metric_name)
+                if not matching_func:
+                    logger.error(f'No matching function found for control type >>{control_type} in project.id >>{project.get("id")}.')
+                    continue
+                # construct params for function
                 control_weights = project.get("control_weights", {})
                 control_weights = control_weights.get(control_name, {})
                 overall_weight = control_weights.get('overall', 1)
+                if overall_weight == 0:
+                    logger.debug(f'Overall weight for control type >>{control_type} is 0.')
+                    continue
                 label_weights = control_weights.get('labels')
                 control_params = deepcopy(params)
                 control_params['label_weights'] = label_weights
                 control_params['per_label'] = per_label
                 if iou_threshold:
                     control_params['iou_threshold'] = iou_threshold
-
-                matching_func = get_matching_func(control_type, metric_name)
-                if not matching_func:
-                    logger.error(f'No matching function found for control type {control_type} in {project}.'
-                                 f'Using naive calculation.')
-                    continue
                 # identify if label config need
                 func_args = inspect.getfullargspec(matching_func.func)
                 if 'label_config' in func_args[0]:
                     control_params['label_config'] = project.get("label_config")
                 if 'control_name' in func_args[0]:
                     control_params['control_name'] = control_name
+
+                feature_flags = kwargs.get('feature_flags')
+                if feature_flags:
+                    control_params.update(feature_flags)
+
                 # get result of certain control_name
                 results_first_by_from_name = cls.filter_results_by_from_name(result_first, control_name)
                 results_second_by_from_name = cls.filter_results_by_from_name(result_second, control_name)
                 s = matching_func.func(results_first_by_from_name, results_second_by_from_name, **control_params)
                 if symmetric:
+                    # get symmetric score
                     s_reversed = matching_func.func(results_second_by_from_name, results_first_by_from_name,
                                                     **control_params)
                     if per_label:
@@ -206,10 +221,11 @@ class Metrics(object):
                 else:
                     score += s * overall_weight
                     n += overall_weight
-
+                logger.debug(f"Ending calculation for {control_type} - {control_name}")
+                
         def clipped(s):
             if s > 1 or s < 0:
-                logger.warning('Error in project %s. Matching score %s is not within [0, 1] interval '
+                logger.debug('Error in project %s. Matching score %s is not within [0, 1] interval '
                              'for the following results:\nx=%s\ny=%s. It will be clipped',
                              str(project), str(s), str(result_first), str(result_second))
                 return 0 if s < 0 else 1
