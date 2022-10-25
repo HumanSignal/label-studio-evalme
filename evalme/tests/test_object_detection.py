@@ -954,3 +954,15 @@ def test_ocr_polygonlabels_shape():
     o2 = OCREvalItem(result2)
     score = o1.compare(o2)
     assert score == 0.8
+
+
+def test_ocr_polygon_shape():
+    """
+    Compare OCR with same annotation
+    """
+    res1 = {"result":[{"id":"D6bIR1hGHD","type":"polygon","value":{"points":[[11.383928571428571,41.25],[22.232142857142858,42.857142857142854],[13.125,55.17857142857143],[7.0982142857142865,51.25]]},"origin":"manual","to_name":"image","from_name":"poly","image_rotation":0,"original_width":768,"original_height":576},{"id":"D6bIR1hGHD","type":"labels","value":{"labels":["Text"],"points":[[11.383928571428571,41.25],[22.232142857142858,42.857142857142854],[13.125,55.17857142857143],[7.0982142857142865,51.25]]},"origin":"manual","to_name":"image","from_name":"label","image_rotation":0,"original_width":768,"original_height":576},{"id":"D6bIR1hGHD","type":"textarea","value":{"text":["12"],"points":[[11.383928571428571,41.25],[22.232142857142858,42.857142857142854],[13.125,55.17857142857143],[7.0982142857142865,51.25]]},"origin":"manual","to_name":"image","from_name":"transcription","image_rotation":0,"original_width":768,"original_height":576}]}
+    res2 = {"result":[{"id":"D6bIR1hGHD","type":"polygon","value":{"points":[[11.383928571428571,41.25],[22.232142857142858,42.857142857142854],[13.125,55.17857142857143],[7.0982142857142865,51.249999999999986]]},"origin":"manual","to_name":"image","from_name":"poly","image_rotation":0,"original_width":768,"original_height":576},{"id":"D6bIR1hGHD","type":"labels","value":{"labels":["Text"],"points":[[11.383928571428571,41.25],[22.232142857142858,42.857142857142854],[13.125,55.17857142857143],[7.0982142857142865,51.249999999999986]]},"origin":"manual","to_name":"image","from_name":"label","image_rotation":0,"original_width":768,"original_height":576},{"id":"D6bIR1hGHD","type":"textarea","value":{"text":["12"],"points":[[11.383928571428571,41.25],[22.232142857142858,42.857142857142854],[13.125,55.17857142857143],[7.0982142857142865,51.249999999999986]]},"origin":"manual","to_name":"image","from_name":"transcription","image_rotation":0,"original_width":768,"original_height":576}]}
+    obj1 = OCREvalItem(res1)
+    obj2 = OCREvalItem(res2)
+
+    assert obj1.compare(obj2) == 1

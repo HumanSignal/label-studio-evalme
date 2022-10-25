@@ -446,7 +446,7 @@ class KeyPointsEvalItem(EvalItem):
 
 
 class OCREvalItem(ObjectDetectionEvalItem):
-    OCR_SHAPES = ['rectangle', 'rectanglelabels', 'brushlabels', 'polygonlabels']
+    OCR_SHAPES = ['rectangle', 'rectanglelabels', 'brushlabels', 'polygonlabels', 'polygon']
     SHAPE_KEY = 'rectangle'
 
     def compare(self, pred,
@@ -540,7 +540,7 @@ class OCREvalItem(ObjectDetectionEvalItem):
         max_score = 0
         if shape == 'brushlabels':
             iou = BrushEvalItem._iou
-        elif shape == 'polygonlabels':
+        elif shape in ['polygonlabels', 'polygon']:
             iou = PolygonObjectDetectionEvalItem(raw_data=gt)._iou
         else:
             iou = self._iou
