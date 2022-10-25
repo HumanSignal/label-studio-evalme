@@ -486,17 +486,20 @@ class OCREvalItem(ObjectDetectionEvalItem):
                     # check if both groups have region selection tags
                     if rec_type in pred_types and rec_type in gt_types:
                         # get max score for region selection
-                        iou_score = self._get_max_iou_rectangles(gt_results[rec_type], pred_results[rec_type])
+                        iou_score = self._get_max_iou_rectangles(gt_results[rec_type],
+                                                                 pred_results[rec_type],
+                                                                 shape=rec_type)
                         if iou_score < threshold:
                             continue
                         else:
+                            labels = rec_type if 'labels' in rec_type else 'labels'
                             # check labels and compare labels
-                            gt_results_labels = gt_results.get('labels', [])
-                            pred_results_labels = pred_results.get('labels', [])
+                            gt_results_labels = gt_results.get(labels, [])
+                            pred_results_labels = pred_results.get(labels, [])
                             if len(gt_results_labels) == 1 and \
                                     len(pred_results_labels) == 1 and \
-                                    gt_results_labels[0]['value']['labels'] == \
-                                    pred_results_labels[0]['value']['labels']:
+                                    gt_results_labels[0]['value'][labels] == \
+                                    pred_results_labels[0]['value'][labels]:
                                 # compare text results
                                 # check if there are text tags in prediction
                                 text_tag_in_result = [item for item in pred_types if
@@ -537,7 +540,7 @@ class OCREvalItem(ObjectDetectionEvalItem):
             values = results.values()
             return sum(values) / len(values) if len(values) > 0 else 0
 
-    def _get_max_iou_rectangles(self, gt, pred):
+    def _get_max_iou_rectangles(self, gt, pred, shape=None):
         """
         Get max iou for OCR shapes
         :param gt: Ground Truth result
@@ -545,9 +548,15 @@ class OCREvalItem(ObjectDetectionEvalItem):
         :return: Max score float[0..1]
         """
         max_score = 0
+        if shape == 'brushlabels':
+            iou = BrushEvalItem._iou
+        elif shape == 'polygonlabels':
+            iou = PolygonObjectDetectionEvalItem(raw_data=gt)._iou
+        else:
+            iou = self._iou
         for item in gt:
             for pred_item in pred:
-                score = self._iou(item['value'], pred_item['value'])
+                score = iou(item['value'], pred_item['value'])
                 max_score = max(max_score, score)
         return max_score
 
