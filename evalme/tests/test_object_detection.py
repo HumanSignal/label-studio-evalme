@@ -367,7 +367,7 @@ def test_OCR_matching_function_no_rectangle():
     obj1 = OCREvalItem(res1)
     obj2 = OCREvalItem(res2)
 
-    assert obj1.compare(obj2) == None
+    assert obj1.compare(obj2) == 0
 
 
 def test_OCR_matching_function_not_matching_text():
@@ -918,7 +918,7 @@ def test_ocr_2_groups_of_regions_without_text():
     o1 = OCREvalItem(result1)
     o2 = OCREvalItem(result2)
     score = o1.compare(o2)
-    assert score == None
+    assert score == 0.5
 
 
 def test_ocr_rectanglelabels_shape():
