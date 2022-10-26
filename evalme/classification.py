@@ -141,6 +141,8 @@ def naive(x, y, per_label=False, **kwargs):
                         logger.error(f"Can't extract label for type {t}.", exc_info=True)
                         continue
                     for label in labels:
+                        # for taxonomy and other non-str labels
+                        label = str(label)
                         if x[i]['value'] == y[i]['value']:
                             results[label] += 1
                         counts[label] += 1
