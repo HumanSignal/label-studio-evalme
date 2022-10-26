@@ -140,14 +140,10 @@ def naive(x, y, per_label=False, **kwargs):
             try:
                 for i in range(len(x)):
                     t = x[i]['type']
-                    # trying to extract label from annotation
-                    try:
-                        labels = x[i]['value'].get(t)
-                        if labels is None:
-                            labels = x[i]['value'].get('hypertextlabels') or x[i]['value'].get('htmllabels')
-                    except Exception as e:
-                        logger.error(f"Can't extract label for type {t}.", exc_info=True)
-                        continue
+                    # extract label from annotation
+                    labels = x[i]['value'].get(t)
+                    if labels is None:
+                        labels = x[i]['value'].get('hypertextlabels') or x[i]['value'].get('htmllabels')
                     for label in labels:
                         # for taxonomy and other non-str labels
                         label = str(label)
