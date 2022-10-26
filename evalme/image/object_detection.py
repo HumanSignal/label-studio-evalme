@@ -535,7 +535,7 @@ class OCREvalItem(ObjectDetectionEvalItem):
                             else:
                                 results[id_gt] = text_distance
         if per_label:
-            return results, num_results
+            return dict(results), dict(num_results)
         else:
             values = results.values()
             return sum(values) / len(values) if len(values) > 0 else 0

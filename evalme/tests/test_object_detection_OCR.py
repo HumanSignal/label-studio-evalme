@@ -372,15 +372,3 @@ def test_ocr_2_groups_of_regions_without_rectangle_intersection():
     o2 = OCREvalItem(result2)
     score = o1.compare(o2)
     assert score == 0
-
-
-def test_ocr_rectanglelabels_shape():
-    pass
-
-
-def test_ocr_brushlabels_shape():
-    pass
-
-
-def test_ocr_polygonlabels_shape():
-    pass
