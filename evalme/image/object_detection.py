@@ -486,31 +486,44 @@ class OCREvalItem(ObjectDetectionEvalItem):
                     # check if both groups have region selection tags
                     if rec_type in pred_types and rec_type in gt_types:
                         # get max score for region selection
-                        iou_score = self._get_max_iou_rectangles(gt_results[rec_type], pred_results[rec_type])
+                        iou_score = self._get_max_iou_rectangles(gt_results[rec_type],
+                                                                 pred_results[rec_type],
+                                                                 shape=rec_type)
                         if iou_score < threshold:
                             continue
                         else:
+                            labels = rec_type if 'labels' in rec_type else 'labels'
                             # check labels and compare labels
-                            gt_results_labels = gt_results.get('labels', [])
-                            pred_results_labels = pred_results.get('labels', [])
+                            gt_results_labels = gt_results.get(labels, [])
+                            pred_results_labels = pred_results.get(labels, [])
                             if len(gt_results_labels) == 1 and \
                                     len(pred_results_labels) == 1 and \
-                                    gt_results_labels[0]['value']['labels'] == \
-                                    pred_results_labels[0]['value']['labels']:
+                                    gt_results_labels[0]['value'][labels] == \
+                                    pred_results_labels[0]['value'][labels]:
                                 # compare text results
-                                text_distance = self._compare_text_tags(pred_types=pred_types,
-                                                                        gt_results=gt_results,
-                                                                        pred_results=pred_results,
-                                                                        algorithm=algorithm,
-                                                                        qval=qval)
-                                if text_distance is None:
-                                    continue
-                            else:
-                                # in case of different labels or many labels
+                                # check if there are text tags in prediction
                                 text_tag_in_result = [item for item in pred_types if
                                                       item != 'labels' and item not in OCREvalItem.OCR_SHAPES]
                                 if not text_tag_in_result:
-                                    continue
+                                    # check if there are text tags in ground truth
+                                    text_tag_in_gt = [item for item in gt_types if
+                                                          item != 'labels' and item not in OCREvalItem.OCR_SHAPES]
+                                    if text_tag_in_gt:
+                                        # if there are text tags in ground truth but not in prediction
+                                        text_distance = 0
+                                    else:
+                                        # if both results do not have text tags
+                                        text_distance = 1
+                                else:
+                                    text_distance = self._compare_text_tags(pred_types=pred_types,
+                                                                            gt_results=gt_results,
+                                                                            pred_results=pred_results,
+                                                                            algorithm=algorithm,
+                                                                            qval=qval)
+                                    if text_distance is None:
+                                        continue
+                            else:
+                                # in case of different labels or many labels
                                 text_distance = 0
 
                             # prepare result
@@ -525,9 +538,9 @@ class OCREvalItem(ObjectDetectionEvalItem):
             return results, num_results
         else:
             values = results.values()
-            return sum(values) / len(values) if len(values) > 0 else None
+            return sum(values) / len(values) if len(values) > 0 else 0
 
-    def _get_max_iou_rectangles(self, gt, pred):
+    def _get_max_iou_rectangles(self, gt, pred, shape=None):
         """
         Get max iou for OCR shapes
         :param gt: Ground Truth result
@@ -535,9 +548,15 @@ class OCREvalItem(ObjectDetectionEvalItem):
         :return: Max score float[0..1]
         """
         max_score = 0
+        if shape == 'brushlabels':
+            iou = BrushEvalItem._iou
+        elif shape == 'polygonlabels':
+            iou = PolygonObjectDetectionEvalItem(raw_data=gt)._iou
+        else:
+            iou = self._iou
         for item in gt:
             for pred_item in pred:
-                score = self._iou(item['value'], pred_item['value'])
+                score = iou(item['value'], pred_item['value'])
                 max_score = max(max_score, score)
         return max_score
 
@@ -636,126 +655,179 @@ class BrushEvalItem(ObjectDetectionEvalItem):
         return np.average(ious, weights=weights) if ious else 0.0
 
 
-def _as_bboxes(item, shape_key=None):
+def _as_bboxes(item, shape_key=None, **kwargs):
     if not isinstance(item, BboxObjectDetectionEvalItem):
-        return BboxObjectDetectionEvalItem(item, shape_key)
+        return BboxObjectDetectionEvalItem(item, shape_key, **kwargs)
     return item
 
 
-def _as_polygons(item, shape_key=None):
+def _as_polygons(item, shape_key=None, **kwargs):
     if not isinstance(item, PolygonObjectDetectionEvalItem):
-        return PolygonObjectDetectionEvalItem(item, shape_key)
+        return PolygonObjectDetectionEvalItem(item, shape_key, **kwargs)
     return item
 
 
-def _as_keypoint(item):
+def _as_keypoint(item, **kwargs):
     if not isinstance(item, KeyPointsEvalItem):
-        return KeyPointsEvalItem(item)
+        return KeyPointsEvalItem(item, **kwargs)
     return item
 
 
-def _as_ocreval(item):
+def _as_ocreval(item, **kwargs):
     if not isinstance(item, OCREvalItem):
-        return OCREvalItem(item)
+        return OCREvalItem(item, **kwargs)
     return item
 
 
-def _as_brush(item):
+def _as_brush(item, **kwargs):
     if not isinstance(item, BrushEvalItem):
-        return BrushEvalItem(item)
+        return BrushEvalItem(item, **kwargs)
     return item
 
 
-def iou_bboxes(item_gt, item_pred, label_weights=None, shape_key=None, per_label=False):
-    item_gt = _as_bboxes(item_gt, shape_key=shape_key)
-    item_pred = _as_bboxes(item_pred, shape_key=shape_key)
+def iou_bboxes(item_gt, item_pred, label_weights=None, shape_key=None, per_label=False, **kwargs):
+    item_gt = _as_bboxes(item_gt, shape_key=shape_key, **kwargs)
+    item_pred = _as_bboxes(item_pred, shape_key=shape_key, **kwargs)
     return item_pred.total_iou(item_gt, label_weights, per_label=per_label)
 
 
-def iou_bboxes_textarea(item_gt, item_pred, label_weights=None, shape_key=None,
-                        algorithm='Levenshtein', qval=1, per_label=False):
-    item_gt = _as_bboxes(item_gt, shape_key=shape_key)
-    item_pred = _as_bboxes(item_pred, shape_key=shape_key)
+def iou_bboxes_textarea(item_gt,
+                        item_pred,
+                        label_weights=None,
+                        shape_key=None,
+                        algorithm='Levenshtein',
+                        qval=1,
+                        per_label=False,
+                        **kwargs):
+    item_gt = _as_bboxes(item_gt, shape_key=shape_key, **kwargs)
+    item_pred = _as_bboxes(item_pred, shape_key=shape_key, **kwargs)
     return item_pred.total_iou(item_gt, label_weights, algorithm=algorithm, qval=qval, per_label=per_label)
 
 
-def iou_polygons(item_gt, item_pred, label_weights=None, shape_key=None, per_label=False):
-    item_gt = _as_polygons(item_gt, shape_key=shape_key)
-    item_pred = _as_polygons(item_pred, shape_key=shape_key)
+def iou_polygons(item_gt, item_pred, label_weights=None, shape_key=None, per_label=False, **kwargs):
+    item_gt = _as_polygons(item_gt, shape_key=shape_key, **kwargs)
+    item_pred = _as_polygons(item_pred, shape_key=shape_key, **kwargs)
     return item_pred.total_iou(item_gt, label_weights, per_label=per_label)
 
 
-def iou_polygons_textarea(item_gt, item_pred, label_weights=None, shape_key=None,
-                          algorithm='Levenshtein', qval=1, per_label=False):
-    item_gt = _as_polygons(item_gt, shape_key=shape_key)
-    item_pred = _as_polygons(item_pred, shape_key=shape_key)
+def iou_polygons_textarea(item_gt,
+                          item_pred,
+                          label_weights=None,
+                          shape_key=None,
+                          algorithm='Levenshtein',
+                          qval=1,
+                          per_label=False,
+                          **kwargs):
+    item_gt = _as_polygons(item_gt, shape_key=shape_key, **kwargs)
+    item_pred = _as_polygons(item_pred, shape_key=shape_key, **kwargs)
     return item_pred.total_iou(item_gt, label_weights, algorithm=algorithm, qval=qval, per_label=per_label)
 
 
-def precision_bboxes(item_gt, item_pred, iou_threshold=0.5, label_weights=None, shape_key=None, per_label=False):
-    item_gt = _as_bboxes(item_gt, shape_key=shape_key)
-    item_pred = _as_bboxes(item_pred, shape_key=shape_key)
+def precision_bboxes(item_gt,
+                     item_pred,
+                     iou_threshold=0.5,
+                     label_weights=None,
+                     shape_key=None,
+                     per_label=False,
+                     **kwargs):
+    item_gt = _as_bboxes(item_gt, shape_key=shape_key, **kwargs)
+    item_pred = _as_bboxes(item_pred, shape_key=shape_key, **kwargs)
     return item_pred.precision_at_iou(item_gt, iou_threshold, label_weights, per_label=per_label)
 
 
-def precision_bboxes_for_map(item_gt, item_pred, iou_threshold=0.5, label_weights=None,
-                             shape_key=None, per_label=False):
-    item_gt = _as_bboxes(item_gt, shape_key=shape_key)
-    item_pred = _as_bboxes(item_pred, shape_key=shape_key)
+def precision_bboxes_for_map(item_gt,
+                             item_pred,
+                             iou_threshold=0.5,
+                             label_weights=None,
+                             shape_key=None,
+                             per_label=False,
+                             **kwargs):
+    item_gt = _as_bboxes(item_gt, shape_key=shape_key, **kwargs)
+    item_pred = _as_bboxes(item_pred, shape_key=shape_key, **kwargs)
     return item_pred.precision_at_iou(item_gt, iou_threshold, label_weights, per_label=per_label)
 
 
-def precision_polygons(item_gt, item_pred, iou_threshold=0.5, label_weights=None, shape_key=None, per_label=False):
-    item_gt = _as_polygons(item_gt, shape_key=shape_key)
-    item_pred = _as_polygons(item_pred, shape_key=shape_key)
+def precision_polygons(item_gt,
+                       item_pred,
+                       iou_threshold=0.5,
+                       label_weights=None,
+                       shape_key=None,
+                       per_label=False,
+                       **kwargs):
+    item_gt = _as_polygons(item_gt, shape_key=shape_key, **kwargs)
+    item_pred = _as_polygons(item_pred, shape_key=shape_key, **kwargs)
     return item_pred.precision_at_iou(item_gt, iou_threshold, label_weights, per_label=per_label)
 
 
-def recall_bboxes(item_gt, item_pred, iou_threshold=0.5, label_weights=None, shape_key=None, per_label=False):
-    item_gt = _as_bboxes(item_gt, shape_key=shape_key)
-    item_pred = _as_bboxes(item_pred, shape_key=shape_key)
+def recall_bboxes(item_gt,
+                  item_pred,
+                  iou_threshold=0.5,
+                  label_weights=None,
+                  shape_key=None,
+                  per_label=False,
+                  **kwargs):
+    item_gt = _as_bboxes(item_gt, shape_key=shape_key, **kwargs)
+    item_pred = _as_bboxes(item_pred, shape_key=shape_key, **kwargs)
     return item_pred.recall_at_iou(item_gt, iou_threshold, label_weights, per_label=per_label)
 
 
-def recall_polygons(item_gt, item_pred, iou_threshold=0.5, label_weights=None, shape_key=None, per_label=False):
-    item_gt = _as_polygons(item_gt, shape_key=shape_key)
-    item_pred = _as_polygons(item_pred, shape_key=shape_key)
+def recall_polygons(item_gt,
+                    item_pred,
+                    iou_threshold=0.5,
+                    label_weights=None,
+                    shape_key=None,
+                    per_label=False,
+                    **kwargs):
+    item_gt = _as_polygons(item_gt, shape_key=shape_key, **kwargs)
+    item_pred = _as_polygons(item_pred, shape_key=shape_key, **kwargs)
     return item_pred.recall_at_iou(item_gt, iou_threshold, label_weights, per_label=per_label)
 
 
-def f1_bboxes(item_gt, item_pred, iou_threshold=0.5, label_weights=None, shape_key=None, per_label=False):
-    item_gt = _as_bboxes(item_gt, shape_key=shape_key)
-    item_pred = _as_bboxes(item_pred, shape_key=shape_key)
+def f1_bboxes(item_gt,
+              item_pred,
+              iou_threshold=0.5,
+              label_weights=None,
+              shape_key=None,
+              per_label=False,
+              **kwargs):
+    item_gt = _as_bboxes(item_gt, shape_key=shape_key, **kwargs)
+    item_pred = _as_bboxes(item_pred, shape_key=shape_key, **kwargs)
     return item_pred.f1_at_iou(item_gt, iou_threshold, label_weights, per_label=per_label)
 
 
-def f1_polygons(item_gt, item_pred, iou_threshold=0.5, label_weights=None, shape_key=None, per_label=False):
-    item_gt = _as_polygons(item_gt, shape_key=shape_key)
-    item_pred = _as_polygons(item_pred, shape_key=shape_key)
+def f1_polygons(item_gt,
+                item_pred,
+                iou_threshold=0.5,
+                label_weights=None,
+                shape_key=None,
+                per_label=False,
+                **kwargs):
+    item_gt = _as_polygons(item_gt, shape_key=shape_key, **kwargs)
+    item_pred = _as_polygons(item_pred, shape_key=shape_key, **kwargs)
     return item_pred.f1_at_iou(item_gt, iou_threshold, label_weights, per_label=per_label)
 
 
-def mAP_bboxes(item_gt, item_pred, iou_threshold=0.5, label_weights=None, shape_key=None, per_label=False):
-    item_gt = _as_bboxes(item_gt, shape_key=shape_key)
-    item_pred = _as_bboxes(item_pred, shape_key=shape_key)
+def mAP_bboxes(item_gt, item_pred, iou_threshold=0.5, label_weights=None, shape_key=None, per_label=False, **kwargs):
+    item_gt = _as_bboxes(item_gt, shape_key=shape_key, **kwargs)
+    item_pred = _as_bboxes(item_pred, shape_key=shape_key, **kwargs)
     return item_pred.mAP_at_iou(item_gt, iou_threshold, label_weights, per_label=per_label)
 
 
-def prediction_bboxes(item_gt, item_pred, iou_threshold=0.5, shape_key=None):
-    item_gt = _as_bboxes(item_gt, shape_key=shape_key)
-    item_pred = _as_bboxes(item_pred, shape_key=shape_key)
+def prediction_bboxes(item_gt, item_pred, iou_threshold=0.5, shape_key=None, **kwargs):
+    item_gt = _as_bboxes(item_gt, shape_key=shape_key, **kwargs)
+    item_pred = _as_bboxes(item_pred, shape_key=shape_key, **kwargs)
     return item_pred.prediction_result_at_iou_for_all_bbox(item_gt, iou_threshold)
 
 
-def matrix_iou_bboxes(item_gt, item_pred, label_weights=None, shape_key=None, per_label=False):
-    item_gt = _as_bboxes(item_gt, shape_key=shape_key)
-    item_pred = _as_bboxes(item_pred, shape_key=shape_key)
+def matrix_iou_bboxes(item_gt, item_pred, label_weights=None, shape_key=None, per_label=False, **kwargs):
+    item_gt = _as_bboxes(item_gt, shape_key=shape_key, **kwargs)
+    item_pred = _as_bboxes(item_pred, shape_key=shape_key, **kwargs)
     return item_gt.total_iou_matrix(item_pred, label_weights, per_label=per_label)
 
 
-def keypoints_distance(item_gt, item_pred, per_label=False, label_weights=None):
-    item_gt = _as_keypoint(item_gt)
-    item_pred = _as_keypoint(item_pred)
+def keypoints_distance(item_gt, item_pred, per_label=False, label_weights=None, **kwargs):
+    item_gt = _as_keypoint(item_gt, **kwargs)
+    item_pred = _as_keypoint(item_pred, **kwargs)
     return item_gt.distance(item_pred, label_weights=label_weights, per_label=per_label)
 
 
@@ -765,9 +837,10 @@ def ocr_compare(item_gt, item_pred,
                 algorithm='Levenshtein',
                 qval=1,
                 label_weights=None,
-                control_weights=None):
-    item_gt = _as_ocreval(item_gt)
-    item_pred = _as_ocreval(item_pred)
+                control_weights=None,
+                **kwargs):
+    item_gt = _as_ocreval(item_gt, **kwargs)
+    item_pred = _as_ocreval(item_pred, **kwargs)
     return item_gt.compare(item_pred,
                            per_label=per_label,
                            threshold=iou_threshold,
@@ -775,25 +848,25 @@ def ocr_compare(item_gt, item_pred,
                            qval=qval)
 
 
-def iou_brush(item_gt, item_pred, per_label=False, label_weights=None):
-    item_gt = _as_brush(item_gt)
-    item_pred = _as_brush(item_pred)
+def iou_brush(item_gt, item_pred, per_label=False, label_weights=None, **kwargs):
+    item_gt = _as_brush(item_gt, **kwargs)
+    item_pred = _as_brush(item_pred, **kwargs)
     return item_gt.iou(item_pred, per_label=per_label, label_weights=label_weights)
 
 
-def precision_brush(item_gt, item_pred, iou_threshold=0.5, label_weights=None, per_label=False):
-    item_gt = _as_brush(item_gt)
-    item_pred = _as_brush(item_pred)
+def precision_brush(item_gt, item_pred, iou_threshold=0.5, label_weights=None, per_label=False, **kwargs):
+    item_gt = _as_brush(item_gt, **kwargs)
+    item_pred = _as_brush(item_pred, **kwargs)
     return item_gt.precision_at_iou(item_pred, iou_threshold, label_weights, per_label=per_label)
 
 
-def recall_brush(item_gt, item_pred, iou_threshold=0.5, label_weights=None, per_label=False):
-    item_gt = _as_brush(item_gt)
-    item_pred = _as_brush(item_pred)
+def recall_brush(item_gt, item_pred, iou_threshold=0.5, label_weights=None, per_label=False, **kwargs):
+    item_gt = _as_brush(item_gt, **kwargs)
+    item_pred = _as_brush(item_pred, **kwargs)
     return item_gt.recall_at_iou(item_pred, iou_threshold, label_weights, per_label=per_label)
 
 
-def f1_brush(item_gt, item_pred, iou_threshold=0.5, label_weights=None, per_label=False):
-    item_gt = _as_brush(item_gt)
-    item_pred = _as_brush(item_pred)
+def f1_brush(item_gt, item_pred, iou_threshold=0.5, label_weights=None, per_label=False, **kwargs):
+    item_gt = _as_brush(item_gt, **kwargs)
+    item_pred = _as_brush(item_pred, **kwargs)
     return item_gt.f1_at_iou(item_pred, iou_threshold, label_weights, per_label=per_label)

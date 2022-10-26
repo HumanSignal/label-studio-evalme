@@ -26,7 +26,11 @@ class TextTagsEvalItem(EvalItem):
         return iou
 
     def _match(self, x, y, f):
-        spans_match = self.spans_iou(x, y)
+        region = EvalItem.has_regions([x, y])
+        if region:
+            spans_match = EvalItem.general_iou_by_type(region, x, y)
+        else:
+            spans_match = 0
         if spans_match == 0 and not self._kwargs.get('ff_back_dev_2762_textarea_weights_30062022_short'):
             return 0
         labels_match = texts_similarity(x[self._shape_key], y[self._shape_key], f)
@@ -59,7 +63,11 @@ class TextTagsEvalItem(EvalItem):
                 # find the best matching span inside gt_values
                 if self._kwargs.get('ff_back_dev_2762_textarea_weights_30062022_short'):
                     best_matching_score = max(map(partial(self._match, y=pred_value, f=comparator), gt_values),
-                                              key=lambda r: r[1])[0]
+                                              key=lambda r: r[1])
+                    if best_matching_score[1] == 0:
+                        best_matching_score = 0
+                    else:
+                        best_matching_score = best_matching_score[0]
                 else:
                     best_matching_score = max(map(partial(self._match, y=pred_value, f=comparator), gt_values))
                 if iou_threshold is not None:
@@ -179,6 +187,7 @@ class HTMLTagsEvalItem(TextTagsEvalItem):
         labels_match = texts_similarity(x_res, y_res, f)
         spans_match = self.spans_iou(x, y)
         return labels_match * spans_match
+
 
 class TextAreaEvalItem(EvalItem):
     SHAPE_KEY = 'text'
@@ -407,61 +416,115 @@ class TaxonomyEvalItem(EvalItem):
         return score / max(len(gt), 1)
 
 
+class SimpleComparisionEvalItem(EvalItem):
+    SHAPE_KEY = 'number'
+
+    def _match(self, gt, pred, check_condition=False):
+        logger.debug(f"_match for {self.SHAPE_KEY}")
+        region = EvalItem.has_regions([gt, pred])
+        logger.debug(f"Region detected: {str(region)}")
+        if region and check_condition:
+            logger.debug(f"Returning per region calculation")
+            return int(gt[self._shape_key] == pred[self._shape_key]), \
+                   EvalItem.general_iou_by_type(region, gt, pred)
+        logger.debug(f"Returning simple calculation")
+        return int(gt[self._shape_key] == pred[self._shape_key])
+
+    def match(self, pred, per_label=False, **kwargs):
+        if per_label:
+            return {}
+        return self.max_score(pred, matcher=self._match, check_condition=kwargs.get('check_condition', True))
+
+
 def _as_text_tags_eval_item(item, shape_key, **kwargs):
     if not isinstance(item, TextTagsEvalItem):
         return TextTagsEvalItem(item, shape_key=shape_key, **kwargs)
     return item
 
 
-def _as_html_tags_eval_item(item, shape_key):
+def _as_html_tags_eval_item(item, shape_key, **kwargs):
     if not isinstance(item, HTMLTagsEvalItem):
-        return HTMLTagsEvalItem(item, shape_key=shape_key)
+        return HTMLTagsEvalItem(item, shape_key=shape_key, **kwargs)
     return item
 
 
-def _as_textarea_eval_item(item):
+def _as_textarea_eval_item(item, **kwargs):
     if not isinstance(item, TextAreaEvalItem):
-        return TextAreaEvalItem(item)
+        return TextAreaEvalItem(item, **kwargs)
     return item
 
 
-def _as_taxonomy_eval_item(item):
+def _as_taxonomy_eval_item(item, **kwargs):
     if not isinstance(item, TaxonomyEvalItem):
-        return TaxonomyEvalItem(item)
+        return TaxonomyEvalItem(item, **kwargs)
     return item
 
 
-def intersection_text_tagging(item_gt, item_pred, label_weights=None, shape_key=None, per_label=False, iou_threshold=None, **kwargs):
+def _as_number_eval_item(item, **kwargs):
+    if not isinstance(item, SimpleComparisionEvalItem):
+        return SimpleComparisionEvalItem(item, shape_key='number', **kwargs)
+    return item
+
+
+def intersection_text_tagging(item_gt,
+                              item_pred,
+                              label_weights=None,
+                              shape_key=None,
+                              per_label=False,
+                              iou_threshold=None,
+                              **kwargs):
     item_gt = _as_text_tags_eval_item(item_gt, shape_key=shape_key, **kwargs)
     item_pred = _as_text_tags_eval_item(item_pred, shape_key=shape_key, **kwargs)
     return item_gt.intersection(item_pred, label_weights, per_label=per_label, iou_threshold=iou_threshold)
 
 
-def intersection_textarea_tagging(item_gt, item_pred, label_weights=None, shape_key='text', algorithm='Levenshtein', qval=1, per_label=False, iou_threshold=None, **kwargs):
+def intersection_textarea_tagging(item_gt,
+                                  item_pred,
+                                  label_weights=None,
+                                  shape_key='text',
+                                  algorithm='Levenshtein',
+                                  qval=1,
+                                  per_label=False,
+                                  iou_threshold=None,
+                                  **kwargs):
     item_gt = _as_text_tags_eval_item(item_gt, shape_key=shape_key, **kwargs)
     item_pred = _as_text_tags_eval_item(item_pred, shape_key=shape_key, **kwargs)
     return item_gt.intersection(item_pred, label_weights=label_weights, algorithm=algorithm, qval=qval, per_label=per_label, iou_threshold=iou_threshold)
 
 
-def intersection_html_tagging(item_gt, item_pred, label_weights=None, shape_key=None, algorithm=None, qval=None, per_label=False, iou_threshold=None):
-    item_gt = _as_html_tags_eval_item(item_gt, shape_key=shape_key)
-    item_pred = _as_html_tags_eval_item(item_pred, shape_key=shape_key)
+def intersection_html_tagging(item_gt,
+                              item_pred,
+                              label_weights=None,
+                              shape_key=None,
+                              algorithm=None,
+                              qval=None,
+                              per_label=False,
+                              iou_threshold=None,
+                              **kwargs):
+    item_gt = _as_html_tags_eval_item(item_gt, shape_key=shape_key, **kwargs)
+    item_pred = _as_html_tags_eval_item(item_pred, shape_key=shape_key, **kwargs)
     return item_gt.intersection(item_pred, label_weights, algorithm=algorithm, qval=qval, per_label=per_label, iou_threshold=iou_threshold)
 
 
 def match_textareas(item_gt, item_pred, algorithm='Levenshtein', qval=1, **kwargs):
     qval = int(qval or 0) or None
-    item_gt = _as_textarea_eval_item(item_gt)
-    item_pred = _as_textarea_eval_item(item_pred)
+    item_gt = _as_textarea_eval_item(item_gt, **kwargs)
+    item_pred = _as_textarea_eval_item(item_pred, **kwargs)
     if kwargs.get('per_label'):
         # per-label mode is not supported for the plain text area
         return {}
     return item_gt.match(item_pred, algorithm, qval)
 
 
-def intersection_taxonomy(item_gt, item_pred, label_weights=dict(), per_label=False, label_config=None, control_name=None):
-    item_gt = _as_taxonomy_eval_item(item_gt)
-    item_pred = _as_taxonomy_eval_item(item_pred)
+def intersection_taxonomy(item_gt,
+                          item_pred,
+                          label_weights=dict(),
+                          per_label=False,
+                          label_config=None,
+                          control_name=None,
+                          **kwargs):
+    item_gt = _as_taxonomy_eval_item(item_gt, **kwargs)
+    item_pred = _as_taxonomy_eval_item(item_pred, **kwargs)
     return item_gt.spans_iou(item_pred,
                              per_label=per_label,
                              label_config=label_config,
@@ -469,7 +532,46 @@ def intersection_taxonomy(item_gt, item_pred, label_weights=dict(), per_label=Fa
                              control_name=control_name)
 
 
-def path_match_taxonomy(item_gt, item_pred, label_weights=dict(), per_label=False):
-    item_gt = _as_taxonomy_eval_item(item_gt)
-    item_pred = _as_taxonomy_eval_item(item_pred)
+def path_match_taxonomy(item_gt, item_pred, label_weights=dict(), per_label=False, **kwargs):
+    item_gt = _as_taxonomy_eval_item(item_gt, **kwargs)
+    item_pred = _as_taxonomy_eval_item(item_pred, **kwargs)
     return item_gt.path_matches(item_pred, per_label=per_label, label_weights=label_weights)
+
+
+def numbers_match(item_gt, item_pred, **kwargs):
+    if kwargs.get('per_label'):
+        # per-label mode is not supported for the numbers text area
+        return {}
+    item_gt = _as_number_eval_item(item_gt, **kwargs)
+    item_pred = _as_number_eval_item(item_pred, **kwargs)
+    return item_gt.match(item_pred)
+
+
+def _as_datetime_eval_item(item, **kwargs):
+    if not isinstance(item, SimpleComparisionEvalItem):
+        return SimpleComparisionEvalItem(item, shape_key='datetime', **kwargs)
+    return item
+
+
+def datetime_match(item_gt, item_pred, **kwargs):
+    if kwargs.get('per_label'):
+        # per-label mode is not supported for the numbers text area
+        return {}
+    item_gt = _as_datetime_eval_item(item_gt, **kwargs)
+    item_pred = _as_datetime_eval_item(item_pred, **kwargs)
+    return item_gt.match(item_pred)
+
+
+def _as_simple_match(item, shape_key, **kwargs):
+    if not isinstance(item, SimpleComparisionEvalItem):
+        return SimpleComparisionEvalItem(item, shape_key=shape_key, **kwargs)
+    return item
+
+
+def simple_match_by_shape_key(item_gt, item_pred, shape_key, **kwargs):
+    if kwargs.get('per_label'):
+        # per-label mode is not supported for the simple comparision
+        return {}
+    item_gt = _as_simple_match(item_gt, shape_key, **kwargs)
+    item_pred = _as_simple_match(item_pred, shape_key, **kwargs)
+    return item_gt.match(item_pred, check_condition=kwargs.get('check_condition', True))

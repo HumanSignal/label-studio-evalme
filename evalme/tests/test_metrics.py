@@ -1,57 +1,5 @@
 from evalme.metrics import Metrics
 
-from evalme.image.object_detection import iou_polygons
-
-from evalme.text.text import intersection_text_tagging
-
-Metrics.register(
-    name='1d_region_intersection_threshold',
-    form='iou_threshold',
-    tag='Labels',
-    func=intersection_text_tagging,
-    desc='Percentage of matched regions by IOU w.r.t threshold'
-)
-
-Metrics.register(
-    name='Test',
-    form='',
-    tag='Test',
-    func='',
-    desc=1
-)
-
-Metrics.register(
-    name='Test2',
-    form='',
-    tag='Test, Test2',
-    func='',
-    desc=2
-)
-
-Metrics.register(
-    name='Test3',
-    form='',
-    tag='Test3',
-    func='',
-    desc=3
-)
-
-Metrics.register(
-    name='Test4',
-    form='',
-    tag='all',
-    func='',
-    desc=4
-)
-
-Metrics.register(
-    name='iou_polygons',
-    form='empty_form',
-    tag='PolygonLabels',
-    func=iou_polygons,
-    desc='IOU for polygons'
-)
-
 
 def test_get_default_metric_for_name_tag_happy_path():
     result = Metrics.get_default_metric_for_name_tag('test', 'Test')
