@@ -527,7 +527,7 @@ class OCREvalItem(ObjectDetectionEvalItem):
 
                             text_distance = text_distance * label_distance
                             # prepare result
-                            if per_label:
+                            if per_label and pred_results_labels:
                                 item = pred_results_labels[0]['value'][labels]
                                 for subitem in item:
                                     results[subitem] += text_distance
