@@ -503,7 +503,6 @@ class OCREvalItem(ObjectDetectionEvalItem):
                             else:
                                 # in case of different labels or many labels
                                 label_distance = 0
-                                continue
 
                             # compare text results
                             # check if there are text tags in prediction
