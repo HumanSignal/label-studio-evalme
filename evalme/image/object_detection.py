@@ -477,7 +477,8 @@ class OCREvalItem(ObjectDetectionEvalItem):
             # get ground truth results and types
             gt_results = gt_ids[id_gt]
             gt_types = gt_results.keys()
-            results[id_gt] = 0
+            if not per_label:
+                results[id_gt] = 0
             for id_pred in pred_ids:
                 # get prediction results and types from current id_pred
                 pred_results = pred_ids[id_pred]
