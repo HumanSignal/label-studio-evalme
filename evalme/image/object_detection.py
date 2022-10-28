@@ -446,7 +446,7 @@ class KeyPointsEvalItem(EvalItem):
 
 
 class OCREvalItem(ObjectDetectionEvalItem):
-    OCR_SHAPES = ['rectangle', 'rectanglelabels', 'brushlabels', 'polygonlabels']
+    OCR_SHAPES = ['rectangle', 'rectanglelabels', 'brushlabels', 'polygonlabels', 'polygon']
     SHAPE_KEY = 'rectangle'
 
     def compare(self, pred,
@@ -477,6 +477,8 @@ class OCREvalItem(ObjectDetectionEvalItem):
             # get ground truth results and types
             gt_results = gt_ids[id_gt]
             gt_types = gt_results.keys()
+            if not per_label:
+                results[id_gt] = 0
             for id_pred in pred_ids:
                 # get prediction results and types from current id_pred
                 pred_results = pred_ids[id_pred]
@@ -496,46 +498,46 @@ class OCREvalItem(ObjectDetectionEvalItem):
                             # check labels and compare labels
                             gt_results_labels = gt_results.get(labels, [])
                             pred_results_labels = pred_results.get(labels, [])
-                            if len(gt_results_labels) == 1 and \
-                                    len(pred_results_labels) == 1 and \
-                                    gt_results_labels[0]['value'][labels] == \
-                                    pred_results_labels[0]['value'][labels]:
-                                # compare text results
-                                # check if there are text tags in prediction
-                                text_tag_in_result = [item for item in pred_types if
-                                                      item != 'labels' and item not in OCREvalItem.OCR_SHAPES]
-                                if not text_tag_in_result:
-                                    # check if there are text tags in ground truth
-                                    text_tag_in_gt = [item for item in gt_types if
-                                                          item != 'labels' and item not in OCREvalItem.OCR_SHAPES]
-                                    if text_tag_in_gt:
-                                        # if there are text tags in ground truth but not in prediction
-                                        text_distance = 0
-                                    else:
-                                        # if both results do not have text tags
-                                        text_distance = 1
-                                else:
-                                    text_distance = self._compare_text_tags(pred_types=pred_types,
-                                                                            gt_results=gt_results,
-                                                                            pred_results=pred_results,
-                                                                            algorithm=algorithm,
-                                                                            qval=qval)
-                                    if text_distance is None:
-                                        continue
+                            if len(gt_results_labels) == len(pred_results_labels) == 1:
+                                label_distance = int(gt_results_labels[0]['value'][labels] == pred_results_labels[0]['value'][labels])
+                            elif len(gt_results_labels) == len(pred_results_labels) == 0:
+                                label_distance = 1
                             else:
                                 # in case of different labels or many labels
-                                text_distance = 0
+                                label_distance = 0
 
+                            # compare text results
+                            # check if there are text tags in prediction
+                            text_tag_in_result = [item for item in pred_types if
+                                                      item != 'labels' and item not in OCREvalItem.OCR_SHAPES]
+                            if not text_tag_in_result:
+                                # check if there are text tags in ground truth
+                                text_tag_in_gt = [item for item in gt_types if
+                                                  item != 'labels' and item not in OCREvalItem.OCR_SHAPES]
+                                if text_tag_in_gt:
+                                    # if there are text tags in ground truth but not in prediction
+                                    text_distance = 0
+                                else:
+                                    # if both results do not have text tags
+                                    text_distance = 1
+                            else:
+                                text_distance = self._compare_text_tags(pred_types=pred_types,
+                                                                        gt_results=gt_results,
+                                                                        pred_results=pred_results,
+                                                                        algorithm=algorithm,
+                                                                        qval=qval)
+
+                            text_distance = text_distance * label_distance
                             # prepare result
                             if per_label:
-                                item = pred_results_labels[0]['value']['labels']
+                                item = pred_results_labels[0]['value'][labels] if pred_results_labels else []
                                 for subitem in item:
                                     results[subitem] += text_distance
                                     num_results[subitem] += 1
                             else:
                                 results[id_gt] = text_distance
         if per_label:
-            return results, num_results
+            return dict(results), dict(num_results)
         else:
             values = results.values()
             return sum(values) / len(values) if len(values) > 0 else 0
@@ -550,7 +552,7 @@ class OCREvalItem(ObjectDetectionEvalItem):
         max_score = 0
         if shape == 'brushlabels':
             iou = BrushEvalItem._iou
-        elif shape == 'polygonlabels':
+        elif shape in ['polygonlabels', 'polygon']:
             iou = PolygonObjectDetectionEvalItem(raw_data=gt)._iou
         else:
             iou = self._iou
@@ -601,7 +603,7 @@ class OCREvalItem(ObjectDetectionEvalItem):
         text_tag_in_result = [item for item in pred_types if item != 'labels' and item not in OCREvalItem.OCR_SHAPES]
         # return 0 if there are no text tag in result
         if len(text_tag_in_result) == 0:
-            return None
+            return 0
         # construct list of text results
         elif len(text_tag_in_result) == 1:
             gt_results_text = gt_results[text_tag_in_result[0]]

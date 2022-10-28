@@ -232,8 +232,8 @@ def test_naive_matching_per_label():
                 }
             }
         ]]
-    assert naive(test_data[0], test_data[1], per_label=True) == {"Accessories\\1\\2": 1}
-    assert Metrics.apply({}, test_data[0], test_data[1], metric_name='naive', per_label=True) == {"Accessories\\1\\2": 1}
+    assert naive(test_data[0], test_data[1], per_label=True) == {'1': 1.0, '2': 1.0, 'Accessories': 1.0}
+    assert Metrics.apply({}, test_data[0], test_data[1], metric_name='naive', per_label=True) == {'1': 1.0, '2': 1.0, 'Accessories': 1.0}
 
 
 def test_naive_not_matching():

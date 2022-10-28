@@ -368,6 +368,7 @@ def test_OCR_matching_function_no_rectangle():
     obj2 = OCREvalItem(res2)
 
     assert obj1.compare(obj2) == 0
+    assert obj2.compare(obj1, per_label=True)
 
 
 def test_OCR_matching_function_not_matching_text():
@@ -549,7 +550,7 @@ def test_OCR_matching_with_several_control_types():
                        {"id": "3Qx2-JNxjz", "type": "textarea", "value": {"text": ["Text"]}, "origin": "manual",
                         "to_name": "audio", "from_name": "transcription1"}]}
     score = Metrics.apply({}, ann1, ann2, metric_name='OCR')
-    assert score == 1.0
+    assert score == 0.5
 
 
 def test_ocr_2_groups_of_regions_with_labels():
@@ -782,6 +783,9 @@ def test_ocr_2_groups_of_regions_with_labels():
     o2 = OCREvalItem(result2)
     score = o1.compare(o2)
     assert score == 0.5
+    score_per_label = o2.compare(o1, per_label=True)
+    assert score_per_label[0] == {'Text': 1.0, 'Handwriting': 0.0}
+    assert score_per_label[1] == {'Text': 1, 'Handwriting': 1}
 
 
 def test_ocr_2_groups_of_regions_without_text():
@@ -920,6 +924,10 @@ def test_ocr_2_groups_of_regions_without_text():
     score = o1.compare(o2)
     assert score == 0.5
 
+    score_per_label = o2.compare(o1, per_label=True)
+    assert score_per_label[0] == {'Text': 1.0, 'Handwriting': 0.0}
+    assert score_per_label[1] == {'Text': 1, 'Handwriting': 1}
+
 
 def test_ocr_rectanglelabels_shape():
     """
@@ -931,6 +939,10 @@ def test_ocr_rectanglelabels_shape():
     o2 = OCREvalItem(result2)
     score = o1.compare(o2)
     assert score == 0.8
+    score_per_label = o2.compare(o1, per_label=True)
+    assert score_per_label[0] == {'Car': 0.8}
+    assert score_per_label[1] == {'Car': 1}
+
 
 def test_ocr_brushlabels_shape():
     """
@@ -942,6 +954,9 @@ def test_ocr_brushlabels_shape():
     o2 = OCREvalItem(result2)
     score = o1.compare(o2)
     assert score == 0.8
+    score_per_label = o2.compare(o1, per_label=True)
+    assert score_per_label[0] == {'Airplane': 0.8}
+    assert score_per_label[1] == {'Airplane': 1}
 
 
 def test_ocr_polygonlabels_shape():
@@ -952,5 +967,26 @@ def test_ocr_polygonlabels_shape():
     result2 = {"result":[{"id":"PrdT1BmZdj","type":"polygonlabels","value":{"points":[[19.6875,23.75],[20.625,33.333333333333336],[25.625,52.08333333333332],[44.375,48.333333333333336],[51.25,29.166666666666668],[50.625000000000014,15.833333333333334],[37.5,10.416666666666663],[25.625,14.166666666666666]],"polygonlabels":["Airplane"]},"origin":"manual","to_name":"image","from_name":"label","image_rotation":0,"original_width":320,"original_height":240},{"id":"PrdT1BmZdj","type":"textarea","value":{"text":["Test1"],"points":[[19.6875,23.75],[20.625,33.333333333333336],[25.625,52.08333333333332],[44.375,48.333333333333336],[51.25,29.166666666666668],[50.625000000000014,15.833333333333334],[37.5,10.416666666666663],[25.625,14.166666666666666]]},"origin":"manual","to_name":"image","from_name":"transcription","image_rotation":0,"original_width":320,"original_height":240}]}
     o1 = OCREvalItem(result1)
     o2 = OCREvalItem(result2)
+
     score = o1.compare(o2)
     assert score == 0.8
+
+    per_label_score = o2.compare(o1, per_label=True)
+    assert per_label_score[0] == {'Airplane': 0.8}
+    assert per_label_score[1] == {'Airplane': 1}
+
+
+def test_ocr_polygon_shape():
+    """
+    Compare OCR with same annotation
+    """
+    res1 = {"result":[{"id":"D6bIR1hGHD","type":"polygon","value":{"points":[[11.383928571428571,41.25],[22.232142857142858,42.857142857142854],[13.125,55.17857142857143],[7.0982142857142865,51.25]]},"origin":"manual","to_name":"image","from_name":"poly","image_rotation":0,"original_width":768,"original_height":576},{"id":"D6bIR1hGHD","type":"labels","value":{"labels":["Text"],"points":[[11.383928571428571,41.25],[22.232142857142858,42.857142857142854],[13.125,55.17857142857143],[7.0982142857142865,51.25]]},"origin":"manual","to_name":"image","from_name":"label","image_rotation":0,"original_width":768,"original_height":576},{"id":"D6bIR1hGHD","type":"textarea","value":{"text":["12"],"points":[[11.383928571428571,41.25],[22.232142857142858,42.857142857142854],[13.125,55.17857142857143],[7.0982142857142865,51.25]]},"origin":"manual","to_name":"image","from_name":"transcription","image_rotation":0,"original_width":768,"original_height":576}]}
+    res2 = {"result":[{"id":"D6bIR1hGHD","type":"polygon","value":{"points":[[11.383928571428571,41.25],[22.232142857142858,42.857142857142854],[13.125,55.17857142857143],[7.0982142857142865,51.249999999999986]]},"origin":"manual","to_name":"image","from_name":"poly","image_rotation":0,"original_width":768,"original_height":576},{"id":"D6bIR1hGHD","type":"labels","value":{"labels":["Text"],"points":[[11.383928571428571,41.25],[22.232142857142858,42.857142857142854],[13.125,55.17857142857143],[7.0982142857142865,51.249999999999986]]},"origin":"manual","to_name":"image","from_name":"label","image_rotation":0,"original_width":768,"original_height":576},{"id":"D6bIR1hGHD","type":"textarea","value":{"text":["12"],"points":[[11.383928571428571,41.25],[22.232142857142858,42.857142857142854],[13.125,55.17857142857143],[7.0982142857142865,51.249999999999986]]},"origin":"manual","to_name":"image","from_name":"transcription","image_rotation":0,"original_width":768,"original_height":576}]}
+    obj1 = OCREvalItem(res1)
+    obj2 = OCREvalItem(res2)
+
+    assert obj1.compare(obj2) == 1
+
+    per_label_score = obj2.compare(obj1, per_label=True)
+    assert per_label_score[0] == {'Text': 1.0}
+    assert per_label_score[1] == {'Text': 1}
