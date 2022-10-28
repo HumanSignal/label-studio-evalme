@@ -140,21 +140,16 @@ def naive(x, y, per_label=False, **kwargs):
             try:
                 for i in range(len(x)):
                     t = x[i]['type']
-                    # trying to extract label from annotation
-                    try:
-                        label = x[i]['value'][t]
-                        if isinstance(label, list):
-                            if len(label) == 1:
-                                label = str(label[0])
-                            else:
-                                label = str("\\".join(label))
-                    # No-label if exception occurs
-                    except Exception as e:
-                        logger.error("Can't assign result for label.", exc_info=True)
-                        label = 'No-label'
-                    if x[i]['value'] == y[i]['value']:
-                        results[label] += 1
-                    counts[label] += 1
+                    # extract label from annotation
+                    labels = x[i]['value'].get(t)
+                    if labels is None:
+                        labels = x[i]['value'].get('hypertextlabels') or x[i]['value'].get('htmllabels')
+                    for label in labels:
+                        # for taxonomy and other non-str labels
+                        label = str(label)
+                        if x[i]['value'] == y[i]['value']:
+                            results[label] += 1
+                        counts[label] += 1
                 for label in counts:
                     result[label] = results[label] / counts[label]
             except:
