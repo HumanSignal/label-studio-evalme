@@ -550,7 +550,7 @@ def test_OCR_matching_with_several_control_types():
                        {"id": "3Qx2-JNxjz", "type": "textarea", "value": {"text": ["Text"]}, "origin": "manual",
                         "to_name": "audio", "from_name": "transcription1"}]}
     score = Metrics.apply({}, ann1, ann2, metric_name='OCR')
-    assert score == 1.0
+    assert score == 0.5
 
 
 def test_ocr_2_groups_of_regions_with_labels():
