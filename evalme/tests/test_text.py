@@ -944,6 +944,27 @@ def test_taxonomy_nested_label_config_with_added_label():
     Test for full tree with empty tree
     """
     pred = intersection_taxonomy(tree_subview_1, tree_subview_with_new_label, label_config=label_config_subview, control_name='taxonomy')
-    assert pred == 1
+    assert pred == 0
     pred_vice = intersection_taxonomy(tree_subview_with_new_label, tree_subview_1, label_config=label_config_subview, control_name='taxonomy')
-    assert pred_vice == 0.5
+    assert pred_vice == 0.0
+
+tree_subview_with_new_label1 = [{'value': {
+        "taxonomy": [
+            [
+                "B"
+            ],
+            [
+                "E"
+            ]
+        ]
+    }}]
+
+
+def test_taxonomy_nested_label_config_with_added_label():
+    """
+    Test for full tree with empty tree
+    """
+    pred = intersection_taxonomy(tree_subview_1, tree_subview_with_new_label1, label_config=label_config_subview, control_name='taxonomy')
+    assert pred == 1.0
+    pred_vice = intersection_taxonomy(tree_subview_with_new_label1, tree_subview_1, label_config=label_config_subview, control_name='taxonomy')
+    assert pred_vice == 0.2
