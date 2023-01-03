@@ -428,6 +428,8 @@ class SimpleComparisionEvalItem(EvalItem):
             return int(gt[self._shape_key] == pred[self._shape_key]), \
                    EvalItem.general_iou_by_type(region, gt, pred)
         logger.debug(f"Returning simple calculation")
+        if check_condition:
+            return int(gt[self._shape_key] == pred[self._shape_key]), 1.0
         return int(gt[self._shape_key] == pred[self._shape_key])
 
     def match(self, pred, per_label=False, **kwargs):
