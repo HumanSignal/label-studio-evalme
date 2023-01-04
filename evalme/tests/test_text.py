@@ -551,6 +551,7 @@ tree_subview_2 = [{'value': {
         ]
     }}]
 
+
 def test_taxonomy_nested_label_config():
     """
     Test for full tree with empty tree
@@ -648,7 +649,7 @@ label_config_with_several_tags = """
 """
 
 
-def test_taxonomy_several_tags():
+def test_taxonomy_several_tags_in_several_views():
     """
     Test taxonomy with several tags in config in different views
     :return:
@@ -659,6 +660,7 @@ def test_taxonomy_several_tags():
     pred_vice = intersection_taxonomy(tree_subview_2, tree_subview_1, label_config=label_config_with_several_tags,
                                       control_name='taxonomy')
     assert pred_vice == 0.25
+
 
 label_config_with_several_tags2 = """
 <View>
@@ -711,7 +713,8 @@ label_config_with_several_tags2 = """
 </View>
 """
 
-def test_taxonomy_several_tags():
+
+def test_taxonomy_several_tags_in_one_view():
     """
     Test taxonomy with several tags in config in one view
     :return:
@@ -722,6 +725,7 @@ def test_taxonomy_several_tags():
     pred_vice = intersection_taxonomy(tree_subview_2, tree_subview_1, label_config=label_config_with_several_tags,
                                       control_name='taxonomy')
     assert pred_vice == 0.25
+
 
 extra_label_confg = """
 <View>
@@ -909,6 +913,8 @@ Theese labels should have hotkeys 1, 2; perRegion required Taxonomy    </Header>
   </Taxonomy>
 </View>
 """
+
+
 def test_taxonomy_extra_label_in_annotations():
     """
     Test taxonomy with several tags in config in one view
@@ -922,3 +928,43 @@ def test_taxonomy_extra_label_in_annotations():
     pred_vice = intersection_taxonomy(r1, r2, label_config=extra_label_confg,
                                       control_name='uniq')
     assert pred_vice == 0
+
+
+tree_subview_with_new_label = [{'value': {
+        "taxonomy": [
+            [
+                "B", "E"
+            ],
+        ]
+    }}]
+
+
+def test_taxonomy_nested_label_config_with_added_label():
+    """
+    Test for full tree with empty tree
+    """
+    pred = intersection_taxonomy(tree_subview_1, tree_subview_with_new_label, label_config=label_config_subview, control_name='taxonomy')
+    assert pred == 0
+    pred_vice = intersection_taxonomy(tree_subview_with_new_label, tree_subview_1, label_config=label_config_subview, control_name='taxonomy')
+    assert pred_vice == 0.0
+
+tree_subview_with_new_label1 = [{'value': {
+        "taxonomy": [
+            [
+                "B"
+            ],
+            [
+                "E"
+            ]
+        ]
+    }}]
+
+
+def test_taxonomy_nested_label_config_with_added_label():
+    """
+    Test for full tree with empty tree
+    """
+    pred = intersection_taxonomy(tree_subview_1, tree_subview_with_new_label1, label_config=label_config_subview, control_name='taxonomy')
+    assert pred == 1.0
+    pred_vice = intersection_taxonomy(tree_subview_with_new_label1, tree_subview_1, label_config=label_config_subview, control_name='taxonomy')
+    assert pred_vice == 0.2

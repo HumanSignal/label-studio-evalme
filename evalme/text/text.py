@@ -231,8 +231,9 @@ class TaxonomyEvalItem(EvalItem):
             logger.warning("No label config - returning simple score.")
             return self.spans_match(prediction, per_label=per_label)
 
+        # create Taxonomy tree from label config
         master_tree = TaxonomyEvalItem._tree(label_config=label_config, control_name=control_name)
-
+        # Get taxonomy results for Ground Truth and Predicted annotation
         gt = self.get_values_iter()
         pred = prediction.get_values_iter()
         matches = 0
@@ -270,6 +271,7 @@ class TaxonomyEvalItem(EvalItem):
                         tasks += 1
                         break
                     else:
+                        # score counter for equal results that would be
                         temp = 0
                         try:
                             for item_pred_tx in taxonomy_pred:
@@ -370,7 +372,19 @@ class TaxonomyEvalItem(EvalItem):
     @staticmethod
     def _transform_tree(config, node):
         """
-        Transform tree to paths list
+        Transform tree to FULL paths list
+        Example:
+            Label config:
+            <Taxonomy name="taxonomy" toName="text">
+            <Choice value="A">
+              <Choice value="AA">
+                <Choice value="AAA"/>
+                <Choice value="AAB"/>
+              </Choice>
+            </Choice>
+
+            Results for value ['A'] -> [['A', 'AA', 'AAA'], ['A', 'AA', 'AAB']]
+            Results for value ['AA'] -> [['AA', 'AAA'], ['AA', 'AAB']]
         """
         import operator
         from functools import reduce
@@ -392,8 +406,12 @@ class TaxonomyEvalItem(EvalItem):
             return local_paths
 
         nodes = []
-
-        items = reduce(operator.getitem, node, config)
+        try:
+            items = reduce(operator.getitem, node, config)
+        except KeyError as exc:
+            logger.warning(f'Node {node} was not found in current label config!'
+                           f'Reason: {exc}', exc_info=True)
+            return [node]
         path_list = paths(items)
         if path_list:
             for path in path_list:
