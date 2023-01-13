@@ -3,6 +3,7 @@ from functools import partial
 
 import evalme.utils
 
+
 class EvalItem(object):
     """
     Generic class that contains all info about evaluation item
@@ -201,13 +202,13 @@ class EvalItem(object):
             pred = prediction.get_values_iter()
             if check_condition:
                 best_matching_score = max(map(partial(matcher, gt_value, check_condition=check_condition), pred),
-                                          key=lambda r: r[1])
+                                          key=lambda r: r[1], default=[0, 0])
                 if best_matching_score[1] == 0:
                     best_matching_score = 0
                 else:
                     best_matching_score = best_matching_score[0]
             else:
-                best_matching_score = max(map(partial(matcher, gt_value), pred))
+                best_matching_score = max(map(partial(matcher, gt_value), pred), default=0)
             max_score = max(max_score, best_matching_score)
         return max_score
 
