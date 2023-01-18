@@ -1,5 +1,5 @@
 from evalme.metrics import Metrics
-
+from evalme.eval_item import EvalItem
 
 def test_get_default_metric_for_name_tag_happy_path():
     result = Metrics.get_default_metric_for_name_tag('test', 'Test')
@@ -107,3 +107,16 @@ def test_config_with_2_control_types_no_metric_for_control():
     assert r1 == 1
     assert r2 == 0.0
     assert combined_result == 1
+
+
+def test_evalitem_simple_max_score():
+    """
+    Simple test for max_score with check_condition
+    :return:
+    """
+    i1 = EvalItem(raw_data=[{"value": 0}], shape_key="test")
+    i2 = EvalItem(raw_data=[{"value": 0}], shape_key="test")
+    score = i1.max_score(i2, matcher=lambda x, y: int(x == y), check_condition=False)
+    assert score == 1
+    score = i1.max_score(i2, matcher=lambda x, y, check_condition: [0, 0], check_condition=True)
+    assert score == 0
