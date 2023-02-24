@@ -1,5 +1,6 @@
 from operator import itemgetter
 from functools import partial
+from dateutil import parser
 
 import evalme.utils
 
@@ -110,14 +111,19 @@ class EvalItem(object):
     @staticmethod
     def spans_iou(x, y):
         """
-        Intersection over union for spans with start/end
-        :param x:
+        Interection over union for spans with start/end
+        :params x:
         :param y:
         :return:
         """
         assert EvalItem.has_spans([x, y])
-        s1, e1 = float(x['start']), float(x['end'])
-        s2, e2 = float(y['start']), float(y['end'])
+        # function to convert value - default is converting to float
+        convert_f = float
+        if 'timeserieslabels' in x:
+            # for timeseries - converting function is dateutil.parser to make datetime from string
+            convert_f = parser.parse
+        s1, e1 = convert_f(x['start']), convert_f(x['end'])
+        s2, e2 = convert_f(y['start']), convert_f(y['end'])
         if s2 > e1 or s1 > e2:
             return 0
         intersection = min(e1, e2) - max(s1, s2)
