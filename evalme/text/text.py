@@ -186,6 +186,8 @@ class HTMLTagsEvalItem(TextTagsEvalItem):
         y_res = y.get(self._shape_key) or y.get('htmllabels')
         labels_match = texts_similarity(x_res, y_res, f)
         spans_match = self.spans_iou(x, y)
+        if self._kwargs.get('ff_back_dev_2762_textarea_weights_30062022_short'):
+            return labels_match, spans_match
         return labels_match * spans_match
 
 
