@@ -116,14 +116,13 @@ class EvalItem(object):
         :param y:
         :return:
         """
-        assert EvalItem.has_spans([x, y])
-        # function to convert value - default is converting to float
-        convert_f = float
-        if 'timeserieslabels' in x:
-            # for timeseries - converting function is dateutil.parser to make datetime from string
-            convert_f = parser.parse
-        s1, e1 = convert_f(x['start']), convert_f(x['end'])
-        s2, e2 = convert_f(y['start']), convert_f(y['end'])
+        try:
+            s1, e1 = float(x['start']), float(x['end'])
+            s2, e2 = float(y['start']), float(y['end'])
+        except ValueError:
+            s1, e1 = parser.parse(x['start']), parser.parse(x['end'])
+            s2, e2 = parser.parse(y['start']), parser.parse(y['end'])
+
         if s2 > e1 or s1 > e2:
             return 0
         intersection = min(e1, e2) - max(s1, s2)
