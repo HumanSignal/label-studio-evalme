@@ -38,27 +38,29 @@ class VideoEvalItem(EvalItem):
             else:
                 max_value = 0.0
             for gt_frame in gt_frames_results:
-                labels_gt = gt_frame['value'].get('labels', [])
-                labels_pred = pred_frame['value'].get('labels', [])
-                res_labels = int(labels_gt == labels_pred) * labels_weights[labels_gt[0]]
+                labels_gt = gt_frame['value'].get('labels')
+                labels_pred = pred_frame['value'].get('labels')
+                if labels_gt is None or labels_pred is None:
+                    continue
+                result_labels = int(labels_gt == labels_pred) * labels_weights[labels_gt[0]]
                 if per_label:
-                    res_labels = {label: int(labels_gt == labels_pred) * labels_weights[label] for label in labels_gt}
-                res = int(gt_frame == pred_frame)
+                    result_labels = {label: int(labels_gt == labels_pred) * labels_weights[label] for label in labels_gt}
+                result = int(gt_frame == pred_frame)
                 if per_label:
-                    res = {label: int(gt_frame == pred_frame) for label in labels_gt}
+                    result = {label: int(gt_frame == pred_frame) for label in labels_gt}
                 if per_label:
                     if not max_value:
-                        max_value = res
+                        max_value = result
                     else:
-                        max_value = max_value if list(res.values())[0] < list(max_value.values())[0] else res
+                        max_value = max_value if list(result.values())[0] < list(max_value.values())[0] else result
                 else:
-                    max_value = max(max_value, res)
+                    max_value = max(max_value, result)
             if per_label:
                 for key, value in max_value.items():
-                    results[key] += res_labels[key] * labels_weights_overall + value * control_weights_overall
+                    results[key] += result_labels[key] * labels_weights_overall + value * control_weights_overall
                     results_count[key] += 1
             else:
-                results += res_labels * labels_weights_overall + max_value * control_weights_overall
+                results += result_labels * labels_weights_overall + max_value * control_weights_overall
                 results_count += 1
         # construct final scores
         if per_label:
