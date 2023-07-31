@@ -9,6 +9,66 @@ from evalme.image.object_detection import ObjectDetectionEvalItem
 class VideoEvalItem(EvalItem):
     SHAPE_KEY = 'videorectangle'
 
+    def rectangle_simple(self, pred, per_label=False, **kwargs):
+        """
+        Simple score for video frames
+
+        :param pred: Predicted VideoEvalItem
+        :param per_label: per label calculation flag
+        :return: float or dict of floats
+        """
+        control_weights = kwargs.get('control_weights', {})
+        control_weights_overall = control_weights.get('box', {}).get('overall', 0)
+        labels_weights = control_weights.get('videoLabels', {}).get('labels', {})
+        labels_weights_overall = control_weights.get('videoLabels', {}).get('overall', 1.0)
+        # prepare results vars for per_label
+        if per_label:
+            results = defaultdict(float)
+            results_count = defaultdict(int)
+        else:
+            results = 0
+            results_count = 0
+        # extract ALL frames from raw data
+        gt_frames_results = self.get_frames()
+        pred_frames_results = pred.get_frames()
+        # check each predicted frame set score with ground truth frame set
+        for pred_frame in pred_frames_results:
+            if per_label:
+                max_value = {}
+            else:
+                max_value = 0.0
+            for gt_frame in gt_frames_results:
+                labels_gt = gt_frame['value'].get('labels')
+                labels_pred = pred_frame['value'].get('labels')
+                if labels_gt is None or labels_pred is None:
+                    continue
+                result_labels = int(labels_gt == labels_pred) * labels_weights[labels_gt[0]]
+                if per_label:
+                    result_labels = {label: int(labels_gt == labels_pred) * labels_weights[label] for label in labels_gt}
+                result = int(gt_frame == pred_frame)
+                if per_label:
+                    result = {label: int(gt_frame == pred_frame) for label in labels_gt}
+                if per_label:
+                    if not max_value:
+                        max_value = result
+                    else:
+                        max_value = max_value if list(result.values())[0] < list(max_value.values())[0] else result
+                else:
+                    max_value = max(max_value, result)
+            if per_label:
+                for key, value in max_value.items():
+                    results[key] += result_labels[key] * labels_weights_overall + value * control_weights_overall
+                    results_count[key] += 1
+            else:
+                results += result_labels * labels_weights_overall + max_value * control_weights_overall
+                results_count += 1
+        # construct final scores
+        if per_label:
+            for key in results:
+                results[key] = results[key] / results_count[key]
+            return results, results_count
+        return results / results_count if results_count else 0
+
     def iou_over_time(self, pred, per_label=False, **kwargs):
         """
         IOU over time for video frames
@@ -131,3 +191,9 @@ def video_iou(item_gt, item_pred, per_label=False, **kwargs):
     item_gt = _as_video(item_gt, **kwargs)
     item_pred = _as_video(item_pred, **kwargs)
     return item_gt.iou_over_time(item_pred, per_label=per_label, **kwargs)
+
+
+def video_rectangle_simple(item_gt, item_pred, per_label=False, **kwargs):
+    item_gt = _as_video(item_gt, **kwargs)
+    item_pred = _as_video(item_pred, **kwargs)
+    return item_gt.rectangle_simple(item_pred, per_label=per_label, **kwargs)
