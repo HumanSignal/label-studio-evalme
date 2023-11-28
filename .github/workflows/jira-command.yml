@@ -44,7 +44,7 @@ jobs:
 
       - name: Create Jira Ticket
         id: create-jira-ticket
-        uses: ./.github/actions-hub/actions/test
+        uses: ./.github/actions-hub/actions/jira-create-issue
         with:
           jira_server: ${{ vars.JIRA_SERVER }}
           jira_username: ${{ secrets.JIRA_USERNAME }}
