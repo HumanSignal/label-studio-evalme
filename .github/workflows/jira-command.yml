@@ -38,7 +38,8 @@ jobs:
       - name: Checkout Actions Hub
         uses: actions/checkout@v4
         with:
-          repository: nikitabelonogov/gh-action-test
+          token: ${{ secrets.GIT_PAT }}
+          repository: HumanSignal/gh-action-test
           path: ./.github/actions-hub
 
       - name: Create Jira Ticket
