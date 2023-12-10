@@ -1,4 +1,4 @@
-name: "/git command"
+name: "/jira command"
 
 on:
   repository_dispatch:
@@ -61,7 +61,7 @@ jobs:
           repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
           comment-id: ${{ github.event.client_payload.github.payload.comment.id }}
           body: |
-            > Jira issue [${{ steps.jira-create-issue.outputs.key }}](${{ steps.jira-create-issue.outputs.link }}) is created 
+            > Jira issue [${{ steps.jira-create-issue.outputs.key }}](${{ steps.jira-create-issue.outputs.link }}) is created
             >
             > [Workflow run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
           reactions: "+1"
