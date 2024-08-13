@@ -7,7 +7,7 @@ import numpy as np
 
 from collections import defaultdict, Counter
 
-from label_studio_sdk.converter.brush import decode_rle
+from evalme.image.brush import decode_rle
 from shapely.geometry import Polygon, MultiPolygon, LineString
 from shapely.ops import unary_union, polygonize
 
