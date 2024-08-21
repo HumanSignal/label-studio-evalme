@@ -150,7 +150,6 @@ def naive(x, y, per_label=False, label_order_matters=True, **kwargs):
                     for label in labels:
                         # for taxonomy and other non-str labels
                         label = str(label)
-                        #
                         y_indexes = list(range(len(y)))
                         if label_order_matters:
                             y_indexes = [i]
