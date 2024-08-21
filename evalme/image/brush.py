@@ -1,5 +1,6 @@
 import numpy as np
-
+# This code was copy-pasted from `label_studio_converter.brush.decode_rle` and should be kept in sync with that function.
+# It can be removed if `evalme` is merged into SDK.
 
 class InputStream:
     def __init__(self, data):
