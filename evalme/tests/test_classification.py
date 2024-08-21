@@ -1,5 +1,6 @@
 import pytest
 
+from copy import deepcopy
 from evalme.classification import ClassificationEvalItem, ChoicesEvalItem, naive, exact_matching_choices
 
 from evalme.metrics import Metrics
@@ -259,6 +260,91 @@ def test_naive_not_matching():
         ]]
     assert naive(test_data[0], test_data[1]) == 0
     assert Metrics.apply({}, test_data[0], test_data[1], metric_name='naive') == 0
+
+
+def test_naive_order_doesnt_matter():
+    first = {
+        "type": "timelinelabels",
+        "value": {
+            "ranges": [
+                {
+                    "end": 7,
+                    "start": 1
+                }
+            ],
+            "timelinelabels": [
+                "Dromedary"
+            ]
+        },
+        "to_name": "video",
+        "from_name": "videolabels"
+    }
+    second = {
+        "type": "timelinelabels",
+        "value": {
+            "ranges": [
+            {
+                "end": 6,
+                "start": 1
+            }
+            ],
+            "timelinelabels": [
+                "Bactrian"
+            ]
+        },
+        "to_name": "video",
+        "from_name": "videolabels"
+    }
+
+    test_x = [first, second]
+    test_y = [second, first]
+
+    assert naive(test_x, test_y, label_order_matters=False) == 1.0
+    assert naive(test_x, test_y) == 0.0
+
+
+def test_naive_order_doesnt_matter_partial_agreement():
+    first = {
+        "type": "timelinelabels",
+        "value": {
+            "ranges": [
+                {
+                    "end": 7,
+                    "start": 1
+                }
+            ],
+            "timelinelabels": [
+                "Dromedary"
+            ]
+        },
+        "to_name": "video",
+        "from_name": "videolabels"
+    }
+    first_2 = deepcopy(first)
+    first_2["value"]["ranges"][0]["end"] = 5
+
+    second = {
+        "type": "timelinelabels",
+        "value": {
+            "ranges": [
+            {
+                "end": 6,
+                "start": 1
+            }
+            ],
+            "timelinelabels": [
+                "Bactrian"
+            ]
+        },
+        "to_name": "video",
+        "from_name": "videolabels"
+    }
+
+    test_x = [first, second]
+    test_y = [second, first_2]
+
+    assert naive(test_x, test_y, label_order_matters=False) == 0.5
+    assert naive(test_x, test_y) == 0.0
 
 
 def test_naive_not_matching_per_label():
