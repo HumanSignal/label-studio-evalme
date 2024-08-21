@@ -119,9 +119,12 @@ def exact_matching_pairwise(item_gt, item_pred, label_weights=None, per_label=Fa
                                                                   per_label=per_label)
 
 
-def naive(x, y, per_label=False, **kwargs):
+def naive(x, y, per_label=False, label_order_matters=True, **kwargs):
     """
     Naive comparison of annotations
+
+    If label order doesn't matter, we consider y's whole result array to find an exact match for each item from x['result'].
+    This could be made more efficient by sorting the results first, but we don't do that yet.
     """
     # extract results from annotations
     if isinstance(x, dict) and isinstance(y, dict):
@@ -147,8 +150,14 @@ def naive(x, y, per_label=False, **kwargs):
                     for label in labels:
                         # for taxonomy and other non-str labels
                         label = str(label)
-                        if x[i]['value'] == y[i]['value']:
-                            results[label] += 1
+                        #
+                        y_indexes = list(range(len(y)))
+                        if label_order_matters:
+                            y_indexes = [i]
+                        for y_index in y_indexes:
+                            if x[i]['value'] == y[y_index]['value']:
+                                results[label] += 1
+                                break
                         counts[label] += 1
                 for label in counts:
                     result[label] = results[label] / counts[label]
@@ -157,7 +166,12 @@ def naive(x, y, per_label=False, **kwargs):
         else:
             result = 0
             for i in range(len(x)):
-                if x[i]['value'] == y[i]['value']:
-                    result += 1
+                y_indexes = list(range(len(y)))
+                if label_order_matters:
+                    y_indexes = [i]
+                for y_index in y_indexes:
+                    if x[i]['value'] == y[y_index]['value']:
+                        result += 1
+                        break
             result = result / len(x)
     return result
