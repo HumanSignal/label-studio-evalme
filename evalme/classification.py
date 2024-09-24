@@ -124,7 +124,7 @@ def exact_matching_pairwise(item_gt, item_pred, label_weights=None, per_label=Fa
                                                                   per_label=per_label)
 
 
-def naive(x, y, per_label=False, label_order_matters=True, **kwargs):
+def naive(x, y, per_label=False, label_order_matters=False, **kwargs):
     """
     Naive comparison of annotations
 
