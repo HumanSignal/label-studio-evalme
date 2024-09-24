@@ -10,7 +10,7 @@ class ClassificationEvalItem(EvalItem):
 
     SHAPE_KEY = 'undefined'
 
-    def exact_match(self, item, label_weights=None, per_label=False):
+    def exact_match(self, item, label_weights=None, per_label=False, label_order_matters=False):
         label_weights = label_weights or {}
         if self.empty and item.empty:
             return {} if per_label else 1
@@ -42,6 +42,10 @@ class ClassificationEvalItem(EvalItem):
             region = EvalItem.has_regions([x, y])
             if region:
                 mismatched_spans = not bool(EvalItem.general_iou_by_type(region, x, y))
+            # If order does not matter, sort labels
+            if not label_order_matters:
+                labels = sorted(labels)
+                y_labels = sorted(y_labels)
             # choices are mismatched
             if labels != y_labels or mismatched_spans:
                 if per_label:
@@ -110,7 +114,8 @@ def _as_pairwise(item, shape_key, **kwargs):
 def exact_matching_choices(item_gt, item_pred, label_weights=None, per_label=False, shape_key=None, **kwargs):
     return _as_choices(item_gt, shape_key, **kwargs).exact_match(_as_choices(item_pred, shape_key, **kwargs),
                                                                  label_weights,
-                                                                 per_label=per_label)
+                                                                 per_label=per_label,
+                                                                 label_order_matters=False)
 
 
 def exact_matching_pairwise(item_gt, item_pred, label_weights=None, per_label=False, shape_key=None, **kwargs):
@@ -119,7 +124,7 @@ def exact_matching_pairwise(item_gt, item_pred, label_weights=None, per_label=Fa
                                                                   per_label=per_label)
 
 
-def naive(x, y, per_label=False, label_order_matters=True, **kwargs):
+def naive(x, y, per_label=False, label_order_matters=False, **kwargs):
     """
     Naive comparison of annotations
 

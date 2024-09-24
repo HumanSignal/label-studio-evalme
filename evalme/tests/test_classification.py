@@ -299,8 +299,8 @@ def test_naive_order_doesnt_matter():
     test_x = [first, second]
     test_y = [second, first]
 
-    assert naive(test_x, test_y, label_order_matters=False) == 1.0
-    assert naive(test_x, test_y) == 0.0
+    assert naive(test_x, test_y) == 1.0
+    assert naive(test_x, test_y, label_order_matters=True) == 0.0
 
 
 def test_naive_order_doesnt_matter_partial_agreement():
@@ -343,8 +343,8 @@ def test_naive_order_doesnt_matter_partial_agreement():
     test_x = [first, second]
     test_y = [second, first_2]
 
-    assert naive(test_x, test_y, label_order_matters=False) == 0.5
-    assert naive(test_x, test_y) == 0.0
+    assert naive(test_x, test_y) == 0.5
+    assert naive(test_x, test_y, label_order_matters=True) == 0.0
 
 
 def test_naive_not_matching_per_label():
