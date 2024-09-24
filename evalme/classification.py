@@ -10,7 +10,7 @@ class ClassificationEvalItem(EvalItem):
 
     SHAPE_KEY = 'undefined'
 
-    def exact_match(self, item, label_weights=None, per_label=False, label_order_matters=True):
+    def exact_match(self, item, label_weights=None, per_label=False, label_order_matters=False):
         label_weights = label_weights or {}
         if self.empty and item.empty:
             return {} if per_label else 1
