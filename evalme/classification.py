@@ -98,7 +98,7 @@ class ChoicesEvalItem(ClassificationEvalItem):
 
 
 class PairwiseEvalItem(ClassificationEvalItem):
-    SHAPE_KEY = 'pairwise'
+    SHAPE_KEY = 'selected'
 
 
 def _as_choices(item, shape_key, **kwargs):
