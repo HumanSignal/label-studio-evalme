@@ -25,27 +25,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5.3.0
-        with:
-          python-version: '3.7'
-
-      - uses: actions/cache@v4
-        name: Configure pip cache
-        id: pip-cache
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}-${{ hashFiles('requirements-test.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
       - name: Install dependencies
         run: |
           sudo apt-get clean
           sudo apt-get update
-          sudo apt-get install virtualenv libsasl2-dev python3-dev libldap2-dev libssl-dev
-          pip install -U pip==20.2
-          pip install -r requirements.txt -r requirements-test.txt 
+          sudo apt-get install libsasl2-dev python3-dev libldap2-dev libssl-dev
+
+      - name: Set up Python
+        uses: actions/setup-python@v5.3.0
+        with:
+          python-version: '3.12'
+          cache: 'pip'
 
       - name: Run functional tests
         run: |
