@@ -82,6 +82,8 @@ class ClassificationEvalItem(EvalItem):
             # mark labels in 1st annotation with 0 score
             for x in self.get_values_iter():
                 labels = x[self._shape_key]
+                if not isinstance(labels, list):
+                    labels = [labels]
                 for label in labels:
                     total_weight[label] = 0
         if per_label:
@@ -96,7 +98,7 @@ class ChoicesEvalItem(ClassificationEvalItem):
 
 
 class PairwiseEvalItem(ClassificationEvalItem):
-    SHAPE_KEY = 'pairwise'
+    SHAPE_KEY = 'selected'
 
 
 def _as_choices(item, shape_key, **kwargs):
